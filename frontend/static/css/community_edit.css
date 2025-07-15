@@ -1,0 +1,269 @@
+/* frontend/static/css/community_edit.css */
+
+.community-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* 상단 정렬 */
+    padding: 30px 20px;
+    min-height: calc(100vh - 84px - 200px); /* 헤더와 푸터 제외한 최소 높이 */
+    flex-grow: 1;
+    background-color: #F5F7FA; /* 배경색 */
+}
+
+.community-form-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    width: 100%;
+    max-width: 700px; /* 폼 카드 최대 너비 */
+    text-align: center;
+}
+
+.community-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #2C3E50;
+    margin-bottom: 10px;
+}
+
+.community-subtitle {
+    font-size: 16px;
+    color: #6C7A89;
+    margin-bottom: 30px;
+}
+
+.community-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* 폼 그룹 간 간격 */
+    text-align: left; /* 폼 내부 요소 왼쪽 정렬 */
+}
+
+.form-group {
+    margin-bottom: 0; /* gap으로 간격 조정 */
+}
+
+.form-label {
+    display: block;
+    font-size: 15px;
+    color: #34495E;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #DCE4EC;
+    border-radius: 8px;
+    font-size: 16px;
+    color: #34495E;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box; /* 패딩이 너비에 포함되도록 */
+    font-family: 'Pretendard', sans-serif; /* 폰트 적용 */
+}
+
+.input-field::placeholder {
+    color: #B0BACC;
+}
+
+.input-field:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+textarea.input-field {
+    resize: vertical; /* 수직으로만 크기 조절 가능 */
+    min-height: 150px;
+}
+
+select.input-field {
+    appearance: none; /* 기본 화살표 숨기기 */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23B0BACC%22%20d%3D%22M287%2C114.7L154.5%2C247.3c-2.3%2C2.3-5.3%2C3.5-8.2%2C3.5s-5.9-1.2-8.2-3.5L5.4%2C114.7c-4.5-4.5-4.5-11.8%2C0-16.3c4.5-4.5%2C11.8-4.5%2C16.3%2C0l132.8%2C132.8L270.7%2C98.4c4.5-4.5%2C11.8-4.5%2C16.3%2C0C291.5%2C102.9%2C291.5%2C110.2%2C287%2C114.7z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 12px;
+    padding-right: 40px; /* 화살표 공간 확보 */
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.checkbox-input {
+    width: 20px;
+    height: 20px;
+    accent-color: #007bff; /* 체크박스 색상 */
+    cursor: pointer;
+}
+
+.checkbox-label {
+    font-size: 15px;
+    color: #34495E;
+    cursor: pointer;
+}
+
+.file-input {
+    border: 1px dashed #DCE4EC; /* 점선 테두리 */
+    background-color: #F8FAFC;
+    cursor: pointer;
+    padding: 15px;
+    text-align: center;
+    color: #6C7A89;
+}
+
+.file-input:hover {
+    border-color: #007bff;
+    background-color: #e0f2ff;
+}
+
+.file-note {
+    font-size: 0.85em;
+    color: #8C98A7;
+    margin-top: 5px;
+    display: block; /* 줄바꿈 */
+}
+
+.current-attachments-list {
+    margin-top: 15px;
+    border-top: 1px solid #E9EEF4;
+    padding-top: 15px;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background-color: #f0f4f8;
+    border-radius: 6px;
+    font-size: 0.95em;
+    color: #4A5C70;
+}
+
+.attachment-item i {
+    color: #007bff;
+}
+
+.attachment-item a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    flex-grow: 1; /* 파일 이름이 긴 경우 공간 차지 */
+    word-break: break-all; /* 파일 이름이 길 경우 줄바꿈 */
+}
+
+.attachment-item a:hover {
+    text-decoration: underline;
+}
+
+.remove-attachment-button {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0;
+    line-height: 1; /* 아이콘이 중앙에 오도록 */
+    transition: color 0.2s ease;
+}
+
+.remove-attachment-button:hover {
+    color: #c82333;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end; /* 버튼을 오른쪽으로 정렬 */
+    gap: 10px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #E9EEF4;
+}
+
+/* 기존 button 스타일 재사용 */
+.button {
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    font-family: 'Pretendard', sans-serif;
+}
+
+.button.primary {
+    background-color: #007bff;
+    color: white;
+    border: 1px solid #007bff;
+}
+
+.button.primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.button.secondary {
+    background-color: white;
+    color: #007bff;
+    border: 1px solid #007bff;
+}
+
+.button.secondary:hover {
+    background-color: #e0f2ff;
+    color: #0056b3;
+    border-color: #0056b3;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .community-form-card {
+        padding: 25px;
+        margin: 20px;
+    }
+
+    .community-title {
+        font-size: 26px;
+    }
+
+    .community-subtitle {
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        font-size: 14px;
+        margin-bottom: 6px;
+    }
+
+    .input-field,
+    select.input-field,
+    textarea.input-field {
+        padding: 10px 12px;
+        font-size: 15px;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    .button:last-child {
+        margin-bottom: 0;
+    }
+}
