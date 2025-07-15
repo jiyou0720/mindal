@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}새 게시글 작성 - 영마인드링크{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/community_create.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="community-container">
+        <div class="community-form-card">
+            <h1 class="community-title">새 게시글 작성</h1>
+            <p class="community-subtitle">새로운 생각과 경험을 공유해보세요!</p>
+
+            <form class="community-form" id="postCreateForm">
+                <div class="form-group">
+                    <label for="postTitle" class="form-label">제목</label>
+                    <input type="text" id="postTitle" placeholder="제목을 입력하세요..." class="input-field" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="postCategory" class="form-label">카테고리</label>
+                    <select id="postCategory" class="input-field">
+                        <option value="photo">사진</option>
+                        <option value="music">음악</option>
+                        <option value="secret">비밀</option>
+                        <option value="daily">일상</option>
+                        <option value="emotion">감정</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">작성자 유형</label>
+                    <div class="author-type-radio">
+                        <input type="radio" id="authorTypeAnonymous" name="authorType" value="anonymous" checked>
+                        <label for="authorTypeAnonymous">익명</label>
+                        <input type="radio" id="authorTypeNickname" name="authorType" value="nickname">
+                        <label for="authorTypeNickname">닉네임</label>
+                    </div>
+                    <p id="nicknameDisplay" class="nickname-display" style="display: none;">(사용자 닉네임: <span id="actualNickname"></span>)</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="postContent" class="form-label">내용</label>
+                    <textarea id="postContent" placeholder="내용을 입력하세요..." rows="10" class="input-field" required></textarea>
+                </div>
+
+                <div class="form-group file-upload-group">
+                    <label for="postAttachments" class="form-label">파일 첨부 (사진, 오디오)</label>
+                    <input type="file" id="postAttachments" multiple accept="image/*,audio/*" class="file-input-hidden">
+                    <label for="postAttachments" class="custom-file-upload-button">
+                        <i class="fas fa-paperclip"></i> 파일 선택
+                    </label>
+                    <div id="selectedFiles" class="selected-files-display"></div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="auth-button primary">저장</button>
+                    <a href="{{ url_for('community') }}" class="auth-button secondary">취소</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const postCreateForm = document.getElementById('postCreateForm');
+            const postTitleInput = document.getElementById('postTitle');
+            const postCategorySelect = document.getElementById('postCategory');
+            const authorTypeAnonymous = document.getElementById('authorTypeAnonymous');
+            const authorTypeNickname = document.getElementById('authorTypeNickname');
+            const nicknameDisplay = document.getElementById('nicknameDisplay');
+            const actualNicknameSpan = document.getElementById('actualNickname');
+            const postContentTextarea = document.getElementById('postContent');
+            const postAttachmentsInput = document.getElementById('postAttachments');
+            const selectedFilesDisplay = document.getElementById('selectedFiles');
+
+            let userNickname = ''; // 사용자 닉네임을 저장할 변수
+
+            // 사용자 닉네임 로드 함수
+            async function loadUserNickname() {
+                const token = localStorage.getItem('jwt_token');
+                if (!token) {
+                    console.log('No JWT token found, user not logged in.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/auth/me', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        userNickname = result.nickname || result.username; // 닉네임이 없으면 사용자 이름 사용
+                        actualNicknameSpan.textContent = userNickname;
+                    } else {
+                        console.error('Failed to load user info:', result.message);
+                        // 토큰이 유효하지 않거나 만료된 경우 로그인 페이지로 리다이렉트
+                        if (response.status === 401) {
+                            localStorage.removeItem('jwt_token');
+                            alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+                            window.location.href = "{{ url_for('login') }}";
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching user info:', error);
+                }
+            }
+
+            // 페이지 로드 시 사용자 닉네임 로드
+            loadUserNickname();
+
+            // 작성자 유형 라디오 버튼 변경 이벤트
+            authorTypeNickname.addEventListener('change', function() {
+                if (this.checked) {
+                    nicknameDisplay.style.display = 'block';
+                }
+            });
+
+            authorTypeAnonymous.addEventListener('change', function() {
+                if (this.checked) {
+                    nicknameDisplay.style.display = 'none';
+                }
+            });
+
+            // 파일 첨부 입력 필드 변경 이벤트
+            postAttachmentsInput.addEventListener('change', function() {
+                selectedFilesDisplay.innerHTML = ''; // 기존 파일 목록 초기화
+                if (this.files.length > 0) {
+                    Array.from(this.files).forEach(file => {
+                        const fileItem = document.createElement('span');
+                        fileItem.className = 'selected-file-item';
+                        fileItem.textContent = file.name;
+                        selectedFilesDisplay.appendChild(fileItem);
+                    });
+                }
+            });
+
+            // 폼 제출 이벤트
+            postCreateForm.addEventListener('submit', async function(event) {
+                event.preventDefault(); // 폼 기본 제출 방지
+
+                const title = postTitleInput.value.trim();
+                const category = postCategorySelect.value;
+                const content = postContentTextarea.value.trim();
+                const isAnonymous = authorTypeAnonymous.checked;
+                const authorName = isAnonymous ? '익명' : userNickname; // 익명 또는 사용자 닉네임
+
+                if (!title) {
+                    alert('제목을 입력해주세요.');
+                    return;
+                }
+                if (!content) {
+                    alert('내용을 입력해주세요.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('title', title);
+                formData.append('category', category);
+                formData.append('content', content);
+                formData.append('is_anonymous', isAnonymous ? 'true' : 'false');
+                formData.append('author_name', authorName);
+
+                // 파일 첨부
+                Array.from(postAttachmentsInput.files).forEach(file => {
+                    // 파일 크기 및 유형 유효성 검사 (예시)
+                    const MAX_FILE_SIZE_MB = 5;
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'audio/mpeg', 'audio/wav'];
+
+                    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                        alert(`파일 크기가 너무 큽니다: ${file.name} (최대 ${MAX_FILE_SIZE_MB}MB)`);
+                        return; // 이 파일은 추가하지 않고 다음 파일로
+                    }
+                    if (!allowedTypes.includes(file.type)) {
+                        alert(`지원하지 않는 파일 형식입니다: ${file.name} (허용: JPG, PNG, GIF, MP3, WAV)`);
+                        return; // 이 파일은 추가하지 않고 다음 파일로
+                    }
+                    formData.append('attachments', file);
+                });
+
+                const token = localStorage.getItem('jwt_token');
+                if (!token) {
+                    alert('로그인이 필요합니다.');
+                    window.location.href = "{{ url_for('login') }}";
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/community/posts', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData // FormData는 Content-Type을 자동으로 multipart/form-data로 설정
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        alert(result.message || '게시글이 성공적으로 작성되었습니다!');
+                        // 성공 시 게시글 목록 페이지로 리다이렉트 (추후 상세 페이지로 변경 가능)
+                        window.location.href = "{{ url_for('community') }}"; // 'community' 라우트가 있다고 가정
+                    } else {
+                        alert(result.message || '게시글 작성에 실패했습니다.');
+                        if (response.status === 401) {
+                            localStorage.removeItem('jwt_token');
+                            window.location.href = "{{ url_for('login') }}";
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error creating post:', error);
+                    alert('서버와 통신 중 오류가 발생했습니다. 다시 시도해주세요.');
+                }
+            });
+        });
+    </script>
+{% endblock %}
