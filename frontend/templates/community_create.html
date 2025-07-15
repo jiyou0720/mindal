@@ -1,3 +1,4 @@
+<!--frontend/templates/community_create.html-->
 {% extends "base.html" %}
 
 {% block title %}새 게시글 작성 - 영마인드링크{% endblock %}
@@ -56,13 +57,18 @@
 
                 <div class="button-group">
                     <button type="submit" class="auth-button primary">저장</button>
-                    <a href="{{ url_for('community') }}" class="auth-button secondary">취소</a>
+                    <a href="{{ url_for('community_list') }}" class="auth-button secondary">취소</a>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
+        // Flask의 url_for을 사용하여 미리 URL을 생성하고 JavaScript 변수에 할당합니다.
+        // 이렇게 하면 Jinja2가 서버에서 이 부분을 처리하여 실제 URL 문자열이 됩니다.
+        const communityListUrl = "{{ url_for('community_list') }}";
+        const loginUrl = "{{ url_for('login') }}"; // login URL도 변수로 선언
+
         document.addEventListener('DOMContentLoaded', function() {
             const postCreateForm = document.getElementById('postCreateForm');
             const postTitleInput = document.getElementById('postTitle');
@@ -104,7 +110,7 @@
                         if (response.status === 401) {
                             localStorage.removeItem('jwt_token');
                             alert('세션이 만료되었습니다. 다시 로그인해주세요.');
-                            window.location.href = "{{ url_for('login') }}";
+                            window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
                         }
                     }
                 } catch (error) {
@@ -187,7 +193,7 @@
                 const token = localStorage.getItem('jwt_token');
                 if (!token) {
                     alert('로그인이 필요합니다.');
-                    window.location.href = "{{ url_for('login') }}";
+                    window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
                     return;
                 }
 
@@ -205,12 +211,12 @@
                     if (response.ok) {
                         alert(result.message || '게시글이 성공적으로 작성되었습니다!');
                         // 성공 시 게시글 목록 페이지로 리다이렉트 (추후 상세 페이지로 변경 가능)
-                        window.location.href = "{{ url_for('community') }}"; // 'community' 라우트가 있다고 가정
+                        window.location.href = communityListUrl; // 미리 정의된 URL 변수 사용
                     } else {
                         alert(result.message || '게시글 작성에 실패했습니다.');
                         if (response.status === 401) {
                             localStorage.removeItem('jwt_token');
-                            window.location.href = "{{ url_for('login') }}";
+                            window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
                         }
                     }
                 } catch (error) {

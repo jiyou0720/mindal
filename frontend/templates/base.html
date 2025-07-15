@@ -33,7 +33,7 @@
                         <li>
                             <a href="{{ url_for('index') }}" class="sidebar-link {% if request.endpoint == 'index' %}active{% endif %}">
                                 <i class="fas fa-home"></i>
-                                <span>대시보드</span>
+                                <span>홈</span>
                             </a>
                         </li>
                         <li>
@@ -81,15 +81,7 @@
                 <p>&copy; 2024 Young MindLink. All rights reserved.</p>
                 <p>문의: support@youngmindlink.com</p>
             </div>
-            <div class="footer-section footer-links">
-                <h4>빠른 링크</h4>
-                <ul>
-                    <li><a href="{{ url_for('index') }}">대시보드</a></li>
-                    <li><a href="{{ url_for('ai_chat') }}">AI 채팅</a></li>
-                    <li><a href="{{ url_for('diary') }}">오늘 일기</a></li>
-                    <li><a href="{{ url_for('community_list') }}">게시판</a></li> {# 푸터에도 추가 #}
-                </ul>
-            </div>
+            {# '빠른 링크' 섹션을 제거하고 소셜 미디어 섹션만 남김 #}
             <div class="footer-section footer-social">
                 <h4>소셜 미디어</h4>
                 <div class="social-icons">
@@ -128,7 +120,10 @@
 
                     if (response.ok) {
                         // 사용자 이름/별명 표시 및 로그아웃 버튼
-                        const displayName = result.nickname || result.username || '사용자';
+                        const displayName = result.nickname || result.username || '사용자'; // 닉네임이 없으면 사용자 이름, 둘 다 없으면 '사용자'
+                        localStorage.setItem('user_uid', result.user_uid); // user_uid 저장
+                        localStorage.setItem('user_id', result.id); // user_id (MariaDB ID) 저장
+
                         headerAuthArea.innerHTML = `
                             <span class="user-display-name">안녕하세요, ${displayName}님!</span>
                             <button class="header-auth-button secondary" id="logoutButton">로그아웃</button>
@@ -137,14 +132,20 @@
                     } else if (response.status === 401) {
                         // 토큰이 유효하지 않거나 만료된 경우
                         localStorage.removeItem('jwt_token'); // 잘못된 토큰 삭제
+                        localStorage.removeItem('user_uid'); // 저장된 user_uid 삭제
+                        localStorage.removeItem('user_id'); // 저장된 user_id 삭제
                         renderLoggedOutHeader(); // 로그인/회원가입 버튼 표시
                     } else {
                         // 기타 오류
                         console.error('사용자 정보 로드 실패:', result.message);
+                        localStorage.removeItem('user_uid'); // 저장된 user_uid 삭제
+                        localStorage.removeItem('user_id'); // 저장된 user_id 삭제
                         renderLoggedOutHeader();
                     }
                 } catch (error) {
                     console.error('사용자 정보 로드 중 네트워크 오류:', error);
+                    localStorage.removeItem('user_uid'); // 저장된 user_uid 삭제
+                    localStorage.removeItem('user_id'); // 저장된 user_id 삭제
                     renderLoggedOutHeader(); // 네트워크 오류 시에도 로그인/회원가입 버튼 표시
                 }
             } else {

@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}게시글 상세 - 영마인드링크{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/community_detail.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+    <div class="community-detail-container">
+        <div class="community-post-card">
+            <h1 class="post-detail-title" id="postTitle"></h1>
+            <div class="post-meta">
+                <span id="postCategory" class="post-category"></span>
+                <span class="meta-divider">|</span>
+                <span id="postAuthor"></span>
+                <span class="meta-divider">|</span>
+                <span id="postCreatedAt"></span>
+                <span class="meta-divider">|</span>
+                <span id="postViews">조회수: 0</span>
+            </div>
+            <div class="post-content-section">
+                <p id="postContent"></p>
+                <div id="postAttachments" class="post-attachments">
+                </div>
+            </div>
+
+            <div class="post-actions" id="postActions">
+            </div>
+        </div>
+
+        <div class="community-comments-section">
+            <h2 class="comments-title">댓글 <span id="commentCount">(0)</span></h2>
+            <div class="comment-form-container">
+                <form id="commentForm" class="comment-form">
+                    <textarea id="commentContent" placeholder="댓글을 작성하세요..." rows="3" required class="comment-input"></textarea>
+                    <button type="submit" class="button primary comment-submit-button">댓글 작성</button>
+                </form>
+            </div>
+            <div id="commentsList" class="comments-list">
+                <p class="no-comments" id="noCommentsMessage">첫 댓글을 남겨보세요!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Flask의 url_for을 사용하여 미리 URL을 생성하고 JavaScript 변수에 할당합니다.
+        // 이렇게 하면 Jinja2가 서버에서 이 부분을 처리하여 실제 URL 문자열이 됩니다.
+        const communityListUrl = "{{ url_for('community_list') }}";
+        const loginUrl = "{{ url_for('login') }}";
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Flask에서 전달된 post_id 사용
+            // post_id가 유효한 숫자로 전달되지 않을 경우를 대비하여 안전하게 처리
+            const rawPostId = "{{ post_id }}"; // Jinja2 변수를 일단 문자열로 가져옴
+            let postId = null; // postId를 초기 null로 설정
+
+            // rawPostId가 비어있지 않고, 숫자로 변환 가능한 경우에만 postId에 정수값 할당
+            if (rawPostId && !isNaN(rawPostId)) {
+                postId = parseInt(rawPostId);
+            }
+
+            // postId가 유효하지 않은 경우 처리
+            if (postId === null) {
+                console.error("Error: post_id is not available or invalid. Redirecting to community list.");
+                alert("게시글 정보를 불러올 수 없습니다. 유효하지 않은 게시글 ID입니다.");
+                window.location.href = communityListUrl; // 미리 정의된 URL 변수 사용
+                return; // 더 이상 스크립트 실행 중지
+            }
+
+            console.log("Loaded with postId:", postId); // postId가 유효하게 로드되었는지 확인
+
+            const token = localStorage.getItem('jwt_token');
+            const currentUserUid = localStorage.getItem('user_uid'); // 현재 로그인한 사용자의 UID
+            const currentUserId = localStorage.getItem('user_id'); // 현재 로그인한 사용자의 ID (MariaDB)
+
+            const postTitleElement = document.getElementById('postTitle');
+            const postCategoryElement = document.getElementById('postCategory');
+            const postAuthorElement = document.getElementById('postAuthor');
+            const postCreatedAtElement = document.getElementById('postCreatedAt');
+            const postViewsElement = document.getElementById('postViews');
+            const postContentElement = document.getElementById('postContent');
+            const postAttachmentsElement = document.getElementById('postAttachments');
+            const postActionsElement = document.getElementById('postActions');
+
+            const commentForm = document.getElementById('commentForm');
+            const commentContentInput = document.getElementById('commentContent');
+            const commentsList = document.getElementById('commentsList');
+            const commentCountElement = document.getElementById('commentCount');
+            const noCommentsMessage = document.getElementById('noCommentsMessage');
+
+            // 게시글 상세 정보 불러오기 함수
+            const fetchPostDetail = async () => {
+                try {
+                    const response = await fetch(`/api/community/posts/${postId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        const post = result.post;
+                        const author = result.author;
+
+                        postTitleElement.textContent = post.title;
+                        postCategoryElement.textContent = post.category ? `#${post.category}` : '';
+                        postAuthorElement.textContent = post.is_anonymous ? '익명' : (post.display_author_name || author.username);
+                        postCreatedAtElement.textContent = new Date(post.created_at).toLocaleString('ko-KR');
+                        postViewsElement.textContent = `조회수: ${post.views}`;
+                        postContentElement.textContent = post.content;
+
+                        // 첨부파일 표시
+                        postAttachmentsElement.innerHTML = '';
+                        if (post.attachment_paths && post.attachment_paths.length > 0) {
+                            post.attachment_paths.forEach(filePath => {
+                                const fileName = filePath.split('/').pop();
+                                const fileUrl = `/uploads/community/${fileName}`;
+                                const fileExtension = fileName.split('.').pop().toLowerCase();
+
+                                const attachmentLink = document.createElement('a');
+                                attachmentLink.href = fileUrl;
+                                attachmentLink.target = '_blank';
+                                attachmentLink.download = fileName;
+                                attachmentLink.classList.add('attachment-link');
+
+                                let fileIcon = '';
+                                if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+                                    fileIcon = '<i class="fas fa-image"></i>';
+                                } else if (['mp3', 'wav', 'ogg'].includes(fileExtension)) {
+                                    fileIcon = '<i class="fas fa-music"></i>';
+                                } else {
+                                    fileIcon = '<i class="fas fa-file"></i>';
+                                }
+                                attachmentLink.innerHTML = `${fileIcon} ${fileName}`;
+                                postAttachmentsElement.appendChild(attachmentLink);
+                            });
+                        }
+
+                        // 게시글 수정/삭제 버튼 표시 (본인 게시글인 경우)
+                        postActionsElement.innerHTML = '';
+                        if (currentUserId && parseInt(post.author_id) === parseInt(currentUserId)) {
+                            const editButton = document.createElement('button');
+                            editButton.textContent = '수정';
+                            editButton.classList.add('button', 'secondary', 'action-button');
+                            editButton.addEventListener('click', () => {
+                                window.location.href = `/community/posts/edit/${postId}`; // 수정된 경로
+                            });
+
+                            const deleteButton = document.createElement('button');
+                            deleteButton.textContent = '삭제';
+                            deleteButton.classList.add('button', 'danger', 'action-button');
+                            deleteButton.addEventListener('click', async () => {
+                                if (confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+                                    try {
+                                        const deleteResponse = await fetch(`/api/community/posts/${postId}`, {
+                                            method: 'DELETE',
+                                            headers: {
+                                                'Authorization': `Bearer ${token}`
+                                            }
+                                        });
+
+                                        const deleteResult = await deleteResponse.json();
+                                        if (deleteResponse.ok) {
+                                            alert(deleteResult.message || '게시글이 삭제되었습니다.');
+                                            window.location.href = communityListUrl; // 미리 정의된 URL 변수 사용
+                                        } else {
+                                            alert(deleteResult.message || '게시글 삭제에 실패했습니다.');
+                                        }
+                                    } catch (error) {
+                                        console.error('Error deleting post:', error);
+                                        alert('게시글 삭제 중 오류가 발생했습니다.');
+                                    }
+                                }
+                            });
+                            postActionsElement.appendChild(editButton);
+                            postActionsElement.appendChild(deleteButton);
+                        }
+
+                    } else {
+                        alert(result.message || '게시글을 불러오는데 실패했습니다.');
+                        if (response.status === 401) {
+                            localStorage.removeItem('jwt_token');
+                            window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
+                        } else {
+                            window.location.href = communityListUrl; // 미리 정의된 URL 변수 사용
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching post detail:', error);
+                    alert('게시글 정보를 불러오는 중 오류가 발생했습니다. 다시 시도해주세요.');
+                    window.location.href = communityListUrl; // 미리 정의된 URL 변수 사용
+                }
+            };
+
+            // 댓글 목록 불러오기 함수
+            const fetchComments = async () => {
+                try {
+                    const response = await fetch(`/api/community/posts/${postId}/comments`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        const comments = result.comments;
+                        commentCountElement.textContent = `(${comments.length})`;
+                        commentsList.innerHTML = '';
+                        if (comments.length === 0) {
+                            noCommentsMessage.style.display = 'block';
+                        } else {
+                            noCommentsMessage.style.display = 'none';
+                            comments.forEach(comment => {
+                                const commentElement = document.createElement('div');
+                                commentElement.classList.add('comment-item');
+                                commentElement.dataset.commentId = comment.id;
+                                commentElement.innerHTML = `
+                                    <div class="comment-header">
+                                        <span class="comment-author">${comment.author_username}</span>
+                                        <span class="comment-date">${new Date(comment.created_at).toLocaleString('ko-KR')}</span>
+                                    </div>
+                                    <div class="comment-content" id="commentContent-${comment.id}">${comment.content}</div>
+                                    <div class="comment-actions">
+                                        ${parseInt(comment.author_id) === parseInt(currentUserId) ? `
+                                            <button class="button small secondary edit-comment-button" data-comment-id="${comment.id}">수정</button>
+                                            <button class="button small danger delete-comment-button" data-comment-id="${comment.id}">삭제</button>
+                                        ` : ''}
+                                    </div>
+                                `;
+                                commentsList.appendChild(commentElement);
+                            });
+
+                            // 댓글 수정 버튼 이벤트 리스너
+                            document.querySelectorAll('.edit-comment-button').forEach(button => {
+                                button.addEventListener('click', (e) => {
+                                    const commentId = e.target.dataset.commentId;
+                                    const commentContentDiv = document.getElementById(`commentContent-${commentId}`);
+                                    const originalContent = commentContentDiv.textContent;
+
+                                    if (e.target.textContent === '수정') {
+                                        commentContentDiv.innerHTML = `<textarea class="edit-comment-textarea" rows="3">${originalContent}</textarea>`;
+                                        e.target.textContent = '저장';
+                                        e.target.classList.remove('secondary');
+                                        e.target.classList.add('primary');
+                                        const cancelButton = document.createElement('button');
+                                        cancelButton.textContent = '취소';
+                                        cancelButton.classList.add('button', 'small', 'secondary');
+                                        cancelButton.addEventListener('click', () => {
+                                            commentContentDiv.textContent = originalContent;
+                                            e.target.textContent = '수정';
+                                            e.target.classList.remove('primary');
+                                            e.target.classList.add('secondary');
+                                            cancelButton.remove();
+                                        });
+                                        e.target.parentNode.insertBefore(cancelButton, e.target.nextSibling);
+                                    } else {
+                                        const newContent = commentContentDiv.querySelector('textarea').value;
+                                        if (newContent.trim() === '') {
+                                            alert('댓글 내용은 비워둘 수 없습니다.');
+                                            return;
+                                        }
+                                        updateComment(commentId, newContent);
+                                    }
+                                });
+                            });
+
+                            // 댓글 삭제 버튼 이벤트 리스너
+                            document.querySelectorAll('.delete-comment-button').forEach(button => {
+                                button.addEventListener('click', (e) => {
+                                    const commentId = e.target.dataset.commentId;
+                                    deleteComment(commentId);
+                                });
+                            });
+                        }
+                    } else {
+                        console.error(result.message || '댓글을 불러오는데 실패했습니다.');
+                    }
+                } catch (error) {
+                    console.error('Error fetching comments:', error);
+                }
+            };
+
+            // 댓글 수정 함수
+            const updateComment = async (commentId, newContent) => {
+                try {
+                    const response = await fetch(`/api/community/comments/${commentId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ content: newContent })
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(result.message || '댓글이 성공적으로 수정되었습니다.');
+                        fetchComments();
+                    } else {
+                        alert(result.message || '댓글 수정에 실패했습니다.');
+                        if (response.status === 401) {
+                            localStorage.removeItem('jwt_token');
+                            window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error updating comment:', error);
+                    alert('댓글 수정 중 오류가 발생했습니다.');
+                }
+            };
+
+            // 댓글 삭제 함수
+            const deleteComment = async (commentId) => {
+                if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+                    return;
+                }
+                try {
+                    const response = await fetch(`/api/community/comments/${commentId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(result.message || '댓글이 성공적으로 삭제되었습니다.');
+                        fetchComments();
+                    } else {
+                        alert(result.message || '댓글 삭제에 실패했습니다.');
+                        if (response.status === 401) {
+                            localStorage.removeItem('jwt_token');
+                            window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error deleting comment:', error);
+                    alert('댓글 삭제 중 오류가 발생했습니다.');
+                }
+            };
+
+            // 새 댓글 작성 폼 제출
+            commentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!token) {
+                    alert('로그인이 필요합니다.');
+                    window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
+                    return;
+                }
+
+                const content = commentContentInput.value.trim();
+                if (!content) {
+                    alert('댓글 내용을 입력해주세요.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/community/posts/${postId}/comments`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ content: content })
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        alert(result.message || '댓글이 성공적으로 작성되었습니다!');
+                        commentContentInput.value = '';
+                        fetchComments();
+                    } else {
+                        alert(result.message || '댓글 작성에 실패했습니다.');
+                        if (response.status === 401) {
+                            localStorage.removeItem('jwt_token');
+                            window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error creating comment:', error);
+                    alert('댓글 작성 중 오류가 발생했습니다. 다시 시도해주세요.');
+                }
+            });
+
+            // 페이지 로드 시 게시글 상세 정보와 댓글 목록 불러오기
+            fetchPostDetail();
+            fetchComments();
+        });
+    </script>
+{% endblock %}
