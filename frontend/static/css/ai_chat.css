@@ -1,0 +1,132 @@
+/* frontend/static/css/ai_chat.css */
+
+.chat-main-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* 메시지 영역과 입력창을 위아래로 분리 */
+    align-items: center;
+    padding: 20px; /* 전체 채팅 영역 내부 패딩 */
+    min-height: calc(100vh - 84px - 200px); /* 헤더, 푸터 제외 최소 높이 */
+    flex-grow: 1;
+    background-color: #FFFFFF; /* 흰색 배경으로 변경 */
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* 그림자 유지 */
+    max-width: 800px; /* 채팅 영역의 최대 너비 설정 */
+    margin: 30px auto; /* 중앙 정렬 및 상하 여백 */
+    height: 70vh; /* 뷰포트 높이에 비례하여 설정 */
+}
+
+.chat-messages-area {
+    flex-grow: 1; /* 메시지 영역이 남은 공간을 모두 차지 */
+    overflow-y: auto; /* 메시지가 많아지면 스크롤 */
+    padding: 10px; /* 메시지 영역 내부 패딩 */
+    width: 100%; /* 전체 너비 차지 */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* 메시지를 아래에서 위로 쌓이게 */
+    background-color: #F8F9FA; /* 메시지 배경색 */
+    border-radius: 8px;
+    margin-bottom: 15px; /* 입력 필드와의 간격 */
+}
+
+.chat-welcome-message {
+    text-align: center;
+    color: #6C7A89;
+    font-size: 16px;
+    margin-top: auto; /* 메시지 영역 하단에 붙도록 */
+    padding: 20px;
+}
+
+.chat-input-container {
+    display: flex;
+    align-items: center;
+    width: 100%; /* 전체 너비 차지 */
+    background: white;
+    border-radius: 8px;
+    padding: 10px 15px;
+    border: 1px solid #e0e0e0; /* 테두리 추가 */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.chat-input-field {
+    flex-grow: 1;
+    border: 1px solid #CCCCCC; /* 입력 필드 테두리 추가 */
+    border-radius: 5px; /* 모서리 둥글게 */
+    outline: none;
+    font-size: 16px;
+    padding: 8px 12px; /* 내부 패딩 조정 */
+    color: #333;
+    height: 40px; /* 입력 필드 높이 고정 */
+    background-color: #FFFFFF; /* 배경색 명확히 지정 */
+}
+
+.chat-input-field::placeholder {
+    color: #95A5A6;
+}
+
+.chat-send-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 18px;
+    margin-left: 10px;
+    transition: background-color 0.2s ease;
+}
+
+.chat-send-button:hover {
+    background-color: #0056b3;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .chat-main-area {
+        padding: 15px;
+        margin: 20px auto;
+        height: 80vh; /* 모바일에서 높이 더 늘림 */
+    }
+    .chat-messages-area {
+        padding: 8px;
+    }
+    .chat-input-container {
+        padding: 8px 12px;
+    }
+    .chat-input-field {
+        font-size: 15px;
+        height: 38px;
+    }
+    .chat-send-button {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chat-main-area {
+        padding: 10px;
+        margin: 15px auto;
+        height: 85vh;
+    }
+    .chat-messages-area {
+        padding: 5px;
+    }
+    .chat-input-container {
+        padding: 6px 10px;
+    }
+    .chat-input-field {
+        font-size: 14px;
+        height: 35px;
+    }
+    .chat-send-button {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+}

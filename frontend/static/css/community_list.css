@@ -1,0 +1,302 @@
+/* frontend/static/css/community.css */
+
+/* 페이지 타이틀과 설명은 base.css 또는 index.css의 .page-title, .page-description 재사용 */
+
+.page-content-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 25px; /* 상하좌우 패딩 조정 */
+    flex-grow: 1;
+}
+
+/* --- Community Header (카테고리 탭 및 글쓰기 버튼) --- */
+.community-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px; /* 섹션 간 간격 조정 */
+    padding-bottom: 20px; /* 하단 패딩 조정 */
+    border-bottom: 1px solid #E9EEF4; /* 좀 더 부드러운 하단 구분선 */
+}
+
+.category-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px; /* 탭 간 간격 조정 */
+}
+
+.category-tab {
+    background-color: #F8FAFC; /* 배경색 더 밝게 */
+    color: #5A6B7F; /* 텍스트 색상 조정 */
+    border: 1px solid #DCE4EC; /* 미묘한 테두리 추가 */
+    border-radius: 25px; /* 더 둥글게 */
+    padding: 10px 22px; /* 패딩 조정 */
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* 아주 약한 그림자 */
+}
+
+.category-tab:hover {
+    background-color: #EBF2F8; /* 호버 시 배경색 */
+    color: #2C3E50;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); /* 호버 시 그림자 강조 */
+    transform: translateY(-2px); /* 호버 시 살짝 떠오르는 효과 */
+}
+
+.category-tab.active {
+    background-color: #007bff; /* 활성 탭 배경색 (기존 유지, 또는 더 세련된 블루톤 고려) */
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3); /* 그림자 더 강조 */
+    border-color: #007bff; /* 활성 탭 테두리 색상 */
+}
+
+.create-post-button {
+    padding: 12px 25px; /* 패딩 조정 */
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px; /* 버튼 모서리 둥글게 */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #007bff; /* 기본 버튼 색상 */
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2);
+}
+
+.create-post-button:hover {
+    background-color: #0056b3; /* 호버 시 색상 */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 123, 255, 0.3);
+}
+
+
+/* --- Post List Container (게시글 목록) --- */
+.post-list-container {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06); /* 그림자 더 부드럽게 */
+    padding: 30px; /* 내부 패딩 조정 */
+    min-height: 450px; /* 최소 높이 설정 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-message, .no-posts-message, .error-message {
+    font-size: 18px;
+    color: #6C7A89;
+    text-align: center;
+    padding: 20px;
+}
+
+.post-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* 최소 너비 조정 */
+    gap: 25px; /* 카드 간 간격 조정 */
+    width: 100%;
+}
+
+.post-card {
+    background-color: #FFFFFF; /* 카드 배경색 흰색으로 변경하여 내부 그림자 효과 강조 */
+    border: 1px solid #EAEFF4; /* 아주 옅은 테두리 */
+    border-radius: 12px; /* 더 둥글게 */
+    padding: 25px; /* 내부 패딩 조정 */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 180px; /* 최소 카드 높이 조정 */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* 기본 그림자 */
+}
+
+.post-card:hover {
+    transform: translateY(-7px); /* 호버 시 더 크게 떠오르는 효과 */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); /* 호버 시 그림자 강조 */
+    border-color: #C0D3EB; /* 호버 시 테두리 색상 변경 */
+}
+
+.post-title {
+    font-size: 22px; /* 제목 크기 키우기 */
+    font-weight: 700; /* 더 굵게 */
+    color: #2C3E50;
+    margin-bottom: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.post-meta {
+    font-size: 14px; /* 메타 정보 폰트 크기 조정 */
+    color: #8C99A9;
+    margin-bottom: 18px; /* 간격 조정 */
+    display: flex;
+    align-items: center;
+    gap: 12px; /* 간격 조정 */
+}
+
+.post-meta span {
+    display: inline-block;
+    padding: 4px 10px; /* 패딩 조정 */
+    border-radius: 6px; /* 둥글기 조정 */
+    background-color: #F0F4F8; /* 배경색 조정 */
+    color: #5A6B7F;
+    font-weight: 500;
+}
+
+.post-category {
+    background-color: #E2ECF7 !important; /* 카테고리 색상 조정 */
+    color: #337AB7 !important; /* 카테고리 텍스트 색상 조정 */
+    font-weight: 600;
+}
+
+
+.post-preview {
+    font-size: 15px;
+    color: #4D4D4D;
+    line-height: 1.7; /* 줄 간격 넓히기 */
+    margin-bottom: 20px; /* 간격 조정 */
+    display: -webkit-box;
+    /* -webkit-line-clamp: 3; */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+}
+
+/* --- Pagination (페이지네이션) --- */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 40px; /* 상단 여백 조정 */
+    gap: 15px;
+}
+
+.pagination-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px; /* 둥글기 조정 */
+    padding: 12px 18px; /* 패딩 조정 */
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 123, 255, 0.15);
+}
+
+.pagination-button:hover:not(:disabled) {
+    background-color: #0056b3;
+    transform: translateY(-3px); /* 더 크게 떠오르는 효과 */
+    box-shadow: 0 5px 12px rgba(0, 123, 255, 0.25);
+}
+
+.pagination-button:disabled {
+    background-color: #E0E6ED; /* 비활성 색상 조정 */
+    color: #AAB7C4;
+    cursor: not-allowed;
+    opacity: 0.8;
+    box-shadow: none;
+}
+
+.page-number {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2C3E50;
+    min-width: 30px; /* 페이지 번호가 고정된 너비를 갖도록 */
+    text-align: center;
+}
+
+/* --- 반응형 디자인 --- */
+@media (max-width: 768px) {
+    .community-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 25px; /* 모바일에서 간격 조정 */
+    }
+
+    .category-tabs {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 8px; /* 모바일에서 탭 간 간격 조정 */
+    }
+
+    .category-tab {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+
+    .create-post-button {
+        width: 100%;
+        justify-content: center;
+        font-size: 15px;
+        padding: 10px 20px;
+    }
+
+    .post-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 20px; /* 모바일에서 카드 간 간격 조정 */
+    }
+
+    .post-card {
+        padding: 20px;
+        min-height: 150px;
+    }
+
+    .post-title {
+        font-size: 20px;
+        margin-bottom: 10px;
+    }
+
+    .post-meta, .post-preview {
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+
+    .pagination-button {
+        padding: 10px 15px;
+        font-size: 15px;
+    }
+    .page-number {
+        font-size: 17px;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-content-wrapper {
+        padding: 25px 15px;
+    }
+    .page-title {
+        font-size: 26px; /* 더 작게 */
+    }
+    .page-description {
+        font-size: 13px; /* 더 작게 */
+    }
+    .category-tab {
+        padding: 7px 14px;
+        font-size: 13px;
+    }
+    .create-post-button {
+        font-size: 14px;
+        padding: 9px 18px;
+    }
+    .post-title {
+        font-size: 18px;
+    }
+    .pagination-button {
+        padding: 9px 14px;
+        font-size: 13px;
+    }
+    .page-number {
+        font-size: 15px;
+    }
+}

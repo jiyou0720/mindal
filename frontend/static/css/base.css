@@ -1,0 +1,407 @@
+/* frontend/static/css/base.css */
+
+/* 모든 요소에 box-sizing 적용하여 패딩, 보더가 너비에 포함되도록 */
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif; /* Google Font 적용 */
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: #F5F7FA; /* 전체 페이지 기본 배경색 */
+    line-height: 1.6;
+    color: #4D4D4D; /* 기본 텍스트 색상 */
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* --- App Container (전체 앱 레이아웃) --- */
+.app-container {
+    display: flex;
+    flex-direction: column; /* 세로 방향으로 요소 정렬 (헤더, 메인 레이아웃 래퍼, 푸터) */
+    min-height: 100vh; /* 최소 화면 높이 */
+    width: 100%;
+    max-width: 1600px; /* 양쪽 여백 조절 */
+    margin: 0 auto; /* 중앙 정렬 */
+    background-color: #FFFFFF; /* 앱 컨테이너 배경색 */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); /* 은은한 그림자 */
+}
+
+/* --- Header --- */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px; /* 헤더 패딩 조정 */
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #ECECEC;
+    height: 84px; /* 고정 높이 */
+    width: 100%;
+    flex-shrink: 0; /* 헤더가 줄어들지 않도록 */
+}
+
+.header-left, .header-right {
+    display: flex;
+    align-items: center;
+}
+
+.header-logo-link {
+    display: flex;
+    align-items: center;
+}
+
+.header-logo {
+    height: 50px; /* 로고 높이 조정 */
+    width: auto;
+    margin-right: 15px; /* 로고와 다른 요소 사이 간격 */
+}
+
+.header-auth-button {
+    padding: 8px 15px;
+    border-radius: 5px;
+    margin-left: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    white-space: nowrap; /* 버튼 텍스트 줄바꿈 방지 */
+}
+
+.header-auth-button.secondary {
+    background-color: transparent;
+    border: 1px solid #007bff;
+    color: #007bff;
+}
+
+.header-auth-button.secondary:hover {
+    background-color: #e0f2ff;
+}
+
+.header-auth-button.primary {
+    background-color: #007bff; /* 주 색상 */
+    border: 1px solid #007bff;
+    color: #FFFFFF;
+}
+
+.header-auth-button.primary:hover {
+    background-color: #0056b3;
+}
+
+.user-display-name { /* 새로 추가된 스타일 */
+    font-size: 16px;
+    font-weight: 600;
+    color: #34495E;
+    margin-right: 15px;
+    white-space: nowrap;
+}
+
+
+/* --- Main Layout Wrapper (사이드바 + 메인 콘텐츠) --- */
+.main-layout-wrapper {
+    display: flex; /* 사이드바와 메인 콘텐츠를 가로로 배치 */
+    flex-grow: 1; /* 남은 공간을 모두 차지하도록 */
+    overflow: hidden; /* 내부 스크롤 처리 */
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    width: 250px; /* 사이드바 너비 */
+    background-color: #FFFFFF;
+    border-right: 1px solid #ECECEC;
+    padding: 20px 0;
+    flex-shrink: 0; /* 사이드바가 줄어들지 않도록 */
+    overflow-y: auto; /* 내용이 길어지면 스크롤 가능 */
+}
+
+.sidebar-nav {
+    padding: 0 15px;
+}
+
+.sidebar-menu li {
+    margin-bottom: 10px;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 8px;
+    color: #555;
+    font-weight: 500;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-link i {
+    margin-right: 10px;
+    font-size: 18px;
+    width: 24px; /* 아이콘 영역 고정 */
+    text-align: center;
+}
+
+.sidebar-link span {
+    font-size: 16px;
+}
+
+.sidebar-link:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.sidebar-link.active {
+    background-color: #e0f2ff; /* 활성 메뉴 배경색 */
+    color: #007bff; /* 활성 메뉴 텍스트 색상 */
+    font-weight: 600;
+}
+
+/* --- Main Content Area --- */
+.main-content-area {
+    flex-grow: 1; /* 남은 공간을 모두 차지 */
+    padding: 20px;
+    overflow-y: auto; /* 내용이 길어지면 스크롤 가능 */
+    background-color: #F5F7FA; /* 메인 콘텐츠 영역 배경색 */
+}
+
+/* --- Footer --- */
+.footer-section {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding: 40px 30px;
+    background-color: #2C3E50;
+    color: #EEE;
+    border-top: 1px solid #444;
+    flex-shrink: 0; /* 푸터가 줄어들지 않도록 */
+    flex-wrap: wrap; /* 반응형을 위해 추가 */
+    gap: 30px; /* 컬럼 간 간격 */
+    margin-top: auto; /* 메인 콘텐츠가 짧아도 푸터가 항상 하단에 붙도록 */
+}
+
+.footer-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 0 20px;
+    max-width: 300px;
+}
+
+.footer-logo {
+    height: 40px;
+    margin-bottom: 15px;
+}
+
+.footer-text {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 5px;
+    color: #bdc3c7;
+}
+
+.footer-heading {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #ecf0f1;
+}
+
+.footer-list {
+    padding: 0;
+    margin: 0;
+}
+
+.footer-list li {
+    margin-bottom: 8px;
+}
+
+.footer-list li .footer-text {
+    font-size: 13px;
+    color: #CCC;
+}
+
+.input-field-wrapper {
+    display: flex;
+    align-items: center;
+    background: #4D5F70; /* 입력 필드 배경색 */
+    border-radius: 5px;
+    padding: 5px 10px;
+    width: 100%;
+}
+
+.input-field-bg { /* 이 부분은 필요 없을 수 있습니다. */
+    display: none; /* 배경으로 사용된 div는 숨김 */
+}
+
+.styled-input {
+    flex-grow: 1;
+    border: none;
+    background: transparent;
+    color: #FFF;
+    padding: 8px 0;
+    font-size: 14px;
+    outline: none;
+}
+
+.styled-input::placeholder {
+    color: #AAA;
+}
+
+.send-icon {
+    width: 20px;
+    height: 20px;
+    background-color: #FFF; /* 임시 아이콘 */
+    border-radius: 50%;
+    margin-left: 10px;
+    /* 실제 아이콘 이미지 또는 SVG로 대체 필요 */
+}
+
+
+/* 반응형 디자인 */
+@media (max-width: 992px) {
+    .header {
+        padding: 10px 20px;
+    }
+    .header-logo {
+        height: 45px;
+    }
+    .header-auth-button {
+        padding: 7px 12px;
+        font-size: 13px;
+    }
+    .user-display-name { /* 새로 추가된 스타일 */
+        font-size: 15px;
+        margin-right: 10px;
+    }
+    .footer-section {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 30px 20px;
+    }
+    .footer-column {
+        min-width: unset;
+        width: 100%;
+        align-items: center;
+    }
+    .input-field-wrapper {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        height: auto;
+        padding: 15px 20px;
+    }
+    .header-logo {
+        max-width: 150px;
+    }
+    /* 모바일에서 사이드바가 상단 가로 메뉴로 변환 */
+    .main-layout-wrapper {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        height: auto; /* 높이 유동적 */
+        border-right: none;
+        border-bottom: 1px solid #ECECEC;
+        padding: 10px 0;
+    }
+    .sidebar-nav {
+        display: flex; /* 메뉴 아이템들을 가로로 배치 */
+        justify-content: space-around;
+    }
+    .sidebar-menu {
+        display: flex;
+        width: 100%;
+        justify-content: space-around;
+        padding: 0;
+        flex-wrap: wrap; /* 메뉴가 많아지면 줄바꿈 */
+    }
+    .sidebar-menu li {
+        margin-bottom: 0;
+        flex: 1; /* 각 메뉴가 동일한 공간 차지 */
+        text-align: center;
+        min-width: 100px; /* 너무 작아지지 않도록 */
+    }
+    .sidebar-link {
+        flex-direction: column; /* 아이콘과 텍스트를 세로로 */
+        padding: 8px 5px;
+        font-size: 12px;
+    }
+    .sidebar-link i {
+        margin-right: 0;
+        margin-bottom: 5px;
+        font-size: 16px;
+    }
+    .sidebar-link span {
+        font-size: 12px;
+    }
+
+    .main-content-area {
+        padding: 15px;
+    }
+
+    .footer-section {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 20px;
+    }
+    .footer-column {
+        margin: 15px 0;
+        align-items: center;
+        max-width: 90%;
+    }
+    .user-display-name { /* 새로 추가된 스타일 */
+        font-size: 14px;
+        margin-right: 0; /* 모바일에서 간격 제거 */
+        margin-bottom: 10px; /* 세로 정렬 시 아래 여백 */
+    }
+    .header-right { /* 모바일에서 버튼들이 세로로 정렬되도록 */
+        flex-direction: column;
+        align-items: center;
+    }
+    .header-auth-button {
+        margin-left: 0;
+        margin-top: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-auth-button {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    .sidebar-menu li {
+        min-width: 80px;
+    }
+    .sidebar-link {
+        font-size: 11px;
+    }
+    .sidebar-link i {
+        font-size: 14px;
+    }
+    .sidebar-link span {
+        font-size: 11px;
+    }
+    .footer-heading {
+        font-size: 15px;
+    }
+    .footer-text {
+        font-size: 12px;
+    }
+    .user-display-name {
+        font-size: 13px;
+    }
+}
