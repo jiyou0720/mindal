@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False) #본명
+    username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     user_uid = db.Column(db.String(10), unique=True, nullable=False)
@@ -23,14 +23,14 @@ class User(db.Model):
         print(f"비밀번호 해싱 완료. 저장될 해시: {self.password_hash}\n")
 
     def check_password(self, password):
-        # 디버깅
-        print(f"입력된 비밀번호: {password}, 저장된 해시: {self.password_hash}\n")
+        # 디버깅용
+        # print(f"입력 비밀번호: {password}, 저장된 해시: {self.password_hash}")
         return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
         return {
             "id": self.id,
-            "username": self.username,
+            "username": self.username, # 이 부분이 반드시 포함되어야 합니다.
             "email": self.email,
             "user_uid": self.user_uid,
             "nickname": self.nickname,
@@ -48,19 +48,19 @@ class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    author_username = db.Column(db.String(80), nullable=False) # 로그인한 사용자의 실제 username
-    
-    # --- New fields for community post ---
-    category = db.Column(db.String(50), nullable=False) # e.g., 'photo', 'music', 'secret', 'daily', 'emotion'
-    is_anonymous = db.Column(db.Boolean, default=False, nullable=False)
-    display_author_name = db.Column(db.String(80), nullable=False) # '익명' or user's nickname
-    # --- End of new fields ---
-
-    mongodb_content_id = db.Column(db.String(24), unique=True, nullable=False) # MongoDB ObjectId as string
+    author_username = db.Column(db.String(80), nullable=False)
+    category = db.Column(db.String(50), nullable=False)  # 추가된 category 필드
+    is_anonymous = db.Column(db.Boolean, default=False, nullable=False)  # 추가된 익명 여부 필드
+    display_author_name = db.Column(db.String(80), nullable=True)  # 추가된 실제 표시될 작성자 이름 필드
+    mongodb_content_id = db.Column(db.String(24), unique=True, nullable=True) # MongoDB ObjectId
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    
+    # --- 추가된 부분: views 컬럼 ---
+    views = db.Column(db.Integer, default=0, nullable=False) # 조회수 필드 추가
+    # -------------------------------
 
-    author = db.relationship('User', backref='posts', lazy=True)
+    author = db.relationship('User', backref='posts', lazy=True) # User 모델과의 관계 설정
 
     def to_dict(self):
         return {
@@ -68,12 +68,13 @@ class Post(db.Model):
             "title": self.title,
             "author_id": self.author_id,
             "author_username": self.author_username,
-            "category": self.category, # Include new fields in dict representation
-            "is_anonymous": self.is_anonymous, # Include new fields in dict representation
-            "display_author_name": self.display_author_name, # Include new fields in dict representation
+            "category": self.category, # to_dict에 추가
+            "is_anonymous": self.is_anonymous, # to_dict에 추가
+            "display_author_name": self.display_author_name, # to_dict에 추가
             "mongodb_content_id": self.mongodb_content_id,
             "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "updated_at": self.updated_at.isoformat(),
+            "views": self.views # to_dict에 추가
         }
 
     def __repr__(self):
@@ -88,6 +89,7 @@ class Comment(db.Model):
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    display_author_name = db.Column(db.String(80), nullable=True) # 새로 추가: 댓글 작성자 표시 이름
 
     post = db.relationship('Post', backref='comments', lazy=True)
     author = db.relationship('User', backref='comments', lazy=True)
@@ -100,8 +102,9 @@ class Comment(db.Model):
             "author_username": self.author_username,
             "content": self.content,
             "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "updated_at": self.updated_at.isoformat(),
+            "display_author_name": self.display_author_name # to_dict에 포함
         }
 
     def __repr__(self):
-        return f'<Comment {self.id}>'
+        return f'<Comment {self.id} on Post {self.post_id}>'
