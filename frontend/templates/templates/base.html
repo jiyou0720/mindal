@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}영마인드링크{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    {% block extra_head %}{% endblock %} {# 각 페이지별 추가 CSS, JS 등을 위한 블록 #}
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-left">
+                <a href="{{ url_for('index') }}" class="header-logo-link">
+<span class="header-app-name">영마인드링크</span>
+                </a>
+            </div>
+            <div class="header-right" id="headerAuthArea">
+                {# 로그인/로그아웃 버튼이 여기에 동적으로 삽입됩니다. #}
+                <a href="{{ url_for('login') }}" class="header-auth-button secondary">로그인</a>
+                <a href="{{ url_for('signup') }}" class="header-auth-button primary">회원가입</a>
+            </div>
+        </header>
+
+        <div class="main-layout-wrapper">
+            <aside class="sidebar">
+                <nav class="sidebar-nav">
+                    <ul>
+                        <li>
+                            <a href="{{ url_for('index') }}" class="sidebar-link {% if request.endpoint == 'index' %}active{% endif %}">
+                                <i class="fas fa-home"></i>
+                                <span>대시보드</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('ai_chat') }}" class="sidebar-link {% if request.endpoint == 'ai_chat' %}active{% endif %}">
+                                <i class="fas fa-robot"></i>
+                                <span>AI 채팅</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('diary') }}" class="sidebar-link {% if request.endpoint == 'diary' %}active{% endif %}">
+                                <i class="fas fa-book"></i>
+                                <span>오늘 일기</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('keyword') }}" class="sidebar-link {% if request.endpoint == 'keyword' %}active{% endif %}">
+                                <i class="fas fa-tags"></i>
+                                <span>키워드</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('my_changes') }}" class="sidebar-link {% if request.endpoint == 'my_changes' %}active{% endif %}">
+                                <i class="fas fa-chart-line"></i>
+                                <span>나의 변화</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('community_list') }}" class="sidebar-link {% if request.endpoint == 'community_list' %}active{% endif %}">
+                                <i class="fas fa-users"></i> {# 커뮤니티 아이콘 (사람들) #}
+                                <span>게시판</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="main-content-area">
+                {% block content %}{% endblock %} {# 각 페이지의 내용이 여기에 삽입됩니다. #}
+            </main>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-section footer-info">
+                <h3>영마인드링크</h3>
+                <p>&copy; 2024 Young MindLink. All rights reserved.</p>
+                <p>문의: support@youngmindlink.com</p>
+            </div>
+            <div class="footer-section footer-links">
+                <h4>빠른 링크</h4>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">대시보드</a></li>
+                    <li><a href="{{ url_for('ai_chat') }}">AI 채팅</a></li>
+                    <li><a href="{{ url_for('diary') }}">오늘 일기</a></li>
+                    <li><a href="{{ url_for('community_list') }}">게시판</a></li> {# 푸터에도 추가 #}
+                </ul>
+            </div>
+            <div class="footer-section footer-social">
+                <h4>소셜 미디어</h4>
+                <div class="social-icons">
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // JWT 토큰 확인 및 헤더 업데이트 함수 (기존 코드 유지)
+        async function updateHeaderAuthArea() {
+            const token = localStorage.getItem('jwt_token');
+            const headerAuthArea = document.getElementById('headerAuthArea');
+
+            // 로그아웃 함수
+            const logout = () => {
+                localStorage.removeItem('jwt_token');
+                alert('로그아웃 되었습니다.');
+                window.location.href = "{{ url_for('index') }}"; // 로그아웃 후 홈으로 리다이렉트
+            };
+
+            if (token) {
+                // 토큰이 있으면 사용자 정보 가져오기 시도
+                try {
+                    const response = await fetch('/api/auth/me', { // 백엔드에 사용자 정보 요청
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        // 사용자 이름/별명 표시 및 로그아웃 버튼
+                        const displayName = result.nickname || result.username || '사용자';
+                        headerAuthArea.innerHTML = `
+                            <span class="user-display-name">안녕하세요, ${displayName}님!</span>
+                            <button class="header-auth-button secondary" id="logoutButton">로그아웃</button>
+                        `;
+                        document.getElementById('logoutButton').addEventListener('click', logout);
+                    } else if (response.status === 401) {
+                        // 토큰이 유효하지 않거나 만료된 경우
+                        localStorage.removeItem('jwt_token'); // 잘못된 토큰 삭제
+                        renderLoggedOutHeader(); // 로그인/회원가입 버튼 표시
+                    } else {
+                        // 기타 오류
+                        console.error('사용자 정보 로드 실패:', result.message);
+                        renderLoggedOutHeader();
+                    }
+                } catch (error) {
+                    console.error('사용자 정보 로드 중 네트워크 오류:', error);
+                    renderLoggedOutHeader(); // 네트워크 오류 시에도 로그인/회원가입 버튼 표시
+                }
+            } else {
+                renderLoggedOutHeader(); // 토큰이 없으면 로그인/회원가입 버튼 표시
+            }
+        }
+
+        // 로그아웃 상태의 헤더를 렌더링하는 헬퍼 함수
+        function renderLoggedOutHeader() {
+            const headerAuthArea = document.getElementById('headerAuthArea');
+            headerAuthArea.innerHTML = `
+                <a href="{{ url_for('login') }}" class="header-auth-button secondary">로그인</a>
+                <a href="{{ url_for('signup') }}" class="header-auth-button primary">회원가입</a>
+            `;
+        }
+
+        // 페이지 로드 시 헤더 업데이트 함수 실행
+        document.addEventListener('DOMContentLoaded', updateHeaderAuthArea);
+    </script>
+</body>
+</html>

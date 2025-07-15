@@ -1,0 +1,83 @@
+<!--frontend/templates/login.html-->
+{% extends "base.html" %}
+
+{% block title %}로그인 - 영마인드링크{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login_signup.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="auth-container">
+        <div class="auth-form-card">
+            <h1 class="auth-title">로그인</h1>
+            <p class="auth-subtitle">영마인드링크에 오신 것을 환영합니다!</p>
+
+            <form class="auth-form" id="loginForm"> {# id="loginForm" 추가 #}
+                <div class="form-group">
+                    <label for="email" class="form-label">이메일</label>
+                    <input type="email" id="email" placeholder="이메일을 입력하세요" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label for="password" class="form-label">비밀번호</label>
+                    <input type="password" id="password" placeholder="비밀번호를 입력하세요" class="input-field" required>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="auth-button primary">로그인</button>
+                </div>
+            </form>
+
+            <div class="auth-links">
+                <a href="{{ url_for('forgot_password') }}" class="auth-link">비밀번호를 잊으셨나요?</a>
+                <span class="auth-separator">|</span>
+                <a href="{{ url_for('signup') }}" class="auth-link">회원가입</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+
+            loginForm.addEventListener('submit', async function(event) {
+                event.preventDefault(); // 폼 기본 제출 방지
+
+                const email = emailInput.value;
+                const password = passwordInput.value;
+
+                if (!email || !password) {
+                    alert('이메일과 비밀번호를 모두 입력해주세요.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email: email, password: password })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        // 로그인 성공 시 JWT 토큰을 localStorage에 저장
+                        localStorage.setItem('jwt_token', result.token);
+                        alert(result.message || '로그인 성공!');
+                        // 메인 페이지로 리다이렉트
+                        window.location.href = "{{ url_for('index') }}";
+                    } else {
+                        // 로그인 실패 시 오류 메시지 표시
+                        alert(result.message || '로그인 실패. 이메일 또는 비밀번호를 확인해주세요.');
+                    }
+                } catch (error) {
+                    console.error('Error during login request:', error);
+                    alert('서버와 통신 중 오류가 발생했습니다. 다시 시도해주세요.');
+                }
+            });
+        });
+    </script>
+{% endblock %}
