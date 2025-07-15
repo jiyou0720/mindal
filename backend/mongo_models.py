@@ -1,84 +1,95 @@
 # backend/mongo_models.py
+
 from bson.objectid import ObjectId
 import datetime
 
 # --- MongoDB에 게시글 '내용'만 저장할 클래스 ---
 class MongoPostContent:
-    def __init__(self, content, _id=None):
+    def __init__(self, content, attachment_paths=None, _id=None):
         self.content = content
+        self.attachment_paths = attachment_paths if attachment_paths is not None else []
         if _id:
             self._id = _id
 
     def to_dict(self):
-        return {
+        data = {
             "content": self.content,
-            "_id": str(self._id) if hasattr(self, '_id') else None
+            "attachment_paths": self.attachment_paths,
         }
+        # _id가 존재하고 None이 아닐 경우에만 포함
+        if hasattr(self, '_id') and self._id is not None:
+            # ObjectId 객체인 경우 문자열로 변환
+            if isinstance(self._id, ObjectId):
+                data["_id"] = str(self._id)
+            else:
+                data["_id"] = self._id # 이미 문자열인 경우 그대로 사용
+        return data
 
     @staticmethod
     def from_mongo(data):
         return MongoPostContent(
             content=data.get('content'),
+            attachment_paths=data.get('attachment_paths', []),
             _id=data.get('_id')
         )
 
-# --- MongoDB용 DiaryEntry 클래스 ---
+# --- MongoDB에 다이어리 항목을 저장할 클래스 ---
 class DiaryEntry:
-    # 'date'와 'mood_emoji_key' 필드 추가
-    def __init__(self, user_id, title, content, date, mood_emoji_key=None, _id=None, created_at=None, updated_at=None):
-        self.user_id = user_id # MariaDB User의 ID (정수형)
-        self.title = title
+    def __init__(self, user_id, date, content, mood, keywords=None, _id=None):
+        self.user_id = user_id
+        self.date = date # ISO 형식 문자열 또는 datetime 객체
         self.content = content
-        self.date = date # 일기 날짜 (YYYY-MM-DD 형식 문자열)
-        self.mood_emoji_key = mood_emoji_key # 선택된 이모티콘의 키 (예: 'happy', 'sad')
-        self.created_at = created_at if created_at else datetime.datetime.utcnow()
-        self.updated_at = updated_at if updated_at else datetime.datetime.utcnow()
+        self.mood = mood
+        self.keywords = keywords if keywords is not None else []
         if _id:
             self._id = _id
 
     def to_dict(self):
         return {
             "user_id": self.user_id,
-            "title": self.title,
+            "date": self.date.isoformat() if isinstance(self.date, datetime.datetime) else self.date,
             "content": self.content,
-            "date": self.date, # date 필드 to_dict에 추가
-            "mood_emoji_key": self.mood_emoji_key, # mood_emoji_key 필드 to_dict에 추가
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
+            "mood": self.mood,
+            "keywords": self.keywords,
             "_id": str(self._id) if hasattr(self, '_id') else None
         }
 
     @staticmethod
     def from_mongo(data):
+        # date 필드가 문자열이면 datetime 객체로 변환 시도
+        date_obj = data.get('date')
+        if isinstance(date_obj, str):
+            try:
+                date_obj = datetime.datetime.fromisoformat(date_obj)
+            except ValueError:
+                # ISO 형식이 아니면 (예: MongoDB의 BSON Date) 그대로 사용
+                pass
+        
         return DiaryEntry(
             user_id=data.get('user_id'),
-            title=data.get('title'),
+            date=date_obj,
             content=data.get('content'),
-            date=data.get('date'), # from_mongo에 추가
-            mood_emoji_key=data.get('mood_emoji_key'), # from_mongo에 추가
-            _id=data.get('_id'),
-            created_at=data.get('created_at'),
-            updated_at=data.get('updated_at')
+            mood=data.get('mood'),
+            keywords=data.get('keywords', []),
+            _id=data.get('_id')
         )
 
-# --- MongoDB용 MoodEntry 클래스 (새로 추가) ---
+# --- MongoDB에 감정 기록 항목을 저장할 클래스 ---
 class MoodEntry:
-    def __init__(self, user_id, mood_type, description=None, _id=None, created_at=None, updated_at=None):
-        self.user_id = user_id # MariaDB User의 ID
-        self.mood_type = mood_type # 예: 'happy', 'sad', 'angry' 등
-        self.description = description # 감정에 대한 선택적 설명
-        self.created_at = created_at if created_at else datetime.datetime.utcnow()
-        self.updated_at = updated_at if updated_at else datetime.datetime.utcnow()
+    def __init__(self, user_id, date, mood_score, timestamp=None, _id=None):
+        self.user_id = user_id
+        self.date = date # YYYY-MM-DD 형식의 문자열 (날짜만)
+        self.mood_score = mood_score # 1-5점
+        self.timestamp = timestamp if timestamp is not None else datetime.datetime.utcnow() # 기록 시점
         if _id:
             self._id = _id
 
     def to_dict(self):
         return {
             "user_id": self.user_id,
-            "mood_type": self.mood_type,
-            "description": self.description,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
+            "date": self.date, # 날짜 문자열은 그대로 사용
+            "mood_score": self.mood_score,
+            "timestamp": self.timestamp.isoformat(),
             "_id": str(self._id) if hasattr(self, '_id') else None
         }
 
@@ -86,9 +97,11 @@ class MoodEntry:
     def from_mongo(data):
         return MoodEntry(
             user_id=data.get('user_id'),
-            mood_type=data.get('mood_type'),
-            description=data.get('description'),
-            _id=data.get('_id'),
-            created_at=data.get('created_at'),
-            updated_at=data.get('updated_at')
+            date=data.get('date'),
+            mood_score=data.get('mood_score'),
+            timestamp=data.get('timestamp'),
+            _id=data.get('_id')
         )
+
+# 이 파일에는 MariaDB 관련 모델(User, Post, Comment)이 없어야 합니다.
+# 해당 모델들은 maria_models.py에만 정의되어야 합니다.

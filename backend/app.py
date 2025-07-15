@@ -55,105 +55,77 @@ app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
 # --- 프론트엔드 HTML 템플릿 렌더링 라우트 (frontend/app.py에서 이동) ---
 
+# --- 프론트엔드 HTML 템플릿 렌더링 라우트 ---
+
 @app.route('/')
 def index():
-    """
-    메인 랜딩 페이지 (Home)를 렌더링합니다.
-    """
+    """메인 랜딩 페이지 (Home)를 렌더링합니다."""
     return render_template('index.html')
 
 @app.route('/ai-chat')
 def ai_chat():
-    """
-    AI 채팅 페이지를 렌더링합니다.
-    """
+    """AI 채팅 페이지를 렌더링합니다."""
     return render_template('ai_chat.html')
 
 @app.route('/diary')
 def diary():
-    """
-    오늘 일기 페이지를 렌더링합니다.
-    """
+    """오늘 일기 페이지를 렌더링합니다."""
     return render_template('diary.html')
 
 @app.route('/keyword')
 def keyword():
-    """
-    키워드 페이지를 렌더링합니다.
-    """
+    """키워드 페이지를 렌더링합니다."""
     return render_template('keyword.html')
 
 @app.route('/my-changes')
 def my_changes():
-    """
-    나의 변화 페이지를 렌더링합니다.
-    """
+    """나의 변화 페이지를 렌더링합니다."""
     return render_template('my_changes.html')
 
 @app.route('/login')
 def login():
-    """
-    로그인 페이지를 렌더링합니다.
-    """
+    """로그인 페이지를 렌더링합니다."""
     return render_template('login.html')
 
 @app.route('/signup')
 def signup():
-    """
-    회원가입 페이지를 렌더링합니다.
-    """
+    """회원가입 페이지를 렌더링합니다."""
     return render_template('signup.html')
 
 @app.route('/forgot-password')
 def forgot_password():
-    """
-    비밀번호 찾기 페이지를 렌더링합니다.
-    """
+    """비밀번호 찾기 페이지를 렌더링합니다."""
     return render_template('forgot_password.html')
+
+# --- 커뮤니티 관련 페이지 라우트 ---
 
 @app.route('/community')
 def community_list():
-    """
-    게시글 목록 페이지를 렌더링합니다.
-    """
+    """게시글 목록 페이지를 렌더링합니다."""
     return render_template('community_list.html')
 
 @app.route('/community/create')
-def create_post():
-    """
-    게시글 작성 페이지를 렌더링합니다.
-    (이 라우트는 다음 단계에서 실제 템플릿과 로직이 구현될 예정입니다.)
-    """
-    # 임시로 'community_list.html'을 렌더링하거나, 별도의 'create_post.html'을 만들어야 합니다.
-    # 현재는 링크를 위해 빈 페이지라도 연결해둡니다.
-    return render_template('community_create.html') # 이 파일은 다음 단계에서 생성됩니다.
-
-@app.route('/community/posts/<int:post_id>')
-def post_detail(post_id):
-    """
-    게시글 상세 페이지를 렌더링합니다.
-    (이 라우트도 다음 단계에서 실제 템플릿과 로직이 구현될 예정입니다.)
-    """
-    return render_template('community_detail.html', post_id=post_id) # 이 파일은 다음 단계에서 생성됩니다.
-
-@app.route('/community/create')
 def community_create():
-    """
-    새 게시글 작성 페이지를 렌더링합니다.
-    """
+    """새 게시글 작성 페이지를 렌더링합니다."""
     return render_template('community_create.html')
 
-# If you don't have a generic '/community' route, you might want to add one
-@app.route('/community')
-def community():
+# 게시글 상세 페이지 라우트 (중복 제거 후 하나만 유지)
+@app.route('/community/posts/<int:post_id>')
+def community_detail(post_id):
     """
-    커뮤니티 게시글 목록 페이지를 렌더링합니다. (임시)
+    게시글 상세 페이지를 렌더링합니다.
+    URL에서 post_id를 받아 JavaScript에서 사용합니다.
     """
-    return render_template('community.html') # You'll need to create this placeholder for now
-                                            # or redirect to index if no community list page exists yet.
+    return render_template('community_detail.html', post_id=post_id)
 
-
-
+# 게시글 수정 페이지 라우트
+@app.route('/community/posts/edit/<int:post_id>')
+def edit_post(post_id):
+    """
+    게시글 수정 페이지를 렌더링합니다.
+    URL에서 post_id를 받아 JavaScript에서 해당 게시글을 로드하고 수정합니다.
+    """
+    return render_template('community_edit.html', post_id=post_id)
 
 # --- CLI 명령어를 위한 부분 (기존 코드 유지) ---
 @app.cli.command("create-admin")
