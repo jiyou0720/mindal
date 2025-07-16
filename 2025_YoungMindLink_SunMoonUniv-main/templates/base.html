@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}영마인드링크{% endblock %}</title> {# 페이지별 제목을 설정할 수 있도록 블록 추가 #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-container">
+        <header class="header">
+            <img src="{{ url_for('static', filename='img/logo_header.png') }}" alt="MindBridge Logo" class="header-logo">
+            <nav class="nav-menu">
+                <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Home</a>
+                <a href="{{ url_for('ai_chat') }}" class="nav-link {% if request.endpoint == 'ai_chat' %}active{% endif %}">ai채팅</a>
+                <a href="{{ url_for('diary') }}" class="nav-link {% if request.endpoint == 'diary' %}active{% endif %}">오늘, 일기</a>
+                <a href="{{ url_for('keyword') }}" class="nav-link {% if request.endpoint == 'keyword' %}active{% endif %}">키워드</a>
+            </nav>
+            <div class="auth-buttons">
+                <a href="{{ url_for('login') }}" class="header-auth-button">Login</a> {# a 태그로 변경 #}
+                <a href="{{ url_for('signup') }}" class="header-auth-button primary">Sign up</a> {# a 태그로 변경 #}
+            </div>
+        </header>
+
+        {% block content %}{% endblock %}
+
+        <footer class="footer-section">
+            <div class="footer-column">
+                <img src="{{ url_for('static', filename='img/logo_footer.png') }}" alt="MindBridge Logo" class="footer-logo">
+                <div>
+                    <span class="footer-text">선문대학교 - 영마인드링크 2기 - 프로젝트</span>
+                    <br>
+                    <span class="footer-text">함께 해주셔서 감사합니다!</span>
+                </div>
+            </div>
+
+            <div class="footer-column">
+                <span class="footer-heading">Support</span>
+                <ul class="footer-list">
+                    <li><span class="footer-text">보건복지부</span></li>
+                    <li><span class="footer-text">멘탈헬스코리아</span></li>
+                    <li><span class="footer-text">영마인드링크2기</span></li>
+                </ul>
+            </div>
+
+            <div class="footer-column">
+                <span class="footer-heading">Stay up to date</span>
+                <div class="input-field-wrapper">
+                    <div class="input-field-bg"></div>
+                    <input type="email" placeholder="Your email address" class="styled-input">
+                    <div class="send-icon"></div>
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

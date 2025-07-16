@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}로그인 - 영마인드링크{% endblock %}
+
+{% block content %}
+    <div class="login-bg-area"> {# 기존 inline-flex div에 클래스 추가 #}
+        <div class="login-background-box"></div> {# 기존 F3E8F5 배경 div에 클래스 추가 #}
+    </div>
+
+    <div class="login-form-card"> {# 로그인 폼 카드 #}
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <div class="input-field">
+                <input type="email" placeholder="Value" class="input-value">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="input-field">
+                <input type="password" placeholder="Value" class="input-value">
+            </div>
+        </div>
+        <div class="button-group">
+            <button class="sign-in-button">Sign In</button>
+        </div>
+        <div class="forgot-password">
+            <a href="#" class="forgot-password-link">Forgot password?</a>
+        </div>
+    </div>
+{% endblock %}

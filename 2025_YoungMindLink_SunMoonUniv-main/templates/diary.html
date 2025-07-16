@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}오늘, 일기 - 영마인드링크{% endblock %}
+
+{% block content %}
+    <div class="diary-main-area"> {# 기존 inline-flex div에 클래스 추가 #}
+        <div class="diary-background-box"> {# 기존 F3E8F5 배경 div에 클래스 추가 #}
+            <div class="diary-content-box"> {# 일기 내용 박스 #}
+                <div class="diary-text-content">일기를 작성하면 지난 1주간의 일기를 확인 가능해요!</div>
+            </div>
+            <div class="diary-random-title-box"> {# 랜덤 일기 제목 박스 #}
+                <div class="diary-random-title-text">오늘의 랜덤 일기 - 만나서 반가워요!</div>
+            </div>
+            <div class="diary-input-background"></div> {# 인풋 배경 #}
+            <div class="diary-send-icon-wrapper"> {# 아이콘 wrapper #}
+                <div class="diary-send-icon-vector"></div> {# 아이콘 벡터 #}
+            </div>
+            <div class="diary-input-placeholder">채팅을 시작해보세요!</div> {# 플레이스홀더 텍스트 #}
+        </div>
+    </div>
+{% endblock %}

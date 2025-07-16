@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}홈 - 영마인드링크{% endblock %} {# 페이지 제목 설정 #}
+
+{% block content %}
+    <section class="hero-section">
+        <div class="hero-text-content">
+            <span class="heading-primary">
+                안녕하세요!<br>오늘도 수고 많았어요.
+            </span>
+            <a href="{{ url_for('ai_chat') }}" class="primary-button"> {# AI 채팅 페이지로 이동 #}
+                <span class="button-label">ai채팅 시작하기</span>
+            </a>
+        </div>
+        <img src="{{ url_for('static', filename='img/image_16bfb3.png') }}" alt="Happy Person on Phone" class="hero-illustration">
+    </section>
+
+    <section class="features-section">
+        <span class="section-title">이런 기능도 사용해보세요</span>
+        <div class="feature-cards-container">
+            <a href="{{ url_for('diary') }}" class="feature-card"> {# 일기 페이지로 이동 #}
+                <div class="card-icon-container">
+                    <div class="icon-background"></div>
+                    <div class="icon today-diary-icon"></div>
+                </div>
+                <span class="card-title">오늘 일기</span>
+                <span class="card-description">
+                    오늘의 나에 대해 한줄만 남겨보세요.<br>다른 사람들의 오늘을 랜덤으로<br>확인할 수도 있어요!
+                </span>
+            </a>
+
+            <a href="{{ url_for('ai_chat') }}" class="feature-card"> {# AI 채팅 페이지로 이동 #}
+                <div class="card-icon-container">
+                    <div class="icon-background"></div>
+                    <div class="icon ai-chat-icon"></div>
+                </div>
+                <span class="card-title">ai 채팅</span>
+                <span class="card-description">
+                    상담 가능한 ai는 이미 많다고요?<br>우리 ai채팅은 형태소 분석을 통해<br>사용자들의 주요 고민거리를 키워드로<br>만들어 공감과 유대를 형성하게 합니다.
+                </span>
+            </a>
+
+            <a href="{{ url_for('keyword') }}" class="feature-card"> {# 키워드 페이지로 이동 #}
+                <div class="card-icon-container">
+                    <div class="icon-background"></div>
+                    <div class="icon keyword-icon"></div>
+                </div>
+                <span class="card-title">키워드</span>
+                <span class="card-description">
+                    여기에서 얼마나 많은 사람들이<br>어떤 아픔으로 상담을 받는지<br>확인할 수 있어요!
+                </span>
+            </a>
+        </div>
+    </section>
+
+    <section class="encouragement-section">
+        <span class="section-title dark-text">
+            혼자가 아니에요.<br>일기를 확인해봐요!
+        </span>
+        <a href="{{ url_for('diary') }}" class="secondary-button"> {# 일기 페이지로 이동 #}
+            <span class="button-label">오늘 일기 쓰러가기</span>
+            <div class="right-arrow-icon"></div>
+        </a>
+    </section>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}회원가입 - 영마인드링크{% endblock %}
+
+{% block content %}
+    <div class="login-bg-area">
+        <div class="login-background-box"></div>
+    </div>
+
+    <div class="login-form-card"> {# 회원가입 폼 카드 - 로그인과 유사 #}
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <div class="input-field">
+                <input type="email" placeholder="이메일 입력" class="input-value">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="input-field">
+                <input type="password" placeholder="비밀번호 입력" class="input-value">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Confirm Password</label>
+            <div class="input-field">
+                <input type="password" placeholder="비밀번호 확인" class="input-value">
+            </div>
+        </div>
+        <div class="button-group">
+            <button class="sign-in-button">Sign Up</button> {# 버튼 텍스트 변경 #}
+        </div>
+        <div class="forgot-password">
+            <a href="{{ url_for('login') }}" class="forgot-password-link">이미 계정이 있으신가요? 로그인</a> {# 로그인 페이지로 이동 #}
+        </div>
+    </div>
+{% endblock %}

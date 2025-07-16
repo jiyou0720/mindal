@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}AI 채팅 - 영마인드링크{% endblock %}
+
+{% block content %}
+    <div class="chat-main-area"> {# 기존 inline-flex div에 클래스 추가 #}
+        <div class="chat-background-box"> {# 기존 F3E8F5 배경 div에 클래스 추가 #}
+            <div class="chat-input-background"></div> {# 인풋 배경 #}
+            <div class="chat-send-icon-wrapper"> {# 아이콘 wrapper #}
+                <div class="chat-send-icon-vector"></div> {# 아이콘 벡터 #}
+            </div>
+            <div class="chat-input-placeholder">채팅을 시작해보세요!</div> {# 플레이스홀더 텍스트 #}
+        </div>
+    </div>
+{% endblock %}
