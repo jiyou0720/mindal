@@ -1,0 +1,131 @@
+/* frontend/static/css/admin_dashboard.css */
+
+.admin-dashboard-container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 30px;
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.admin-dashboard-title {
+    font-size: 2.5em;
+    color: #2C3E50;
+    text-align: center;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+.admin-dashboard-subtitle {
+    font-size: 1.1em;
+    color: #777;
+    text-align: center;
+    margin-bottom: 40px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 20px;
+}
+
+.dashboard-sections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.dashboard-card {
+    background-color: #F8FAFC;
+    border: 1px solid #E9EEF4;
+    border-radius: 10px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+    font-size: 1.6em;
+    color: #34495E;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.card-description {
+    font-size: 0.95em;
+    color: #6C7A89;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    flex-grow: 1; /* 내용이 길어져도 버튼 위치 유지 */
+}
+
+.card-button {
+    padding: 10px 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+    border-radius: 8px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 123, 255, 0.2);
+}
+
+.card-button:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .admin-dashboard-container {
+        padding: 20px;
+        margin: 20px auto;
+    }
+    .admin-dashboard-title {
+        font-size: 2em;
+    }
+    .admin-dashboard-subtitle {
+        font-size: 1em;
+        margin-bottom: 30px;
+    }
+    .dashboard-sections-grid {
+        grid-template-columns: 1fr; /* 모바일에서는 한 줄에 하나의 카드 */
+    }
+    .dashboard-card {
+        padding: 20px;
+    }
+    .card-title {
+        font-size: 1.4em;
+    }
+    .card-description {
+        font-size: 0.9em;
+    }
+    .card-button {
+        width: 100%;
+        padding: 10px 15px;
+        font-size: 0.85em;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-dashboard-container {
+        padding: 15px;
+        margin: 15px auto;
+    }
+    .admin-dashboard-title {
+        font-size: 1.8em;
+    }
+    .admin-dashboard-subtitle {
+        font-size: 0.9em;
+        margin-bottom: 20px;
+    }
+}

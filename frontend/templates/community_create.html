@@ -1,229 +1,278 @@
-<!--frontend/templates/community_create.html-->
 {% extends "base.html" %}
 
-{% block title %}새 게시글 작성 - 영마인드링크{% endblock %}
+{% block title %}게시글 작성 - 영마인드링크{% endblock %} {# 제목을 '게시글 작성'으로 변경 #}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/community_create.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/community_edit.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}
 
 {% block content %}
-    <div class="community-container">
-        <div class="community-form-card">
-            <h1 class="community-title">새 게시글 작성</h1>
-            <p class="community-subtitle">새로운 생각과 경험을 공유해보세요!</p>
+    <div class="community-create-container">
+        <h1 class="create-post-title">게시글 작성</h1> {# 제목을 '게시글 작성'으로 변경 #}
+        <form id="editPostForm" class="create-post-form">
+            <div class="form-group">
+                <label for="postTitle">제목</label>
+                <input type="text" id="postTitle" name="title" required placeholder="게시글 제목을 입력하세요">
+            </div>
 
-            <form class="community-form" id="postCreateForm">
-                <div class="form-group">
-                    <label for="postTitle" class="form-label">제목</label>
-                    <input type="text" id="postTitle" placeholder="제목을 입력하세요..." class="input-field" required>
-                </div>
+            <div class="form-group">
+                <label for="postCategory">카테고리</label>
+                <select id="postCategory" name="category" required>
+                    <option value="">카테고리 선택</option>
+                    <option value="daily">일상</option>
+                    <option value="emotion">감정</option>
+                    <option value="photo">사진</option>
+                    <option value="music">음악</option>
+                    <option value="secret">비밀</option>
+                </select>
+            </div>
 
-                <div class="form-group">
-                    <label for="postCategory" class="form-label">카테고리</label>
-                    <select id="postCategory" class="input-field">
-                        <option value="photo">사진</option>
-                        <option value="music">음악</option>
-                        <option value="secret">비밀</option>
-                        <option value="daily">일상</option>
-                        <option value="emotion">감정</option>
-                    </select>
-                </div>
+            <div class="form-group">
+                <label for="postContent">내용</label>
+                <textarea id="postContent" name="content" rows="10" placeholder="내용을 입력하세요..." required></textarea>
+            </div>
 
-                <div class="form-group">
-                    <label class="form-label">작성자 유형</label>
-                    <div class="author-type-radio">
-                        <input type="radio" id="authorTypeAnonymous" name="authorType" value="anonymous" checked>
-                        <label for="authorTypeAnonymous">익명</label>
-                        <input type="radio" id="authorTypeNickname" name="authorType" value="nickname">
-                        <label for="authorTypeNickname">닉네임</label>
-                    </div>
-                    <p id="nicknameDisplay" class="nickname-display" style="display: none;">(사용자 닉네임: <span id="actualNickname"></span>)</p>
-                </div>
+            <div class="form-group attachment-upload-group">
+                <label for="attachmentUpload">첨부 파일</label>
+                <input type="file" id="attachmentUpload" name="attachments" multiple accept="image/*,audio/*">
+                <p class="file-info">이미지 또는 오디오 파일을 첨부할 수 있습니다.</p>
+            </div>
 
-                <div class="form-group">
-                    <label for="postContent" class="form-label">내용</label>
-                    <textarea id="postContent" placeholder="내용을 입력하세요..." rows="10" class="input-field" required></textarea>
-                </div>
+            <div id="currentAttachments" class="current-attachments">
+                <!-- 현재 첨부파일이 여기에 표시됩니다 -->
+            </div>
 
-                <div class="form-group file-upload-group">
-                    <label for="postAttachments" class="form-label">파일 첨부 (사진, 오디오)</label>
-                    <input type="file" id="postAttachments" multiple accept="image/*,audio/*" class="file-input-hidden">
-                    <label for="postAttachments" class="custom-file-upload-button">
-                        <i class="fas fa-paperclip"></i> 파일 선택
-                    </label>
-                    <div id="selectedFiles" class="selected-files-display"></div>
-                </div>
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="isAnonymous" name="is_anonymous">
+                <label for="isAnonymous">익명으로 작성</label>
+            </div>
 
-                <div class="button-group">
-                    <button type="submit" class="auth-button primary">저장</button>
-                    <a href="{{ url_for('community_list') }}" class="auth-button secondary">취소</a>
-                </div>
-            </form>
-        </div>
+            <div class="button-group">
+                <button type="submit" class="button primary">작성 완료</button> {# 버튼 텍스트를 '작성 완료'로 변경 #}
+                <button type="button" class="button secondary" onclick="history.back()">취소</button>
+            </div>
+        </form>
     </div>
 
     <script>
-        // Flask의 url_for을 사용하여 미리 URL을 생성하고 JavaScript 변수에 할당합니다.
-        // 이렇게 하면 Jinja2가 서버에서 이 부분을 처리하여 실제 URL 문자열이 됩니다.
-        const communityListUrl = "{{ url_for('community_list') }}";
-        const loginUrl = "{{ url_for('login') }}"; // login URL도 변수로 선언
-
         document.addEventListener('DOMContentLoaded', function() {
-            const postCreateForm = document.getElementById('postCreateForm');
+            // URL에서 게시글 ID 추출. community_create.html에서는 postId가 없을 수 있으므로,
+            // URL이 /community/posts/edit/<post_id> 형태일 때만 postId를 가져옴.
+            // community_create.html에서는 postId가 정의되지 않으므로, 이 부분을 수정합니다.
+            const pathSegments = window.location.pathname.split('/');
+            const postId = pathSegments[pathSegments.length - 1] === 'create' ? null : pathSegments.pop();
+            
+            const editPostForm = document.getElementById('editPostForm');
             const postTitleInput = document.getElementById('postTitle');
             const postCategorySelect = document.getElementById('postCategory');
-            const authorTypeAnonymous = document.getElementById('authorTypeAnonymous');
-            const authorTypeNickname = document.getElementById('authorTypeNickname');
-            const nicknameDisplay = document.getElementById('nicknameDisplay');
-            const actualNicknameSpan = document.getElementById('actualNickname');
             const postContentTextarea = document.getElementById('postContent');
-            const postAttachmentsInput = document.getElementById('postAttachments');
-            const selectedFilesDisplay = document.getElementById('selectedFiles');
+            const isAnonymousCheckbox = document.getElementById('isAnonymous');
+            const attachmentUploadInput = document.getElementById('attachmentUpload');
+            const currentAttachmentsContainer = document.getElementById('currentAttachments');
 
-            let userNickname = ''; // 사용자 닉네임을 저장할 변수
+            // loginUrl은 base.html에서 전역으로 선언되므로 여기서 다시 선언하지 않습니다.
+            const communityListUrl = "{{ url_for('community_list') }}";
+            // 이전 오류를 일으키던 줄을 완전히 삭제합니다.
+            // communityDetailUrlBase 변수는 community_edit.html에서만 필요합니다.
 
-            // 사용자 닉네임 로드 함수
-            async function loadUserNickname() {
+
+            // localStorage에서 현재 로그인된 사용자 정보 가져오기
+            const currentUserId = localStorage.getItem('user_id');
+            let currentUserRoles = [];
+            const userRolesString = localStorage.getItem('user_roles');
+            if (userRolesString) {
+                try {
+                    currentUserRoles = JSON.parse(userRolesString);
+                } catch (e) {
+                    console.error("Error parsing user roles from localStorage:", e);
+                }
+            }
+            console.log("Current user roles:", currentUserRoles); // 디버깅용
+
+            // 관리자 역할인지 확인하는 헬퍼 함수
+            const isAdmin = () => currentUserRoles.includes('관리자');
+
+            let existingAttachments = []; // 기존 첨부파일 URL을 저장할 배열
+
+            // 게시글 상세 정보를 불러와 폼에 채우기 (게시글 수정 페이지에서만 실행)
+            async function fetchPostDetailForEdit() {
+                if (!postId) { // postId가 없으면 게시글 생성 페이지이므로, 이 함수를 실행하지 않습니다.
+                    console.log("게시글 생성 페이지입니다. 기존 게시글 정보를 불러오지 않습니다.");
+                    return;
+                }
+
                 const token = localStorage.getItem('jwt_token');
                 if (!token) {
-                    console.log('No JWT token found, user not logged in.');
+                    await showAlert('로그인이 필요합니다.');
+                    window.location.href = loginUrl;
                     return;
                 }
 
                 try {
-                    const response = await fetch('/api/auth/me', {
-                        method: 'GET',
+                    const response = await fetch(`/api/community/posts/${postId}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
                     });
-
                     const result = await response.json();
 
                     if (response.ok) {
-                        userNickname = result.nickname || result.username; // 닉네임이 없으면 사용자 이름 사용
-                        actualNicknameSpan.textContent = userNickname;
-                    } else {
-                        console.error('Failed to load user info:', result.message);
-                        // 토큰이 유효하지 않거나 만료된 경우 로그인 페이지로 리다이렉트
-                        if (response.status === 401) {
-                            localStorage.removeItem('jwt_token');
-                            alert('세션이 만료되었습니다. 다시 로그인해주세요.');
-                            window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
+                        const post = result.post;
+                        const mongoContent = result.content; // MongoDB에서 가져온 실제 content와 attachments
+
+                        // 권한 확인: 게시글 작성자 본인이거나 관리자만 수정 가능
+                        if (parseInt(post.user_id) !== parseInt(currentUserId) && !isAdmin()) { // user_id로 변경
+                            await showAlert('이 게시글을 수정할 권한이 없습니다.');
+                            window.location.href = `${communityListUrl}`; // 권한 없으면 목록으로 리다이렉트
+                            return;
                         }
+
+                        postTitleInput.value = post.title;
+                        postCategorySelect.value = post.category;
+                        postContentTextarea.value = mongoContent.content; // MongoDB에서 가져온 내용 사용
+                        isAnonymousCheckbox.checked = post.is_anonymous;
+
+                        existingAttachments = mongoContent.attachments || [];
+                        renderCurrentAttachments();
+
+                    } else {
+                        await showAlert(result.message || '게시글을 불러오는 데 실패했습니다.');
+                        window.location.href = communityListUrl; // 실패 시 목록으로 돌아가기
                     }
                 } catch (error) {
-                    console.error('Error fetching user info:', error);
+                    console.error('Error fetching post detail for edit:', error);
+                    await showAlert('게시글 정보를 불러오는 중 오류가 발생했습니다.');
+                    window.location.href = communityListUrl;
                 }
             }
 
-            // 페이지 로드 시 사용자 닉네임 로드
-            loadUserNickname();
+            // 현재 첨부파일을 렌더링하는 함수
+            function renderCurrentAttachments() {
+                currentAttachmentsContainer.innerHTML = '';
+                if (existingAttachments.length > 0) {
+                    const title = document.createElement('h3');
+                    title.textContent = '현재 첨부 파일:';
+                    currentAttachmentsContainer.appendChild(title);
 
-            // 작성자 유형 라디오 버튼 변경 이벤트
-            authorTypeNickname.addEventListener('change', function() {
-                if (this.checked) {
-                    nicknameDisplay.style.display = 'block';
-                }
-            });
+                    existingAttachments.forEach((attachment, index) => {
+                        const attachmentItem = document.createElement('div');
+                        attachmentItem.className = 'attachment-item';
 
-            authorTypeAnonymous.addEventListener('change', function() {
-                if (this.checked) {
-                    nicknameDisplay.style.display = 'none';
-                }
-            });
+                        const attachmentName = attachment.split('/').pop(); // 파일명 추출
+                        const attachmentType = attachmentName.split('.').pop().toLowerCase();
 
-            // 파일 첨부 입력 필드 변경 이벤트
-            postAttachmentsInput.addEventListener('change', function() {
-                selectedFilesDisplay.innerHTML = ''; // 기존 파일 목록 초기화
-                if (this.files.length > 0) {
-                    Array.from(this.files).forEach(file => {
-                        const fileItem = document.createElement('span');
-                        fileItem.className = 'selected-file-item';
-                        fileItem.textContent = file.name;
-                        selectedFilesDisplay.appendChild(fileItem);
+                        let displayElement;
+                        if (['png', 'jpg', 'jpeg', 'gif'].includes(attachmentType)) {
+                            displayElement = document.createElement('img');
+                            displayElement.src = attachment;
+                            displayElement.alt = attachmentName;
+                            displayElement.style.maxWidth = '100px';
+                            displayElement.style.maxHeight = '100px';
+                        } else if (['mp3', 'wav'].includes(attachmentType)) {
+                            displayElement = document.createElement('audio');
+                            displayElement.controls = true;
+                            displayElement.src = attachment;
+                        } else {
+                             displayElement = document.createElement('a');
+                             displayElement.href = attachment;
+                             displayElement.textContent = attachmentName;
+                             displayElement.target = '_blank';
+                        }
+                        
+                        const deleteButton = document.createElement('button');
+                        deleteButton.type = 'button';
+                        deleteButton.className = 'delete-attachment-button';
+                        deleteButton.innerHTML = '&times;'; // X 아이콘
+                        deleteButton.title = '첨부파일 삭제';
+                        deleteButton.addEventListener('click', () => {
+                            // 배열에서 해당 첨부파일 제거
+                            existingAttachments.splice(index, 1);
+                            renderCurrentAttachments(); // 목록 다시 렌더링
+                        });
+
+                        attachmentItem.appendChild(displayElement);
+                        attachmentItem.appendChild(deleteButton);
+                        currentAttachmentsContainer.appendChild(attachmentItem);
                     });
                 }
-            });
+            }
 
-            // 폼 제출 이벤트
-            postCreateForm.addEventListener('submit', async function(event) {
-                event.preventDefault(); // 폼 기본 제출 방지
 
-                const title = postTitleInput.value.trim();
-                const category = postCategorySelect.value;
-                const content = postContentTextarea.value.trim();
-                const isAnonymous = authorTypeAnonymous.checked;
-                const authorName = isAnonymous ? '익명' : userNickname; // 익명 또는 사용자 닉네임
+            // 폼 제출 이벤트 핸들러
+            editPostForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
 
-                if (!title) {
-                    alert('제목을 입력해주세요.');
-                    return;
-                }
-                if (!content) {
-                    alert('내용을 입력해주세요.');
+                const token = localStorage.getItem('jwt_token');
+                if (!token) {
+                    await showAlert('로그인이 필요합니다.');
+                    window.location.href = loginUrl;
                     return;
                 }
 
                 const formData = new FormData();
-                formData.append('title', title);
-                formData.append('category', category);
-                formData.append('content', content);
-                formData.append('is_anonymous', isAnonymous ? 'true' : 'false');
-                formData.append('author_name', authorName);
+                formData.append('title', postTitleInput.value.trim());
+                formData.append('category', postCategorySelect.value);
+                formData.append('content', postContentTextarea.value.trim());
+                formData.append('is_anonymous', isAnonymousCheckbox.checked ? 'true' : 'false');
+                formData.append('existing_attachments', JSON.stringify(existingAttachments)); // 기존 첨부파일 목록 전송
 
-                // 파일 첨부
-                Array.from(postAttachmentsInput.files).forEach(file => {
-                    // 파일 크기 및 유형 유효성 검사 (예시)
-                    const MAX_FILE_SIZE_MB = 5;
-                    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'audio/mpeg', 'audio/wav'];
-
-                    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-                        alert(`파일 크기가 너무 큽니다: ${file.name} (최대 ${MAX_FILE_SIZE_MB}MB)`);
-                        return; // 이 파일은 추가하지 않고 다음 파일로
-                    }
-                    if (!allowedTypes.includes(file.type)) {
-                        alert(`지원하지 않는 파일 형식입니다: ${file.name} (허용: JPG, PNG, GIF, MP3, WAV)`);
-                        return; // 이 파일은 추가하지 않고 다음 파일로
-                    }
-                    formData.append('attachments', file);
+                // 새로 추가된 파일들 추가
+                Array.from(attachmentUploadInput.files).forEach(file => {
+                    formData.append('new_attachments', file);
                 });
 
-                const token = localStorage.getItem('jwt_token');
-                if (!token) {
-                    alert('로그인이 필요합니다.');
-                    window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
-                    return;
+                let apiUrl = '/api/community/posts';
+                let httpMethod = 'POST';
+
+                if (postId) { // postId가 있으면 수정 (PUT)
+                    apiUrl = `/api/community/posts/${postId}`;
+                    httpMethod = 'PUT';
                 }
 
                 try {
-                    const response = await fetch('/api/community/posts', {
-                        method: 'POST',
+                    const response = await fetch(apiUrl, {
+                        method: httpMethod,
                         headers: {
                             'Authorization': `Bearer ${token}`
+                            // FormData를 사용할 때는 'Content-Type': 'multipart/form-data'를 명시적으로 설정하지 않습니다.
+                            // 브라우저가 자동으로 Boundary를 포함하여 설정합니다.
                         },
-                        body: formData // FormData는 Content-Type을 자동으로 multipart/form-data로 설정
+                        body: formData
                     });
-
                     const result = await response.json();
 
+                    // 응답 상태 및 메시지 로깅
+                    console.log("--- Server Response ---");
+                    console.log("Status:", response.status);
+                    console.log("Result:", result);
+                    console.log("-----------------------");
+
+
                     if (response.ok) {
-                        alert(result.message || '게시글이 성공적으로 작성되었습니다!');
-                        // 성공 시 게시글 목록 페이지로 리다이렉트 (추후 상세 페이지로 변경 가능)
-                        window.location.href = communityListUrl; // 미리 정의된 URL 변수 사용
+                        await showAlert(result.message || '게시글이 성공적으로 처리되었습니다!');
+                        // 게시글 생성/수정 후 상세 페이지로 이동
+                        const targetPostId = postId || result.post_id; // 생성 시에는 result.post_id 사용
+                        if (targetPostId) {
+                            window.location.href = `/community/posts/${targetPostId}`;
+                        } else {
+                            window.location.href = communityListUrl; // Fallback
+                        }
                     } else {
-                        alert(result.message || '게시글 작성에 실패했습니다.');
+                        await showAlert(result.message || '게시글 처리 실패했습니다.');
                         if (response.status === 401) {
                             localStorage.removeItem('jwt_token');
-                            window.location.href = loginUrl; // 미리 정의된 URL 변수 사용
+                            window.location.href = loginUrl;
                         }
                     }
                 } catch (error) {
-                    console.error('Error creating post:', error);
-                    alert('서버와 통신 중 오류가 발생했습니다. 다시 시도해주세요.');
+                    console.error('Error processing post:', error);
+                    await showAlert('게시글 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
                 }
             });
+
+            // 페이지 로드 시 게시글 상세 정보 불러오기 (수정 페이지일 경우)
+            fetchPostDetailForEdit();
         });
     </script>
 {% endblock %}

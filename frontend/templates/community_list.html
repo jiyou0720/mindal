@@ -15,7 +15,9 @@
                 <h1 class="community-title">게시판</h1>
                 <p class="community-subtitle">다양한 사람들과 이야기하고 소통해보세요!</p>
             </div>
-            <a href="{{ url_for('community_create') }}" class="button primary create-post-button">
+            {# 새 게시글 작성 버튼: '일반 사용자', '에디터', '운영자', '관리자'만 표시 #}
+            {# user_roles는 base.html에서 localStorage에 저장되므로 여기서 직접 참조하지 않고 JS에서 로드 #}
+            <a href="{{ url_for('community_create') }}" class="button primary create-post-button" id="createPostButton" style="display: none;">
                 <i class="fas fa-plus"></i> 새 게시글 작성
             </a>
         </div>
@@ -33,7 +35,7 @@
             <!-- <button class="button secondary">정렬</button> -->
         </div>
 
-        <div class="post-cards-grid" id="postList"> {# 클래스 이름 변경: community-post-list -> post-cards-grid #}
+        <div class="post-cards-grid" id="postList">
             <!-- 게시글 목록이 여기에 동적으로 로드됩니다. -->
             <p id="loadingMessage" class="loading-message">게시글을 불러오는 중...</p>
             <p id="noPostsMessage" class="no-posts-message" style="display: none;">아직 작성된 게시글이 없습니다. 첫 게시글을 작성해보세요!</p>
@@ -47,7 +49,7 @@
     <script>
         const communityCreateUrl = "{{ url_for('community_create') }}";
         const communityDetailUrlBase = "/community/posts/"; // 게시글 상세 페이지 URL 베이스
-        const loginUrl = "{{ url_for('login') }}";
+        // const loginUrl = "{{ url_for('login') }}"; // base.html에서 전역으로 선언되므로 제거됨
 
         document.addEventListener('DOMContentLoaded', async function() {
             const postList = document.getElementById('postList');
@@ -55,21 +57,42 @@
             const noPostsMessage = document.getElementById('noPostsMessage');
             const paginationContainer = document.getElementById('pagination');
             const categoryFilter = document.getElementById('categoryFilter');
+            const createPostButton = document.getElementById('createPostButton'); // 새 게시글 작성 버튼
 
             let currentPage = 1;
             const postsPerPage = 10; // 한 페이지당 게시글 수
+            let currentUserId = null; // 현재 로그인된 사용자 ID
+            let currentUserRoles = []; // 현재 로그인된 사용자 역할 리스트
+
+            // 사용자 역할에 따라 '새 게시글 작성' 버튼 표시 여부 결정
+            function updateCreatePostButtonVisibility() {
+                const token = localStorage.getItem('jwt_token');
+                const userRolesString = localStorage.getItem('user_roles');
+                
+                if (token && userRolesString) {
+                    try {
+                        const roles = JSON.parse(userRolesString);
+                        const allowedRolesForCreate = ['일반 사용자', '에디터', '운영자', '관리자'];
+                        const hasPermission = roles.some(role => allowedRolesForCreate.includes(role));
+                        if (hasPermission) {
+                            createPostButton.style.display = 'flex'; // flex로 설정하여 아이콘과 텍스트 정렬
+                        } else {
+                            createPostButton.style.display = 'none';
+                        }
+                    } catch (e) {
+                        console.error("Error parsing user roles from localStorage:", e);
+                        createPostButton.style.display = 'none';
+                    }
+                } else {
+                    createPostButton.style.display = 'none';
+                }
+            }
+
 
             const fetchPosts = async (page = 1, category = '') => {
                 loadingMessage.style.display = 'block';
                 noPostsMessage.style.display = 'none';
                 postList.innerHTML = ''; // 기존 목록 초기화
-
-                const token = localStorage.getItem('jwt_token');
-                if (!token) {
-                    alert('로그인이 필요합니다.');
-                    window.location.href = loginUrl;
-                    return;
-                }
 
                 try {
                     let url = `/api/community/posts?page=${page}&limit=${postsPerPage}`;
@@ -77,27 +100,31 @@
                         url += `&category=${category}`;
                     }
 
-                    const response = await fetch(url, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
+                    // fetchWithAuth 함수는 base.html에 전역으로 정의되어 있으므로 직접 사용
+                    const response = await fetchWithAuth(url, { // <--- fetchWithAuth 사용 확인
+                        method: 'GET'
                     });
                     const result = await response.json();
 
                     if (response.ok) {
                         const posts = result.posts;
+                        currentUserId = result.current_user_id; // 백엔드에서 받은 사용자 ID 업데이트
+                        currentUserRoles = result.current_user_roles; // 백엔드에서 받은 사용자 역할 업데이트
+
                         if (posts.length === 0) {
                             noPostsMessage.style.display = 'block';
                         } else {
                             posts.forEach(post => {
                                 const postElement = document.createElement('div');
-                                postElement.classList.add('post-card'); // 클래스 이름 변경: community-post-item -> post-card
+                                postElement.classList.add('post-card');
+                                // 카드 클릭 시 상세 페이지로 이동하도록 data-post-id 속성 추가
+                                postElement.dataset.postId = post.id; 
                                 postElement.innerHTML = `
                                     <div class="post-item-header">
                                         <span class="post-category">#${post.category}</span>
-                                        <h3 class="post-title"><a href="${communityDetailUrlBase}${post.id}">${post.title}</a></h3>
+                                        <h3 class="post-title">${post.title}</h3>
                                     </div>
-                                    <p class="post-preview">${post.content_preview}</p> {# 클래스 이름 변경: post-content-preview -> post-preview #}
+                                    <p class="post-preview">${post.content_preview}</p>
                                     <div class="post-item-footer">
                                         <span class="post-author">
                                             <i class="fas fa-user-circle"></i> ${post.display_author_name}
@@ -110,20 +137,28 @@
                                     </div>
                                 `;
                                 postList.appendChild(postElement);
+
+                                // 게시글 카드 전체에 클릭 이벤트 리스너 추가
+                                postElement.addEventListener('click', async () => { // async 추가
+                                    // 로그인되어 있지 않으면 로그인 페이지로 리다이렉트
+                                    if (!localStorage.getItem('jwt_token')) {
+                                        await showAlert('게시글 상세보기를 위해 로그인이 필요합니다.'); // alert 대신 showAlert
+                                        window.location.href = loginUrl; // base.html의 전역 loginUrl 사용
+                                    } else {
+                                        window.location.href = `${communityDetailUrlBase}${post.id}`;
+                                    }
+                                });
                             });
                         }
                         renderPagination(result.total_posts, page, postsPerPage);
 
                     } else {
-                        alert(result.message || '게시글 로드 중 오류 발생');
-                        if (response.status === 401) {
-                            localStorage.removeItem('jwt_token');
-                            window.location.href = loginUrl;
-                        }
+                        // fetchWithAuth에서 401 처리를 하므로, 여기서는 다른 종류의 오류만 처리
+                        await showAlert(result.message || '게시글 로드 중 오류 발생'); // alert 대신 showAlert
                     }
                 } catch (error) {
                     console.error('게시글 로드 중 오류 발생:', error);
-                    alert('게시글을 불러오는 중 네트워크 오류가 발생했습니다.');
+                    await showAlert('게시글을 불러오는 중 네트워크 오류가 발생했습니다.'); // alert 대신 showAlert
                 } finally {
                     loadingMessage.style.display = 'none';
                 }
@@ -156,7 +191,7 @@
                     paginationContainer.appendChild(createPageButton(currentPage - 1, '이전'));
                 }
 
-                // 페이지 번호 버튼
+                // 페이지 번호 버튼 
                 let startPage = Math.max(1, currentPage - 2);
                 let endPage = Math.min(totalPages, currentPage + 2);
 
@@ -190,6 +225,7 @@
 
             // 초기 로드
             fetchPosts(currentPage);
+            updateCreatePostButtonVisibility(); // 페이지 로드 시 버튼 가시성 업데이트
 
             // 카테고리 필터 변경 이벤트
             categoryFilter.addEventListener('change', () => {

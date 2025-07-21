@@ -1,0 +1,709 @@
+<!--frontend/templates/user_management.html-->
+{% extends "base.html" %}
+
+{% block title %}사용자 관리 - Mindbridge{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}"> {# 관리자 대시보드 CSS 재사용 #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* user_management.html 전용 스타일 */
+
+        .admin-dashboard-container {
+            max-width: 1200px; /* 컨테이너 너비 확장 */
+            margin: 30px auto;
+            padding: 40px; /* 패딩 증가 */
+            background-color: #FFFFFF;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); /* 그림자 강조 */
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #2C3E50;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .admin-dashboard-container > p { /* 직접적인 자식 p 태그에만 적용 */
+            font-size: 1.1em;
+            color: #6C7A89;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        #currentUserRolesDisplay {
+            font-weight: 600;
+            color: #007bff;
+        }
+
+        .admin-section {
+            background-color: #F8FAFC;
+            border: 1px solid #E9EEF4;
+            border-radius: 10px;
+            padding: 30px;
+            margin-top: 40px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .admin-section h2 {
+            font-size: 1.8em;
+            color: #34495E;
+            margin-bottom: 25px;
+            font-weight: 600;
+            border-bottom: 1px solid #E0E6ED;
+            padding-bottom: 15px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+            flex-wrap: wrap; /* 반응형을 위해 추가 */
+        }
+
+        #userSearchInput {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 1px solid #DCE4EC;
+            border-radius: 8px;
+            font-size: 1em;
+            color: #4D4D4D;
+            background-color: #FFFFFF;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
+            transition: border-color 0.2s ease;
+            min-width: 250px; /* 검색창 최소 너비 */
+        }
+
+        #userSearchInput:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .button.primary {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 2px 5px rgba(0, 123, 255, 0.2);
+        }
+
+        .button.primary:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .user-list-table-container {
+            overflow-x: auto; /* 테이블이 넘칠 경우 스크롤 */
+            margin-bottom: 20px;
+            border: 1px solid #E9EEF4; /* 테이블 컨테이너 보더 */
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+
+        .user-list-table {
+            width: 100%;
+            border-collapse: separate; /* border-radius 적용을 위해 */
+            border-spacing: 0;
+            min-width: 800px; /* 테이블 최소 너비 설정 */
+        }
+
+        .user-list-table th, .user-list-table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #E9EEF4;
+        }
+
+        .user-list-table th {
+            background-color: #EBF2F8;
+            color: #34495E;
+            font-weight: 600;
+            font-size: 0.95em;
+            text-transform: uppercase;
+        }
+
+        .user-list-table tr:last-child td {
+            border-bottom: none; /* 마지막 행의 하단 보더 제거 */
+        }
+
+        .user-list-table tbody tr:hover {
+            background-color: #F0F4F8; /* 호버 시 배경색 변경 */
+        }
+
+        .user-list-table td {
+            background-color: #FFFFFF;
+            color: #4D4D4D;
+            font-size: 0.9em;
+        }
+
+        .loading-row, .error-row, .no-users-message {
+            text-align: center;
+            padding: 30px;
+            color: #6C7A89;
+            font-size: 1.1em;
+        }
+
+        .button.small {
+            padding: 8px 15px;
+            font-size: 0.85em;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .button.secondary {
+            background-color: #F0F4F8;
+            color: #5A6B7F;
+            border: 1px solid #DCE4EC;
+        }
+
+        .button.secondary:hover {
+            background-color: #E0E6ED;
+            color: #2C3E50;
+        }
+
+        .button.danger {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+        }
+
+        .button.danger:hover {
+            background-color: #c82333;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6); /* 어두운 배경 */
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background-color: #FFFFFF;
+            margin: auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            animation: fadeInScale 0.3s ease-out; /* 애니메이션 추가 */
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-content h2 {
+            font-size: 1.8em;
+            color: #2C3E50;
+            margin-bottom: 15px;
+            font-weight: 700;
+            border-bottom: 1px solid #E0E6ED;
+            padding-bottom: 10px;
+        }
+
+        .modal-content p {
+            font-size: 1em;
+            color: #5A6B7F;
+            margin-bottom: 20px;
+        }
+
+        .close-button {
+            color: #AAB7C4;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #34495E;
+        }
+
+        .roles-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* 체크박스 그리드 레이아웃 */
+            gap: 10px;
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #E9EEF4;
+            border-radius: 8px;
+            background-color: #F8FAFC;
+        }
+
+        .role-checkbox-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.95em;
+            color: #4D4D4D;
+        }
+
+        .role-checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        #saveRolesButton {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 1.1em;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .admin-dashboard-container {
+                padding: 25px;
+                margin: 20px auto;
+            }
+            h1 {
+                font-size: 2em;
+            }
+            .admin-dashboard-container > p {
+                font-size: 1em;
+                margin-bottom: 20px;
+            }
+            .admin-section {
+                padding: 20px;
+                margin-top: 30px;
+            }
+            .admin-section h2 {
+                font-size: 1.6em;
+                margin-bottom: 20px;
+                padding-bottom: 10px;
+            }
+            .search-bar {
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            #userSearchInput {
+                width: 100%;
+                min-width: unset;
+            }
+            .button.primary {
+                width: 100%;
+            }
+            .user-list-table th, .user-list-table td {
+                padding: 10px 15px;
+                font-size: 0.85em;
+            }
+            .user-list-table {
+                min-width: 600px; /* 모바일에서 스크롤 가능하도록 최소 너비 유지 */
+            }
+            .modal-content {
+                padding: 20px;
+            }
+            .modal-content h2 {
+                font-size: 1.5em;
+            }
+            .modal-content p {
+                font-size: 0.95em;
+            }
+            .roles-checkboxes {
+                grid-template-columns: 1fr;
+            }
+            #saveRolesButton {
+                font-size: 1em;
+                padding: 10px 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .admin-dashboard-container {
+                padding: 15px;
+                margin: 15px auto;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            .admin-dashboard-container > p {
+                font-size: 0.9em;
+            }
+            .admin-section {
+                padding: 15px;
+            }
+            .admin-section h2 {
+                font-size: 1.4em;
+            }
+            #userSearchInput {
+                font-size: 0.9em;
+            }
+            .button.primary {
+                font-size: 0.9em;
+            }
+            .user-list-table th, .user-list-table td {
+                font-size: 0.8em;
+                padding: 8px 10px;
+            }
+            .button.small {
+                font-size: 0.75em;
+                padding: 6px 10px;
+            }
+            .modal-content {
+                padding: 15px;
+            }
+            .modal-content h2 {
+                font-size: 1.3em;
+            }
+            .modal-content p {
+                font-size: 0.9em;
+            }
+            .roles-checkboxes {
+                gap: 8px;
+            }
+            .role-checkbox-item {
+                font-size: 0.9em;
+            }
+            #saveRolesButton {
+                font-size: 0.95em;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="admin-dashboard-container">
+        <h1>사용자 관리</h1>
+        <p>회원 목록을 조회하고 사용자 역할을 변경하거나 계정을 삭제할 수 있습니다.</p>
+        <p>현재 로그인된 사용자 역할: <span id="currentUserRolesDisplay"></span></p>
+
+        <div class="admin-section">
+            <h2>사용자 목록</h2>
+            <div class="search-bar">
+                <input type="text" id="userSearchInput" placeholder="사용자 이름, 이메일 또는 UID 검색...">
+                <button id="searchUserButton" class="button primary">검색</button>
+            </div>
+            
+            <div class="user-list-table-container">
+                <table class="user-list-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>UID</th>
+                            <th>사용자 이름</th>
+                            <th>닉네임</th>
+                            <th>이메일</th>
+                            <th>현재 역할</th>
+                            <th>역할 관리</th>
+                            <th>액션</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <!-- 사용자 데이터가 여기에 동적으로 로드됩니다 -->
+                        <tr>
+                            <td colspan="8" class="loading-row">사용자 정보를 불러오는 중...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="noUsersMessage" class="no-users-message hidden">검색 결과가 없습니다.</p>
+        </div>
+    </div>
+
+    <!-- 역할 관리 모달 -->
+    <div id="roleManagementModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>사용자 역할 관리</h2>
+            <p>사용자: <strong id="modalUsername"></strong> (<span id="modalUserEmail"></span>)</p>
+            <div id="rolesCheckboxes" class="roles-checkboxes">
+                <!-- 역할 체크박스가 여기에 동적으로 로드됩니다 -->
+            </div>
+            <button id="saveRolesButton" class="button primary">역할 저장</button>
+        </div>
+    </div>
+
+    <script>
+        // base.html에서 전역으로 선언된 loginUrl, homeUrl, fetchWithAuth 사용
+
+        let allUsers = [];
+        let allRoles = [];
+
+        // DOM 요소 가져오기
+        const userTableBody = document.getElementById('userTableBody');
+        const noUsersMessage = document.getElementById('noUsersMessage');
+        const userSearchInput = document.getElementById('userSearchInput');
+        const searchUserButton = document.getElementById('searchUserButton');
+        const currentUserRolesDisplay = document.getElementById('currentUserRolesDisplay');
+
+        const roleManagementModal = document.getElementById('roleManagementModal');
+        const closeModalButtonModal = roleManagementModal.querySelector('.close-button'); // 이름 변경하여 충돌 방지
+        const modalUsername = document.getElementById('modalUsername');
+        const modalUserEmail = document.getElementById('modalUserEmail');
+        const rolesCheckboxesContainer = document.getElementById('rolesCheckboxes');
+        const saveRolesButton = document.getElementById('saveRolesButton');
+
+        let currentEditingUser = null;
+
+        // 로그인 상태 및 관리자 권한 확인 함수
+        async function checkAdminAccess() {
+            const token = localStorage.getItem('jwt_token');
+            const userRolesString = localStorage.getItem('user_roles');
+            let userRoles = [];
+
+            if (!token) {
+                await showAlert('관리자 페이지에 접근하려면 로그인이 필요합니다.'); // alert 대신 showAlert
+                window.location.href = loginUrl;
+                return false;
+            }
+
+            if (userRolesString) {
+                try {
+                    userRoles = JSON.parse(userRolesString);
+                } catch (e) {
+                    console.error("Error parsing user roles from localStorage:", e);
+                    await showAlert('사용자 역할 정보를 불러오는 데 실패했습니다. 다시 로그인해주세요.'); // alert 대신 showAlert
+                    localStorage.removeItem('jwt_token');
+                    window.location.href = loginUrl;
+                    return false;
+                }
+            }
+
+            if (!userRoles.includes('관리자')) {
+                await showAlert('관리자만 접근할 수 있는 페이지입니다.'); // alert 대신 showAlert
+                window.location.href = homeUrl;
+                return false;
+            }
+
+            currentUserRolesDisplay.textContent = userRoles.join(', ');
+            return true;
+        }
+
+        // 모든 사용자 및 역할 데이터 불러오기
+        async function fetchAllUsersAndRoles() {
+            userTableBody.innerHTML = '<tr><td colspan="8" class="loading-row">사용자 정보를 불러오는 중...</td></tr>';
+            noUsersMessage.classList.add('hidden'); // 데이터 로드 시작 시 메시지 숨김
+
+            try {
+                const rolesResponse = await fetchWithAuth('/api/admin/roles');
+                const rolesResult = await rolesResponse.json();
+                if (rolesResponse.ok) {
+                    allRoles = rolesResult.roles;
+                } else {
+                    console.error('Failed to load all roles for user management:', rolesResult.message);
+                    userTableBody.innerHTML = '<tr><td colspan="8" class="error-row">역할 정보를 불러오는 데 실패했습니다.</td></tr>';
+                    return;
+                }
+
+                const usersResponse = await fetchWithAuth('/api/admin/users');
+                const usersResult = await usersResponse.json();
+
+                if (usersResponse.ok) {
+                    allUsers = usersResult.users;
+                    console.log("Fetched allUsers data:", allUsers); // allUsers 데이터 로깅
+                    renderUserTable(allUsers);
+                } else {
+                    await showAlert('사용자 정보를 불러오는 데 실패했습니다.'); // alert 대신 showAlert
+                    console.error('Error fetching users:', usersResult.message);
+                    userTableBody.innerHTML = '<tr><td colspan="8" class="error-row">사용자 정보를 불러오는 데 실패했습니다.</td></tr>';
+                }
+            } catch (error) {
+                console.error('Network error fetching users/roles:', error);
+                await showAlert('네트워크 오류가 발생했습니다. 관리자 정보를 불러올 수 없습니다.'); // alert 대신 showAlert
+                userTableBody.innerHTML = '<tr><td colspan="8" class="error-row">네트워크 오류가 발생했습니다.</td></tr>';
+            }
+        }
+
+        // 사용자 테이블 렌더링
+        function renderUserTable(usersToRender) {
+            userTableBody.innerHTML = '';
+
+            if (usersToRender.length === 0) {
+                noUsersMessage.classList.remove('hidden');
+            } else {
+                noUsersMessage.classList.add('hidden');
+            }
+
+            const currentLoggedInUserId = localStorage.getItem('user_id');
+
+            usersToRender.forEach(user => {
+                const row = userTableBody.insertRow();
+                const isCurrentUser = parseInt(user.id) === parseInt(currentLoggedInUserId);
+
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.user_uid}</td>
+                    <td>${user.username}</td>
+                    <td>${user.nickname || '-'}</td>
+                    <td>${user.email}</td>
+                    <td>${user.roles.join(', ') || '-'}</td>
+                    <td>
+                        <button class="button small secondary manage-roles-button" data-user-id="${user.id}" ${isCurrentUser ? 'disabled' : ''}>역할 관리</button>
+                    </td>
+                    <td>
+                        <button class="button danger small delete-user-button" data-user-id="${user.id}" ${isCurrentUser ? 'disabled' : ''}>강제 삭제</button>
+                    </td>
+                `;
+
+                row.querySelector('.manage-roles-button').addEventListener('click', (event) => {
+                    const userId = parseInt(event.target.dataset.userId);
+                    openRoleManagementModal(userId);
+                });
+
+                row.querySelector('.delete-user-button').addEventListener('click', (event) => {
+                    const userId = parseInt(event.target.dataset.userId);
+                    forceDeleteUser(userId);
+                });
+            });
+        }
+
+        // 역할 관리 모달 열기
+        function openRoleManagementModal(userId) {
+            currentEditingUser = allUsers.find(user => user.id === userId);
+            if (!currentEditingUser) {
+                showAlert('사용자 정보를 찾을 수 없습니다.'); // alert 대신 showAlert
+                return;
+            }
+
+            modalUsername.textContent = currentEditingUser.username;
+            modalUserEmail.textContent = currentEditingUser.email;
+            rolesCheckboxesContainer.innerHTML = '';
+
+            allRoles.forEach(role => {
+                const checkboxDiv = document.createElement('div');
+                checkboxDiv.className = 'role-checkbox-item';
+                checkboxDiv.innerHTML = `
+                    <input type="checkbox" id="role-${role.id}" value="${role.name}" ${currentEditingUser.roles.includes(role.name) ? 'checked' : ''}>
+                    <label for="role-${role.id}">${role.name}</label>
+                `;
+                rolesCheckboxesContainer.appendChild(checkboxDiv);
+            });
+
+            roleManagementModal.classList.remove('hidden');
+        }
+
+        // 역할 관리 모달 닫기
+        closeModalButtonModal.addEventListener('click', () => { // 이름 변경된 변수 사용
+            roleManagementModal.classList.add('hidden');
+            currentEditingUser = null;
+        });
+
+        // 역할 저장 버튼 클릭 이벤트
+        saveRolesButton.addEventListener('click', async () => {
+            if (!currentEditingUser) return;
+
+            const selectedRoles = [];
+            rolesCheckboxesContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                selectedRoles.push(checkbox.value);
+            });
+
+            try {
+                const response = await fetchWithAuth(`/api/admin/users/${currentEditingUser.id}/roles`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ roles: selectedRoles })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    await showAlert(result.message || '역할이 성공적으로 업데이트되었습니다.'); // alert 대신 showAlert
+                    roleManagementModal.classList.add('hidden');
+                    fetchAllUsersAndRoles();
+                } else {
+                    await showAlert(result.message || '역할 업데이트에 실패했습니다.'); // alert 대신 showAlert
+                }
+            } catch (error) {
+                console.error('Error updating user roles:', error);
+                await showAlert('역할 업데이트 중 오류가 발생했습니다.'); // alert 대신 showAlert
+            }
+        });
+
+        // 사용자 강제 삭제
+        async function forceDeleteUser(userId) {
+            const currentLoggedInUserId = localStorage.getItem('user_id');
+            if (parseInt(userId) === parseInt(currentLoggedInUserId)) {
+                await showAlert('자기 자신을 삭제할 수 없습니다.'); // alert 대신 showAlert
+                return;
+            }
+
+            const confirmed = await showConfirm('정말로 이 사용자를 강제 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'); // confirm 대신 showConfirm
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth(`/api/admin/users/${userId}/force_delete`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    await showAlert(result.message || '사용자가 성공적으로 삭제되었습니다.'); // alert 대신 showAlert
+                    fetchAllUsersAndRoles();
+                } else {
+                    await showAlert(result.message || '사용자 삭제에 실패했습니다.'); // alert 대신 showAlert
+                }
+            } catch (error) {
+                console.error('Error force deleting user:', error);
+                await showAlert('사용자 삭제 중 오류가 발생했습니다.'); // alert 대신 showAlert
+            }
+        }
+
+        // 사용자 검색 기능
+        searchUserButton.addEventListener('click', () => {
+            const searchTerm = userSearchInput.value.toLowerCase().trim(); // 검색어 앞뒤 공백 제거
+            console.log("Search Term:", searchTerm); // 검색어 로깅
+
+            const filteredUsers = allUsers.filter(user => {
+                // user.user_uid가 존재하는지 확인하고 toLowerCase() 적용
+                const uidToSearch = user.user_uid ? user.user_uid.toLowerCase() : '';
+
+                const usernameMatch = user.username.toLowerCase().includes(searchTerm);
+                const emailMatch = user.email.toLowerCase().includes(searchTerm);
+                const nicknameMatch = (user.nickname && user.nickname.toLowerCase().includes(searchTerm));
+                const uidMatch = uidToSearch.includes(searchTerm); // UID 검색 조건
+
+                // 각 사용자에 대한 상세 매칭 정보 로깅
+                console.log(`User: ${user.username}, UID: ${user.user_uid}, Search matches: username=${usernameMatch}, email=${emailMatch}, nickname=${nicknameMatch}, uid=${uidMatch}`);
+
+                return usernameMatch || emailMatch || nicknameMatch || uidMatch;
+            });
+            renderUserTable(filteredUsers);
+        });
+
+        // 초기 로드 시 관리자 접근 권한 확인 후 데이터 로드
+        document.addEventListener('DOMContentLoaded', async () => {
+            const hasAccess = await checkAdminAccess();
+            if (hasAccess) {
+                fetchAllUsersAndRoles();
+            }
+        });
+    </script>
+{% endblock %}

@@ -232,7 +232,12 @@ ul {
     color: #007bff; /* 호버 시 색상 변경 */
 }
 
-
+.footer-social p {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 5px;
+    color: #bdc3c7;
+}
 
 /* 반응형 디자인 */
 @media (max-width: 992px) {

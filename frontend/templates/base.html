@@ -3,167 +3,541 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}영마인드링크{% endblock %}</title>
+    <title>{% block title %}Mindbridge{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    {% block extra_head %}{% endblock %} {# 각 페이지별 추가 CSS, JS 등을 위한 블록 #}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Alert/Confirm Modal Styles (Moved to head for proper loading) -->
+    <style>
+        /* Modal Basic Styles */
+        .modal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background-color: #FFFFFF;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            position: relative;
+            text-align: center;
+            animation: fadeInScale 0.3s ease-out;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .close-button {
+            color: #AAB7C4;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #34495E;
+        }
+
+        #modalMessage {
+            font-size: 1.1em;
+            color: #4D4D4D;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* Reusing .button styles from base.css or defining here if not available */
+        .button {
+            padding: 10px 20px;
+            font-size: 0.95em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .button.primary {
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+
+        .button.primary:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+        }
+
+        .button.secondary {
+            background-color: #F0F4F8;
+            color: #5A6B7F;
+            border: 1px solid #DCE4EC;
+        }
+
+        .button.secondary:hover {
+            background-color: #E0E6ED;
+            color: #2C3E50;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
+    <!-- Custom Alert/Confirm Modal -->
+    <div id="customModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button" id="closeModalButton">&times;</span>
+            <p id="modalMessage"></p>
+            <div class="modal-buttons">
+                <button id="modalConfirmButton" class="button primary hidden">확인</button>
+                <button id="modalCancelButton" class="button secondary hidden">취소</button>
+                <button id="modalAlertButton" class="button primary hidden">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <div class="app-container">
         <header class="header">
             <div class="header-left">
                 <a href="{{ url_for('index') }}" class="header-logo-link">
-<span class="header-app-name">영마인드링크</span>
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mindbridge Logo" class="header-logo">
                 </a>
             </div>
-            <div class="header-right" id="headerAuthArea">
-                {# 로그인/로그아웃 버튼이 여기에 동적으로 삽입됩니다. #}
-                <a href="{{ url_for('login') }}" class="header-auth-button secondary">로그인</a>
-                <a href="{{ url_for('signup') }}" class="header-auth-button primary">회원가입</a>
+            <div class="header-right" id="authArea">
+                <!-- 로그인 상태에 따라 내용이 동적으로 변경됩니다 -->
+                <!-- 초기 로드 시 로그인/회원가입 버튼 텍스트가 보이도록 명시적으로 추가 -->
+                <a href="{{ url_for('login') }}" class="header-auth-button secondary" id="loginButton">로그인</a>
+                <a href="{{ url_for('signup') }}" class="header-auth-button primary" id="signupButton">회원가입</a>
+                <!-- 로그인 시 동적으로 추가될 요소들 (초기에는 숨김) -->
+                <span class="user-display-name" id="userDisplayName" style="display: none;"></span>
+                <button class="header-auth-button secondary" id="logoutButton" style="display: none;">로그아웃</button>
             </div>
         </header>
 
         <div class="main-layout-wrapper">
-            <aside class="sidebar">
+            <aside class="sidebar" id="sidebar">
                 <nav class="sidebar-nav">
-                    <ul>
-                        <li>
-                            <a href="{{ url_for('index') }}" class="sidebar-link {% if request.endpoint == 'index' %}active{% endif %}">
-                                <i class="fas fa-home"></i>
-                                <span>홈</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ url_for('ai_chat') }}" class="sidebar-link {% if request.endpoint == 'ai_chat' %}active{% endif %}">
-                                <i class="fas fa-robot"></i>
-                                <span>AI 채팅</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ url_for('diary') }}" class="sidebar-link {% if request.endpoint == 'diary' %}active{% endif %}">
-                                <i class="fas fa-book"></i>
-                                <span>오늘 일기</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ url_for('keyword') }}" class="sidebar-link {% if request.endpoint == 'keyword' %}active{% endif %}">
-                                <i class="fas fa-tags"></i>
-                                <span>키워드</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ url_for('my_changes') }}" class="sidebar-link {% if request.endpoint == 'my_changes' %}active{% endif %}">
-                                <i class="fas fa-chart-line"></i>
-                                <span>나의 변화</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ url_for('community_list') }}" class="sidebar-link {% if request.endpoint == 'community_list' %}active{% endif %}">
-                                <i class="fas fa-users"></i> {# 커뮤니티 아이콘 (사람들) #}
-                                <span>게시판</span>
-                            </a>
-                        </li>
+                    <ul class="sidebar-menu" id="sidebarMenu">
+                        <!-- 메뉴 아이템은 JavaScript를 통해 동적으로 로드됩니다 -->
                     </ul>
                 </nav>
             </aside>
 
             <main class="main-content-area">
-                {% block content %}{% endblock %} {# 각 페이지의 내용이 여기에 삽입됩니다. #}
+                {% block content %}{% endblock %}
             </main>
         </div>
 
         <footer class="footer">
             <div class="footer-section footer-info">
-                <h3>영마인드링크</h3>
-                <p>&copy; 2025 Young MindLink. All rights reserved.</p>
-                <p>문의: support@youngmindlink.com</p>
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mindbridge Logo" class="footer-logo">
+                <h3>Mindbridge</h3>
+                <p>마음과 마음을 잇는 다리, Mindbridge입니다.</p>
+                <p>문의: support@mindbridge.com</p>
             </div>
-            {# '빠른 링크' 섹션을 제거하고 소셜 미디어 섹션만 남김 #}
             <div class="footer-section footer-social">
-                <h4>소셜 미디어</h4>
+                <h4>Connect With Us</h4>
                 <div class="social-icons">
                     <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                     <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
                     <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                 </div>
             </div>
         </footer>
     </div>
 
     <script>
-        // JWT 토큰 확인 및 헤더 업데이트 함수 (기존 코드 유지)
-        async function updateHeaderAuthArea() {
-            const token = localStorage.getItem('jwt_token');
-            const headerAuthArea = document.getElementById('headerAuthArea');
+        // 전역 변수로 URL 정의 (다른 스크립트에서 재사용 가능)
+        const loginUrl = "{{ url_for('login') }}";
+        const signupUrl = "{{ url_for('signup') }}";
+        const indexUrl = "{{ url_for('index') }}";
+        const homeUrl = "{{ url_for('index') }}"; // homeUrl도 indexUrl과 동일하게 정의
 
-            // 로그아웃 함수
-            const logout = () => {
-                localStorage.removeItem('jwt_token');
-                alert('로그아웃 되었습니다.');
-                window.location.href = "{{ url_for('index') }}"; // 로그아웃 후 홈으로 리다이렉트
+        // Custom Modal Elements (DOM이 로드되기 전에는 null일 수 있으므로, 함수 내에서 참조)
+        let customModal, closeModalButton, modalMessage, modalConfirmButton, modalCancelButton, modalAlertButton;
+
+        let confirmResolve = null; // Promise resolve function for confirm
+
+        // Function to show custom alert
+        function showAlert(message) {
+            return new Promise(resolve => {
+                // DOM 요소가 로드된 후에만 접근
+                if (!customModal) {
+                    customModal = document.getElementById('customModal');
+                    closeModalButton = document.getElementById('closeModalButton');
+                    modalMessage = document.getElementById('modalMessage');
+                    modalConfirmButton = document.getElementById('modalConfirmButton');
+                    modalCancelButton = document.getElementById('modalCancelButton');
+                    modalAlertButton = document.getElementById('modalAlertButton');
+                }
+
+                modalMessage.textContent = message;
+                modalConfirmButton.classList.add('hidden');
+                modalCancelButton.classList.add('hidden');
+                modalAlertButton.classList.remove('hidden');
+                customModal.classList.remove('hidden');
+
+                const handler = () => {
+                    customModal.classList.add('hidden');
+                    modalAlertButton.removeEventListener('click', handler);
+                    closeModalButton.removeEventListener('click', handler);
+                    resolve(true); // Always resolve true for alert
+                };
+
+                modalAlertButton.addEventListener('click', handler);
+                closeModalButton.addEventListener('click', handler);
+            });
+        }
+
+        // Function to show custom confirm
+        function showConfirm(message) {
+            return new Promise(resolve => {
+                // DOM 요소가 로드된 후에야 접근
+                if (!customModal) {
+                    customModal = document.getElementById('customModal');
+                    closeModalButton = document.getElementById('closeModalButton');
+                    modalMessage = document.getElementById('modalMessage');
+                    modalConfirmButton = document.getElementById('modalConfirmButton');
+                    modalCancelButton = document.getElementById('modalCancelButton');
+                    modalAlertButton = document.getElementById('modalAlertButton');
+                }
+
+                modalMessage.textContent = message;
+                modalConfirmButton.classList.remove('hidden');
+                modalCancelButton.classList.remove('hidden');
+                modalAlertButton.classList.add('hidden');
+                customModal.classList.remove('hidden');
+
+                confirmResolve = resolve; // Store resolve function
+
+                const confirmHandler = () => {
+                    customModal.classList.add('hidden');
+                    modalConfirmButton.removeEventListener('click', confirmHandler);
+                    modalCancelButton.removeEventListener('click', cancelHandler);
+                    closeModalButton.removeEventListener('click', cancelHandler); // Close button acts as cancel
+                    confirmResolve(true);
+                };
+
+                const cancelHandler = () => {
+                    customModal.classList.add('hidden');
+                    modalConfirmButton.removeEventListener('click', confirmHandler);
+                    modalCancelButton.removeEventListener('click', cancelHandler);
+                    closeModalButton.removeEventListener('click', cancelHandler);
+                    confirmResolve(false);
+                };
+
+                modalConfirmButton.addEventListener('click', confirmHandler);
+                modalCancelButton.addEventListener('click', cancelHandler);
+                closeModalButton.addEventListener('click', cancelHandler); // Close button also cancels
+            });
+        }
+
+
+        // JWT 토큰이 필요한 API 요청을 위한 래퍼 함수
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('jwt_token');
+            const headers = {
+                ...options.headers,
             };
 
+            // FormData 인스턴스인지 확인
+            const isFormData = options.body instanceof FormData;
+
+            // FormData가 아닐 경우에만 Content-Type을 'application/json'으로 설정
+            if (!isFormData && !headers['Content-Type']) { // 이미 Content-Type이 설정되어 있지 않은 경우에만
+                headers['Content-Type'] = 'application/json';
+            }
+
             if (token) {
-                // 토큰이 있으면 사용자 정보 가져오기 시도
-                try {
-                    const response = await fetch('/api/auth/me', { // 백엔드에 사용자 정보 요청
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    const result = await response.json();
-
-                    if (response.ok) {
-                        // 사용자 이름/별명 표시 및 로그아웃 버튼
-                        const displayName = result.nickname || result.username || '사용자'; // 닉네임이 없으면 사용자 이름, 둘 다 없으면 '사용자'
-                        localStorage.setItem('user_uid', result.user_uid); // user_uid 저장
-                        localStorage.setItem('user_id', result.id); // user_id (MariaDB ID) 저장
-
-                        headerAuthArea.innerHTML = `
-                            <span class="user-display-name">안녕하세요, ${displayName}님!</span>
-                            <button class="header-auth-button secondary" id="logoutButton">로그아웃</button>
-                        `;
-                        document.getElementById('logoutButton').addEventListener('click', logout);
-                    } else if (response.status === 401) {
-                        // 토큰이 유효하지 않거나 만료된 경우
-                        localStorage.removeItem('jwt_token'); // 잘못된 토큰 삭제
-                        localStorage.removeItem('user_uid'); // 저장된 user_uid 삭제
-                        localStorage.removeItem('user_id'); // 저장된 user_id 삭제
-                        renderLoggedOutHeader(); // 로그인/회원가입 버튼 표시
-                    } else {
-                        // 기타 오류
-                        console.error('사용자 정보 로드 실패:', result.message);
-                        localStorage.removeItem('user_uid'); // 저장된 user_uid 삭제
-                        localStorage.removeItem('user_id'); // 저장된 user_id 삭제
-                        renderLoggedOutHeader();
-                    }
-                } catch (error) {
-                    console.error('사용자 정보 로드 중 네트워크 오류:', error);
-                    localStorage.removeItem('user_uid'); // 저장된 user_uid 삭제
-                    localStorage.removeItem('user_id'); // 저장된 user_id 삭제
-                    renderLoggedOutHeader(); // 네트워크 오류 시에도 로그인/회원가입 버튼 표시
-                }
+                headers['Authorization'] = `Bearer ${token}`;
             } else {
-                renderLoggedOutHeader(); // 토큰이 없으면 로그인/회원가입 버튼 표시
+                console.warn("fetchWithAuth: Token is missing for URL:", url);
+            }
+
+            // GET 요청이 아닌 경우에만 body를 JSON.stringify
+            // FormData는 stringify하지 않습니다.
+            if (options.body && !isFormData && typeof options.body !== 'string') {
+                options.body = JSON.stringify(options.body);
+            }
+
+            try {
+                const response = await fetch(url, { ...options, headers: headers });
+
+                // 401 Unauthorized 응답 처리
+                if (response.status === 401) {
+                    localStorage.removeItem('jwt_token');
+                    localStorage.removeItem('user_id');
+                    localStorage.removeItem('user_uid');
+                    localStorage.removeItem('nickname');
+                    localStorage.removeItem('username');
+                    localStorage.removeItem('user_roles');
+                    localStorage.removeItem('cached_menu_items');
+                    await showAlert('세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.');
+                    window.location.href = loginUrl;
+                    throw new Error('Unauthorized'); 
+                }
+
+                return response;
+            } catch (error) {
+                console.error("Network or fetch error:", error);
+                await showAlert('네트워크 오류가 발생했습니다. 인터넷 연결을 확인하거나 다시 시도해주세요.');
+                throw error;
             }
         }
 
-        // 로그아웃 상태의 헤더를 렌더링하는 헬퍼 함수
-        function renderLoggedOutHeader() {
-            const headerAuthArea = document.getElementById('headerAuthArea');
-            headerAuthArea.innerHTML = `
-                <a href="{{ url_for('login') }}" class="header-auth-button secondary">로그인</a>
-                <a href="{{ url_for('signup') }}" class="header-auth-button primary">회원가입</a>
-            `;
-        }
+        let menuRendered = false; // 메뉴 중복 렌더링 방지를 위한 플래그
 
-        // 페이지 로드 시 헤더 업데이트 함수 실행
-        document.addEventListener('DOMContentLoaded', updateHeaderAuthArea);
+        document.addEventListener('DOMContentLoaded', function() {
+            const authArea = document.getElementById('authArea');
+            const sidebarMenu = document.getElementById('sidebarMenu');
+            
+            // 헤더의 초기 로그인/회원가입 버튼 요소 가져오기
+            const loginButtonElement = document.getElementById('loginButton');
+            const signupButtonElement = document.getElementById('signupButton');
+            // 로그인 시 동적으로 표시될 요소들 가져오기 (초기에는 숨김)
+            const userDisplayNameElement = document.getElementById('userDisplayName');
+            const logoutButtonElement = document.getElementById('logoutButton');
+
+
+            // 헤더 UI 업데이트 함수
+            function updateHeaderUI() {
+                const token = localStorage.getItem('jwt_token');
+                const nickname = localStorage.getItem('nickname'); // 닉네임 가져오기
+                const username = localStorage.getItem('username'); // 사용자 이름 가져오기 (닉네임 없을 때 대비)
+
+                if (token && (nickname || username)) { // 토큰이 있고 닉네임 또는 사용자 이름이 있으면 로그인 상태
+                    const displayName = nickname || username; 
+                    
+                    // 로그인/회원가입 버튼 숨기기
+                    if (loginButtonElement) loginButtonElement.style.display = 'none';
+                    if (signupButtonElement) signupButtonElement.style.display = 'none';
+
+                    // 사용자 이름 및 로그아웃 버튼 표시
+                    if (userDisplayNameElement) {
+                        userDisplayNameElement.textContent = `안녕하세요, ${displayName}님!`;
+                        userDisplayNameElement.style.display = 'inline-block'; // span은 inline-block으로 표시
+                    }
+                    if (logoutButtonElement) {
+                        logoutButtonElement.style.display = 'inline-block'; // button은 inline-block으로 표시
+                    }
+
+                    // 로그아웃 버튼 이벤트 리스너 (이미 추가되어 있다면 중복 추가 방지)
+                    if (logoutButtonElement && !logoutButtonElement.dataset.listenerAdded) {
+                        logoutButtonElement.addEventListener('click', async function() { // async 추가
+                            localStorage.removeItem('jwt_token');
+                            localStorage.removeItem('user_id');
+                            localStorage.removeItem('user_uid');
+                            localStorage.removeItem('nickname');
+                            localStorage.removeItem('username');
+                            localStorage.removeItem('user_roles');
+                            localStorage.removeItem('cached_menu_items');
+                            updateHeaderUI(); // UI 즉시 업데이트
+                            renderSidebarMenu(); // 메뉴 즉시 업데이트
+                            // await showAlert('로그아웃 되었습니다.'); // 로그아웃 시에도 모달 사용
+                            window.location.href = indexUrl; // 메인 페이지로 리다이렉트
+                        });
+                        logoutButtonElement.dataset.listenerAdded = 'true'; // 리스너 추가 플래그
+                    }
+
+                } else { // 로그인되어 있지 않으면 로그인/회원가입 버튼 표시
+                    // 로그인/회원가입 버튼 표시
+                    if (loginButtonElement) loginButtonElement.style.display = 'inline-block';
+                    if (signupButtonElement) signupButtonElement.style.display = 'inline-block';
+
+                    // 사용자 이름 및 로그아웃 버튼 숨기기
+                    if (userDisplayNameElement) userDisplayNameElement.style.display = 'none';
+                    if (logoutButtonElement) logoutButtonElement.style.display = 'none';
+                }
+            }
+
+            async function renderSidebarMenu() {
+    if (menuRendered) {
+        console.log("메뉴가 이미 렌더링되었습니다. 중복 실행 방지.");
+        return;
+    }
+    menuRendered = true;
+
+    const token = localStorage.getItem('jwt_token'); // 중요: 명시적으로 선언
+    const userRolesString = localStorage.getItem('user_roles');
+    let userRoles = [];
+
+    if (userRolesString) {
+        try {
+            userRoles = JSON.parse(userRolesString);
+        } catch (e) {
+            console.error("user_roles JSON 파싱 오류:", e);
+        }
+    }
+
+    const sidebarMenu = document.getElementById('sidebarMenu');
+    sidebarMenu.innerHTML = ''; // 기존 메뉴 초기화
+
+    let menuItems = [];
+    const cachedMenuItems = localStorage.getItem('cached_menu_items');
+
+    if (cachedMenuItems) {
+        try {
+            menuItems = JSON.parse(cachedMenuItems);
+            console.log("✅ 메뉴 캐시에서 로드 완료.");
+        } catch (e) {
+            console.error("❌ 메뉴 캐시 파싱 오류:", e);
+            localStorage.removeItem('cached_menu_items');
+        }
+    }
+
+    // 서버 API에서 메뉴 가져오기 (캐시 없을 경우)
+    if (menuItems.length === 0) {
+        try {
+            const response = await fetchWithAuth('/api/admin/menu_configs');
+            const result = await response.json();
+
+            if (response.ok) {
+                menuItems = result.menu_items;
+                localStorage.setItem('cached_menu_items', JSON.stringify(menuItems));
+                console.log("✅ API로부터 메뉴 불러오기 성공.");
+            } else {
+                console.warn("❗ 메뉴 API 오류:", result.message);
+            }
+        } catch (error) {
+            console.error("❌ 메뉴 API 호출 중 네트워크 오류:", error);
+        }
+    }
+
+    // Flask 경로 매핑
+    const flaskUrlMap = {
+        'index': '{{ url_for("index") }}',
+        'diary': '{{ url_for("diary") }}',
+        'community_list': '{{ url_for("community_list") }}',
+        'ai_chat': '{{ url_for("ai_chat") }}',
+        'mypage': '{{ url_for("mypage") }}',
+        'my_changes': '{{ url_for("my_changes") }}',
+        'admin_dashboard': '{{ url_for("admin_dashboard") }}',
+        'user_management': '{{ url_for("user_management") }}',
+        'menu_management': '{{ url_for("menu_management") }}',
+        'role_menu_assignment': '{{ url_for("role_menu_assignment") }}',
+        'counseling': '{{ url_for("counseling") }}'
+    };
+
+    console.log("🔍 렌더링할 메뉴 개수:", menuItems.length);
+    console.log("🔍 사용자 역할:", userRoles);
+    console.log("🔍 토큰 존재 여부:", !!token);
+
+    // 메뉴 정렬 후 렌더링
+    menuItems.sort((a, b) => a.order - b.order);
+
+    menuItems.forEach(item => {
+        const isPublicMenu = item.required_roles.includes('모든 사용자');
+        const hasAccess = item.required_roles.some(role => userRoles.includes(role));
+        const isAllowed = isPublicMenu || (token && hasAccess);
+
+        console.log(`🧩 메뉴 '${item.name}' → isPublic: ${isPublicMenu}, hasAccess: ${hasAccess}, 최종 isAllowed: ${isAllowed}`);
+
+        if (isAllowed) {
+            const listItem = document.createElement('li');
+            const link = document.createElement('a');
+            link.href = flaskUrlMap[item.path] || '#';
+            link.className = 'sidebar-link';
+            link.innerHTML = `<i class="${item.icon_class}"></i> <span>${item.name}</span>`;
+
+            // 현재 페이지 경로와 매칭해서 'active' 클래스 부여
+            const currentPath = window.location.pathname;
+            const linkPath = new URL(link.href, window.location.origin).pathname;
+
+            if (
+                currentPath === linkPath ||
+                (currentPath.startsWith('/community/posts') && item.path === 'community_list') ||
+                (currentPath.startsWith('/diary') && item.path === 'diary') ||
+                (currentPath.startsWith('/ai-chat') && item.path === 'ai_chat') ||
+                (currentPath.startsWith('/mypage') && item.path === 'mypage') ||
+                (currentPath.startsWith('/my-changes') && item.path === 'my_changes') ||
+                (currentPath.startsWith('/admin-dashboard') && item.path === 'admin_dashboard') ||
+                (currentPath.startsWith('/user-management') && item.path === 'user_management') ||
+                (currentPath.startsWith('/menu-management') && item.path === 'menu_management') ||
+                (currentPath.startsWith('/role-menu-assignment') && item.path === 'role_menu_assignment') ||
+                (currentPath.startsWith('/counseling') && item.path === 'counseling')
+            ) {
+                link.classList.add('active');
+            }
+
+            listItem.appendChild(link);
+            sidebarMenu.appendChild(listItem);
+        }
+    });
+}
+
+
+            // 로그인 여부에 따라 다른 기본 메뉴 반환
+            function getDefaultMenuItems(isLoggedIn) {
+                if (isLoggedIn) {
+                    // 로그인된 사용자에게 보여줄 기본 메뉴 (서버에서 메뉴를 가져오지 못했을 때)
+                    return [
+                        { name: '홈', path: 'index', icon_class: 'fas fa-home', required_roles: ['모든 사용자'], order: 1 },
+                        { name: '오늘, 일기', path: 'diary', icon_class: 'fas fa-book', required_roles: ['일반 사용자', '관리자', '운영자', '에디터', '개발자', '연구자'], order: 2 },
+                        { name: '커뮤니티', path: 'community_list', icon_class: 'fas fa-users', required_roles: ['모든 사용자'], order: 3 },
+                        { name: 'AI 챗봇', path: 'ai_chat', icon_class: 'fas fa-robot', required_roles: ['일반 사용자', '관리자', '운영자', '에디터', '개발자', '연구자'], order: 4 },
+                        { name: '마이페이지', path: 'mypage', icon_class: 'fas fa-user', required_roles: ['일반 사용자', '관리자', '운영자', '에디터', '개발자', '연구자'], order: 5 },
+                        { name: '나의 변화', path: 'my_changes', icon_class: 'fas fa-chart-line', required_roles: ['일반 사용자', '관리자', '운영자', '에디터', '개발자', '연구자'], order: 6 },
+                        { name: '온라인 상담', path: 'counseling', icon_class: 'fas fa-comments', required_roles: ['일반 사용자', '관리자', '운영자', '에디터', '개발자', '연구자'], order: 7 },
+                        { name: '관리자 대시보드', path: 'admin_dashboard', icon_class: 'fas fa-tachometer-alt', required_roles: ['관리자'], order: 8 },
+                        { name: '사용자 관리', path: 'user_management', icon_class: 'fas fa-users-cog', required_roles: ['관리자'], order: 9 },
+                        { name: '메뉴 관리', path: 'menu_management', icon_class: 'fas fa-bars', required_roles: ['관리자'], order: 10 },
+                        { name: '권한별 메뉴 설정', path: 'role_menu_assignment', icon_class: "fas fa-user-shield", required_roles: ['관리자'], order: 11 }
+                    ];
+                } else {
+                    // 로그인하지 않은 사용자에게 보여줄 기본 메뉴
+                    return [
+                        { name: '홈', path: 'index', icon_class: 'fas fa-home', required_roles: ['모든 사용자'], order: 1 },
+                        { name: '커뮤니티', path: 'community_list', icon_class: 'fas fa-users', required_roles: ['모든 사용자'], order: 2 }
+                    ];
+                }
+            }
+
+            // 페이지 로드 시 UI 업데이트 및 메뉴 렌더링
+            updateHeaderUI();
+            renderSidebarMenu(); // 사이드바 메뉴 동적 렌더링 시작
+        });
     </script>
 </body>
 </html>

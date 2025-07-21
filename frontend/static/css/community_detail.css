@@ -1,311 +1,502 @@
 /* frontend/static/css/community_detail.css */
 
-.page-content-wrapper {
-    max-width: 900px; /* 게시글 상세 페이지의 최대 너비 */
-    margin: 0 auto;
-    padding: 40px 25px;
-    flex-grow: 1;
-    background-color: #F8FAFC;
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-}
-
-.post-detail-container {
-    background-color: white;
-    border-radius: 10px;
+.community-detail-container {
+    max-width: 900px;
+    margin: 30px auto;
     padding: 30px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
-.post-header {
-    border-bottom: 1px solid #E9EEF4;
-    padding-bottom: 20px;
-    margin-bottom: 25px;
-    text-align: left;
+.community-post-card {
+    background-color: #FFFFFF;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 30px;
+    border: 1px solid #e9e9e9;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.post-title {
+.post-detail-title {
     font-size: 2.2em;
-    font-weight: 700;
     color: #2C3E50;
-    margin-bottom: 10px;
-    word-break: break-word; /* 긴 단어 줄바꿈 */
+    margin-bottom: 15px;
+    font-weight: 700;
+    line-height: 1.3;
 }
 
 .post-meta {
+    display: flex; /* Make it a flex container */
+    justify-content: space-between; /* Push items to ends */
+    align-items: center; /* Vertically align items */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
     font-size: 0.95em;
-    color: #6C7A89;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap; /* 작은 화면에서 줄바꿈 */
-    gap: 8px; /* 요소 간 간격 */
+    color: #777;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
-.post-meta .post-category {
-    background-color: #e0f2ff; /* 밝은 파랑 */
+.post-meta .meta-left { /* New wrapper for left-aligned meta info */
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping of meta items */
+    gap: 15px; /* 간격 추가 */
+}
+
+.post-meta span {
+    /* margin-right: 15px; */ /* meta-left의 gap으로 대체 */
+    white-space: nowrap;
+}
+
+.meta-divider {
+    color: #ccc;
+    /* margin-right: 15px; */ /* meta-left의 gap으로 대체 */
+}
+
+.post-category {
+    background-color: #e0f2ff;
     color: #007bff;
     padding: 4px 10px;
     border-radius: 5px;
-    font-weight: 600;
     font-size: 0.85em;
+    font-weight: 600;
 }
 
-.post-meta .separator {
-    color: #DCE4EC;
-    font-weight: 300;
-}
-
-.post-content-area {
-    margin-bottom: 30px;
-    line-height: 1.8;
-    color: #34495E;
+.post-content-section {
     font-size: 1.1em;
-}
-
-.post-body {
-    white-space: pre-wrap; /* 줄바꿈 및 공백 유지 */
-    margin-bottom: 20px;
+    line-height: 1.8;
+    color: #4D4D4D;
+    margin-bottom: 30px;
+    word-wrap: break-word; /* 긴 단어 줄바꿈 */
+    white-space: pre-wrap; /* 공백과 줄바꿈 유지 */
 }
 
 .post-attachments {
     margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #e0e0e0;
 }
 
-.post-attachment-image {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    display: block; /* 이미지 하단 여백 제거 */
-    margin-bottom: 10px; /* 이미지 간 간격 */
-}
-
-.post-attachment-image:last-child {
-    margin-bottom: 0;
-}
-
-audio {
-    width: 100%;
-    max-width: 500px;
-    margin-top: 10px;
-}
-
-.post-attachment-link {
-    color: #007bff;
+.attachment-link {
+    display: inline-flex;
+    align-items: center;
+    background-color: #F0F4F8;
+    border: 1px solid #DCE4EC;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: #337AB7;
     text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95em;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.post-attachment-link:hover {
-    text-decoration: underline;
+.attachment-link:hover {
+    background-color: #EBF2F8;
+    border-color: #C0D3EB;
+}
+
+.attachment-link i {
+    margin-right: 6px;
+    color: #007bff;
 }
 
 .post-actions {
     display: flex;
-    justify-content: flex-end; /* 버튼들을 오른쪽으로 정렬 */
-    gap: 10px;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #E9EEF4;
+    justify-content: flex-end; /* 버튼을 오른쪽으로 정렬 */
+    gap: 15px; /* 텍스트 링크 간 간격 조정 */
+    /* margin-top, padding-top, border-top 제거 (post-meta 내부로 이동했으므로) */
+    /* margin-top: 20px; */
+    /* padding-top: 15px; */
+    /* border-top: 1px solid #f0f0f0; */
 }
 
-.comments-section {
-    margin-top: 40px;
-    padding-top: 30px;
-    border-top: 1px solid #E9EEF4;
-}
-
-.comments-section h2 {
-    font-size: 1.6em;
-    color: #2C3E50;
-    margin-bottom: 20px;
-    text-align: left;
-}
-
-.comments-list {
-    margin-bottom: 30px;
-    max-height: 400px; /* 댓글 목록 최대 높이 */
-    overflow-y: auto; /* 내용이 넘치면 스크롤바 표시 */
-    padding-right: 10px; /* 스크롤바와 내용 사이 여백 */
-}
-
-.comment-item {
-    background-color: #F8FAFC;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-    text-align: left;
-}
-
-.comment-item .comment-author {
-    font-weight: 600;
-    color: #4A5C70;
-    margin-bottom: 5px;
-    font-size: 0.95em;
-}
-
-.comment-item .comment-content {
-    color: #34495E;
-    line-height: 1.6;
-    margin-bottom: 10px;
-    white-space: pre-wrap;
-}
-
-.comment-item .comment-date {
-    font-size: 0.8em;
-    color: #8C98A7;
-    text-align: right;
-}
-
-.comment-form-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.comment-input {
-    width: 100%;
-    min-height: 80px;
-    padding: 12px 15px;
-    border: 1px solid #DCE4EC;
-    border-radius: 8px;
-    font-size: 1em;
-    resize: vertical;
-    box-sizing: border-box;
-    font-family: 'Pretendard', sans-serif;
-}
-
-.comment-input::placeholder {
-    color: #B0BACC;
-}
-
-.comment-submit-button {
-    align-self: flex-end; /* 버튼을 오른쪽으로 정렬 */
-    padding: 10px 25px;
-    font-size: 1em;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
+/* 게시글 수정/삭제/신고 링크처럼 보이도록 스타일 변경 */
+.post-actions .action-button {
+    padding: 0; /* 패딩 제거 */
+    background-color: transparent; /* 배경색 제거 */
+    border: none; /* 테두리 제거 */
+    box-shadow: none; /* 그림자 제거 */
+    font-size: 0.95em; /* 폰트 크기 유지 */
+    font-weight: 500; /* 덜 두껍게 */
+    color: #007bff; /* 링크 색상 */
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
+    border-radius: 0; /* 둥근 모서리 제거 */
+    text-decoration: none; /* 기본 밑줄 제거 */
 }
 
-.comment-submit-button:hover {
-    background-color: #0056b3;
+.post-actions .action-button:hover {
+    color: #0056b3; /* 호버 시 색상 변경 */
+    text-decoration: underline; /* 호버 시 밑줄 */
+    transform: none; /* 변형 제거 */
+    box-shadow: none; /* 그림자 제거 */
 }
 
+/* meta-divider가 post-actions 내부에 사용될 경우를 위한 스타일 */
+.post-actions .meta-divider {
+    color: #ccc;
+    margin: 0 5px; /* 구분선 좌우 여백 */
+}
 
-/* 기존 button 스타일 재사용 */
-.button {
+/* 기존 button 스타일은 다른 곳에 영향을 주지 않도록 유지 */
+.action-button, .button { /* 이 부분은 이제 .post-actions .action-button이 오버라이드할 것임 */
     padding: 10px 20px;
-    border-radius: 5px;
+    font-size: 0.95em;
     font-weight: 600;
+    border-radius: 8px;
     cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-    font-family: 'Pretendard', sans-serif;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .button.primary {
     background-color: #007bff;
     color: white;
-    border: 1px solid #007bff;
+    border: none;
 }
 
 .button.primary:hover {
     background-color: #0056b3;
-    border-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
 }
 
 .button.secondary {
-    background-color: white;
-    color: #007bff;
-    border: 1px solid #007bff;
+    background-color: #F0F4F8;
+    color: #5A6B7F;
+    border: 1px solid #DCE4EC;
 }
 
 .button.secondary:hover {
-    background-color: #e0f2ff;
-    color: #0056b3;
-    border-color: #0056b3;
+    background-color: #E0E6ED;
+    color: #2C3E50;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .button.danger {
     background-color: #dc3545;
     color: white;
-    border: 1px solid #dc3545;
+    border: none;
 }
 
 .button.danger:hover {
     background-color: #c82333;
-    border-color: #bd2130;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
 }
 
-/* 메시지 스타일 */
-.loading-message, .error-message, #noCommentsMessage {
+/* 새로 추가된 신고 버튼 스타일 (이제 .action-button에 의해 오버라이드됨) */
+.button.report-button {
+    background-color: #ffc107; /* 경고/주목 색상 */
+    color: #333;
+    border: 1px solid #ffc107;
+}
+
+.button.report-button:hover {
+    background-color: #e0a800;
+    border-color: #e0a800;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
+}
+
+/* --- Comments Section --- */
+.comments-section { /* 클래스 이름 변경 */
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    padding: 25px;
+}
+
+.comments-title {
+    font-size: 1.8em;
+    color: #2C3E50;
+    margin-bottom: 20px;
+    font-weight: 700;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 10px;
+}
+
+.comments-title span {
+    font-size: 0.8em;
+    color: #888;
+    margin-left: 5px;
+}
+
+.comment-input-area { /* 클래스 이름 변경 */
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed #e0e0e0;
+    display: flex; /* Flexbox 추가 */
+    flex-direction: column; /* 세로 정렬 */
+    gap: 15px; /* 요소 간 간격 */
+}
+
+.comment-input-area textarea { /* 클래스 이름 변경 */
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #DCE4EC;
+    border-radius: 8px;
+    font-size: 1em;
+    color: #4D4D4D;
+    background-color: #F8FAFC;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.comment-input-area textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+.comment-input-area button { /* 클래스 이름 변경 */
+    align-self: flex-end; /* 오른쪽 하단으로 정렬 */
+    padding: 10px 20px;
+    font-size: 1em;
+}
+
+.comments-list {
+    margin-top: 20px;
+}
+
+.no-comments {
     text-align: center;
-    color: #6C7A89;
-    padding: 20px;
+    color: #888;
     font-size: 1.1em;
-}
-.error-message {
-    color: #dc3545;
+    padding: 20px;
 }
 
-/* 반응형 디자인 */
+.comment-item {
+    background-color: #FDFDFD;
+    border: 1px solid #E9EEF4;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.03);
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px; /* 날짜가 아래로 내려가므로 간격 줄임 */
+    flex-wrap: wrap;
+}
+
+.comment-author-info { /* 작성자 이름과 공감수를 묶는 래퍼 */
+    display: flex;
+    align-items: center;
+    gap: 8px; /* 이름과 공감수 사이 간격 */
+}
+
+.comment-author {
+    font-weight: 600;
+    color: #2C3E50;
+    font-size: 0.95em;
+}
+
+.comment-likes { /* 공감수 스타일 */
+    font-size: 0.85em;
+    color: #8C99A9;
+    font-weight: 500;
+}
+
+.comment-date { /* 날짜를 이름 아래로 이동 */
+    display: block; /* 블록 요소로 만들어 다음 줄로 내림 */
+    font-size: 0.85em;
+    color: #8C99A9;
+    margin-top: 2px; /* 이름 아래로 내려온 날짜의 상단 여백 */
+    margin-bottom: 10px; /* 날짜와 내용 사이 간격 */
+}
+
+/* 댓글 액션 버튼들을 위한 새로운 인라인 래퍼 */
+.comment-actions-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* 액션 링크 간 간격 */
+    margin-left: auto; /* 오른쪽으로 밀어내기 */
+}
+
+/* 댓글 액션 링크처럼 보이도록 스타일 변경 */
+.comment-actions-inline .action-button {
+    padding: 0;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    font-size: 0.85em; /* 게시글 액션보다 약간 작게 */
+    font-weight: 500;
+    color: #007bff;
+    cursor: pointer;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
+    border-radius: 0;
+    text-decoration: none;
+}
+
+.comment-actions-inline .action-button:hover {
+    color: #0056b3;
+    text-decoration: underline;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 댓글 액션 내 구분선 */
+.comment-actions-inline .meta-divider {
+    color: #ccc;
+    margin: 0 5px;
+}
+
+
+.comment-content {
+    font-size: 1em;
+    color: #4D4D4D;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.comment-actions { /* 기존 댓글 액션 버튼 그룹은 이제 comment-actions-inline으로 대체됨 */
+    display: none; /* 숨김 */
+}
+
+.comment-actions .button.small {
+    padding: 6px 12px;
+    font-size: 0.8em;
+    border-radius: 6px;
+}
+
+/* 댓글 수정 텍스트 에어리어 */
+.edit-comment-textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #DCE4EC;
+    border-radius: 6px;
+    font-size: 0.95em;
+    color: #4D4D4D;
+    background-color: #F8FAFC;
+    resize: vertical;
+    min-height: 60px;
+    margin-bottom: 10px;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-    .page-content-wrapper {
-        padding: 20px 15px;
-    }
-
-    .post-detail-container {
+    .community-detail-container {
         padding: 20px;
+        margin: 20px auto;
     }
-
-    .post-title {
+    .post-detail-title {
         font-size: 1.8em;
     }
-
     .post-meta {
         font-size: 0.9em;
-        flex-direction: column; /* 세로로 정렬 */
+        flex-direction: column; /* 세로 정렬 */
         align-items: flex-start;
-        gap: 5px;
+        gap: 8px; /* 요소 간 간격 */
     }
-
-    .post-meta .separator {
-        display: none; /* 모바일에서 구분선 숨기기 */
+    .post-meta .meta-left { /* 모바일에서 메타 정보도 세로 정렬 */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        width: 100%; /* 전체 너비 차지 */
     }
-
-    .post-content-area {
+    .post-meta span {
+        margin-right: 0;
+    }
+    .meta-divider {
+        display: none; /* 모바일에서 구분선 숨김 */
+    }
+    .post-actions .meta-divider { /* 모바일에서 게시글 액션 구분선도 숨김 */
+        display: none;
+    }
+    .post-content-section {
         font-size: 1em;
     }
-
     .post-actions {
         flex-direction: column;
-        align-items: stretch; /* 버튼들이 가로로 꽉 차게 */
+        gap: 8px;
+        width: 100%; /* 모바일에서 버튼 전체 너비 차지 */
     }
-
-    .button {
+    .action-button, .button {
         width: 100%;
-        margin-bottom: 10px; /* 버튼 간 간격 */
+        padding: 8px 15px;
+        font-size: 0.9em;
     }
-
-    .comment-form-container {
-        align-items: stretch;
+    .comments-title {
+        font-size: 1.5em;
     }
-
-    .comment-submit-button {
+    .comment-input-area textarea {
+        padding: 10px 12px;
+        font-size: 0.95em;
+    }
+    .comment-input-area button {
         width: 100%;
+        font-size: 0.95em;
+    }
+    .comment-item {
+        padding: 12px 15px;
+    }
+    .comment-author {
+        font-size: 0.9em;
+    }
+    .comment-date {
+        font-size: 0.8em;
+    }
+    .comment-content {
+        font-size: 0.95em;
+    }
+    .comment-actions-inline { /* 모바일에서 댓글 인라인 액션도 세로 정렬 */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        margin-left: 0;
+        width: 100%;
+    }
+    .comment-actions-inline .meta-divider { /* 모바일에서 댓글 액션 구분선도 숨김 */
+        display: none;
+    }
+    .comment-actions-inline .action-button {
+        width: 100%; /* 모바일에서 액션 링크 전체 너비 차지 */
+        text-align: left;
+    }
+    .comment-actions .button.small {
+        font-size: 0.75em;
+        padding: 5px 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .community-detail-container {
+        padding: 15px;
+        margin: 15px auto;
+    }
+    .post-detail-title {
+        font-size: 1.6em;
+    }
+    .post-meta {
+        font-size: 0.85em;
+    }
+    .post-content-section {
+        font-size: 0.95em;
+    }
+    .attachment-link {
+        font-size: 0.8em;
+        padding: 6px 10px;
+    }
+    .comments-title {
+        font-size: 1.3em;
+    }
+    .comment-input-area textarea {
+        font-size: 0.9em;
+    }
+    .comment-actions-inline .action-button {
+        font-size: 0.8em;
     }
 }

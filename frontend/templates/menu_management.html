@@ -1,0 +1,335 @@
+<!--frontend/templates/menu_management.html-->
+{% extends "base.html" %}
+
+{% block title %}메뉴 관리 - Mindbridge{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}"> {# 관리자 대시보드 CSS 재사용 #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-dashboard-container"> {# admin-dashboard-container 클래스 재사용 #}
+        <h1>메뉴 관리</h1>
+        <p>웹사이트의 사이드바 메뉴 항목을 추가, 수정, 삭제할 수 있습니다.</p>
+        <p>현재 로그인된 사용자 역할: <span id="currentUserRolesDisplay"></span></p>
+
+        <div class="admin-section"> {# admin-section 클래스 재사용 #}
+            <button id="addMenuButton" class="button primary">새 메뉴 추가</button>
+            <div class="menu-list-table-container">
+                <table class="menu-list-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>메뉴 이름</th>
+                            <th>경로</th>
+                            <th>아이콘 클래스</th>
+                            <th>필요 역할</th>
+                            <th>액션</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menuTableBody">
+                        <!-- 메뉴 데이터가 여기에 동적으로 로드됩니다 -->
+                        <tr>
+                            <td colspan="6" class="loading-row">메뉴 정보를 불러오는 중...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="noMenusMessage" class="no-menus-message hidden">등록된 메뉴가 없습니다.</p>
+        </div>
+    </div>
+
+    <!-- 메뉴 추가/수정 모달 (초기에는 숨겨져 있음) -->
+    <div id="menuManagementModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2 id="menuModalTitle">새 메뉴 추가</h2>
+            <form id="menuForm">
+                <input type="hidden" id="menuId">
+                <div class="form-group">
+                    <label for="menuName">메뉴 이름</label>
+                    <input type="text" id="menuName" required>
+                </div>
+                <div class="form-group">
+                    <label for="menuPath">경로 (Flask 엔드포인트)</label>
+                    <input type="text" id="menuPath" required>
+                </div>
+                <div class="form-group">
+                    <label for="menuIconClass">아이콘 클래스 (Font Awesome)</label>
+                    <input type="text" id="menuIconClass" placeholder="예: fas fa-home" required>
+                </div>
+                <div class="form-group">
+                    <label>필요 역할</label>
+                    <div id="menuRolesCheckboxes" class="roles-checkboxes">
+                        <!-- 모든 역할 체크박스가 여기에 동적으로 로드됩니다 -->
+                    </div>
+                </div>
+                <button type="submit" id="saveMenuButton" class="button primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // base.html에서 전역으로 선언된 loginUrl, homeUrl, fetchWithAuth 사용
+
+        let allRoles = [];
+        let allMenuItems = []; // 모든 메뉴 항목 데이터를 저장할 배열 (원본)
+
+        // DOM 요소 가져오기
+        const addMenuButton = document.getElementById('addMenuButton');
+        const menuTableBody = document.getElementById('menuTableBody');
+        const noMenusMessage = document.getElementById('noMenusMessage');
+        const currentUserRolesDisplay = document.getElementById('currentUserRolesDisplay'); // 현재 사용자 역할 표시
+
+        const menuManagementModal = document.getElementById('menuManagementModal');
+        const closeMenuModalButton = menuManagementModal.querySelector('.close-button');
+        const menuModalTitle = document.getElementById('menuModalTitle');
+        const menuForm = document.getElementById('menuForm');
+        const menuIdInput = document.getElementById('menuId');
+        const menuNameInput = document.getElementById('menuName');
+        const menuPathInput = document.getElementById('menuPath');
+        const menuIconClassInput = document.getElementById('menuIconClass');
+        const menuRolesCheckboxesContainer = document.getElementById('menuRolesCheckboxes');
+        const saveMenuButton = document.getElementById('saveMenuButton');
+
+        let currentEditingMenuItem = null; // 현재 모달에서 편집 중인 메뉴 항목 객체
+
+        // 로그인 상태 및 관리자 권한 확인 함수
+        async function checkAdminAccess() {
+            const token = localStorage.getItem('jwt_token');
+            const userRolesString = localStorage.getItem('user_roles');
+            let userRoles = [];
+
+            if (!token) {
+                alert('관리자 페이지에 접근하려면 로그인이 필요합니다.');
+                window.location.href = loginUrl;
+                return false;
+            }
+
+            if (userRolesString) {
+                try {
+                    userRoles = JSON.parse(userRolesString);
+                } catch (e) {
+                    console.error("Error parsing user roles from localStorage:", e);
+                    alert('사용자 역할 정보를 불러오는 데 실패했습니다. 다시 로그인해주세요.');
+                    localStorage.removeItem('jwt_token');
+                    window.location.href = loginUrl;
+                    return false;
+                }
+            }
+
+            if (!userRoles.includes('관리자')) {
+                alert('관리자만 접근할 수 있는 페이지입니다.');
+                window.location.href = homeUrl;
+                return false;
+            }
+
+            currentUserRolesDisplay.textContent = userRoles.join(', ');
+            return true;
+        }
+
+        // 모든 메뉴 항목 불러오기
+        async function fetchAllMenuItems() {
+            menuTableBody.innerHTML = '<tr><td colspan="6" class="loading-row">메뉴 정보를 불러오는 중...</td></tr>';
+            noMenusMessage.classList.add('hidden');
+
+            try {
+                const response = await fetchWithAuth('/api/admin/menu_configs');
+                const result = await response.json();
+
+                if (response.ok) {
+                    allMenuItems = result.menu_items; // 원본 메뉴 목록 저장
+                    renderMenuTable(allMenuItems);
+                } else {
+                    alert('메뉴 정보를 불러오는 데 실패했습니다.');
+                    console.error('Error fetching menu items:', result.message);
+                    menuTableBody.innerHTML = '<tr><td colspan="6" class="error-row">메뉴 정보를 불러오는 데 실패했습니다.</td></tr>';
+                }
+            } catch (error) {
+                console.error('Network error fetching menu items:', error);
+                alert('네트워크 오류가 발생했습니다. 메뉴 정보를 불러올 수 없습니다.');
+                menuTableBody.innerHTML = '<tr><td colspan="6" class="error-row">네트워크 오류가 발생했습니다.</td></tr>';
+            }
+        }
+
+        // 메뉴 테이블 렌더링
+        function renderMenuTable(menuItemsToRender) {
+            menuTableBody.innerHTML = '';
+
+            if (menuItemsToRender.length === 0) {
+                noMenusMessage.classList.remove('hidden');
+                return;
+            } else {
+                noMenusMessage.classList.add('hidden');
+            }
+
+            menuItemsToRender.forEach(menuItem => {
+                const row = menuTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${menuItem._id || '-'}</td>
+                    <td>${menuItem.name}</td>
+                    <td>${menuItem.path}</td>
+                    <td><i class="${menuItem.icon_class}"></i> ${menuItem.icon_class}</td>
+                    <td>${menuItem.required_roles.join(', ') || '모든 사용자'}</td>
+                    <td>
+                        <button class="button small secondary edit-menu-button" data-menu-id="${menuItem._id}">수정</button>
+                        <button class="button danger small delete-menu-button" data-menu-id="${menuItem._id}">삭제</button>
+                    </td>
+                `;
+
+                row.querySelector('.edit-menu-button').addEventListener('click', (event) => {
+                    const menuId = event.target.dataset.menuId;
+                    openMenuManagementModal(menuId);
+                });
+
+                row.querySelector('.delete-menu-button').addEventListener('click', (event) => {
+                    const menuId = event.target.dataset.menuId;
+                    deleteMenuItem(menuId);
+                });
+            });
+        }
+
+        // 새 메뉴 추가 버튼 클릭
+        addMenuButton.addEventListener('click', () => {
+            menuModalTitle.textContent = '새 메뉴 추가';
+            menuForm.reset();
+            menuIdInput.value = ''; // ID 초기화
+            currentEditingMenuItem = null;
+            renderMenuRolesCheckboxes([]); // 모든 역할 체크박스 초기화 (선택된 것 없음)
+            menuManagementModal.classList.remove('hidden');
+        });
+
+        // 메뉴 관리 모달 닫기
+        closeMenuModalButton.addEventListener('click', () => {
+            menuManagementModal.classList.add('hidden');
+            currentEditingMenuItem = null;
+        });
+
+        // 메뉴 관리 모달 열기 (수정 모드)
+        function openMenuManagementModal(menuId) {
+            currentEditingMenuItem = allMenuItems.find(item => item._id === menuId);
+            if (!currentEditingMenuItem) {
+                alert('메뉴 항목을 찾을 수 없습니다.');
+                return;
+            }
+
+            menuModalTitle.textContent = '메뉴 수정';
+            menuIdInput.value = currentEditingMenuItem._id;
+            menuNameInput.value = currentEditingMenuItem.name;
+            menuPathInput.value = currentEditingMenuItem.path;
+            menuIconClassInput.value = currentEditingMenuItem.icon_class;
+            renderMenuRolesCheckboxes(currentEditingMenuItem.required_roles); // 기존 역할 선택
+
+            menuManagementModal.classList.remove('hidden');
+        }
+
+        // 메뉴 역할 체크박스 렌더링
+        function renderMenuRolesCheckboxes(selectedRoles) {
+            menuRolesCheckboxesContainer.innerHTML = '';
+            allRoles.forEach(role => {
+                const checkboxDiv = document.createElement('div');
+                checkboxDiv.className = 'role-checkbox-item';
+                checkboxDiv.innerHTML = `
+                    <input type="checkbox" id="menu-role-${role.id}" value="${role.name}" ${selectedRoles.includes(role.name) ? 'checked' : ''}>
+                    <label for="menu-role-${role.id}">${role.name}</label>
+                `;
+                menuRolesCheckboxesContainer.appendChild(checkboxDiv);
+            });
+        }
+
+        // 메뉴 저장/수정 폼 제출
+        menuForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const menuId = menuIdInput.value;
+            const name = menuNameInput.value.trim();
+            const path = menuPathInput.value.trim();
+            const iconClass = menuIconClassInput.value.trim();
+            const selectedRequiredRoles = Array.from(menuRolesCheckboxesContainer.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            const payload = {
+                name: name,
+                path: path,
+                icon_class: iconClass,
+                required_roles: selectedRequiredRoles
+            };
+
+            try {
+                let response;
+                if (menuId) { // 수정 모드
+                    response = await fetchWithAuth(`/api/admin/menu_configs/${menuId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } else { // 생성 모드
+                    response = await fetchWithAuth('/api/admin/menu_configs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message || '메뉴 항목이 성공적으로 처리되었습니다.');
+                    menuManagementModal.classList.add('hidden');
+                    fetchAllMenuItems(); // 메뉴 목록 새로고침
+                    localStorage.removeItem('cached_menu_items'); // base.html의 메뉴 캐시를 지워 새로고침 유도
+                } else {
+                    alert(result.message || '메뉴 항목 처리 실패.');
+                }
+            } catch (error) {
+                console.error('Error saving menu item:', error);
+                alert('메뉴 항목 처리 중 오류가 발생했습니다.');
+            }
+        });
+
+        // 메뉴 항목 삭제
+        async function deleteMenuItem(menuId) {
+            if (!confirm('정말로 이 메뉴 항목을 삭제하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth(`/api/admin/menu_configs/${menuId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message || '메뉴 항목이 성공적으로 삭제되었습니다.');
+                    fetchAllMenuItems(); // 메뉴 목록 새로고침
+                    localStorage.removeItem('cached_menu_items');
+                } else {
+                    alert(result.message || '메뉴 항목 삭제 실패.');
+                }
+            } catch (error) {
+                console.error('Error deleting menu item:', error);
+                alert('메뉴 항목 삭제 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 초기 로드 시 관리자 접근 권한 확인 후 데이터 로드
+        document.addEventListener('DOMContentLoaded', async () => {
+            const hasAccess = await checkAdminAccess();
+            if (hasAccess) {
+                // 모든 역할은 메뉴 관리에서 필요하므로 미리 로드
+                try {
+                    const rolesResponse = await fetchWithAuth('/api/admin/roles');
+                    if (rolesResponse.ok) {
+                        const rolesResult = await rolesResponse.json();
+                        allRoles = rolesResult.roles; // 전역 allRoles 업데이트
+                    } else {
+                        console.error('Failed to load all roles:', rolesResponse.message);
+                    }
+                } catch (error) {
+                    console.error('Network error loading all roles:', error);
+                }
+                fetchAllMenuItems(); // 메뉴 데이터 로드
+            }
+        });
+    </script>
+{% endblock %}

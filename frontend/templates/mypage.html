@@ -1,0 +1,18 @@
+<!--frontend/templates/mypage.html-->
+{% extends "base.html" %}
+
+{% block title %}마이페이지 - Mindbridge{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mypage.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="mypage-container">
+        <h1>마이페이지</h1>
+        <p>여기는 사용자 개인 정보와 작성한 게시글을 볼 수 있는 마이페이지입니다.</p>
+        <p>현재 로그인된 사용자 역할: {{ user_roles | join(', ') }}</p>
+
+        <!-- 여기에 사용자 정보, 내 게시글 목록 등의 콘텐츠를 추가할 수 있습니다. -->
+    </div>
+{% endblock %}

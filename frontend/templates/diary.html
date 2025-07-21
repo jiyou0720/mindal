@@ -175,7 +175,7 @@
                 } else if (summaryResponse.status === 401) {
                     localStorage.removeItem('jwt_token');
                     showLoginRequiredUI();
-                    alert("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
+                    await showAlert("로그인 세션이 만료되었습니다. 다시 로그인해주세요."); // alert 대신 showAlert
                 } else {
                     console.error("Failed to fetch monthly summary:", summaryResponse.status);
                 }
@@ -278,14 +278,14 @@
                     currentDiaryEntryId = null; // _id 초기화
                 } else {
                     const errorData = await response.json();
-                    alert(errorData.message || '일기를 불러오는 데 실패했습니다.');
+                    await showAlert(errorData.message || '일기를 불러오는 데 실패했습니다.'); // alert 대신 showAlert
                     diaryContentInput.value = '';
                     updateSelectedMoodEmoji(null);
                     currentDiaryEntryId = null; // _id 초기화
                 }
             } catch (error) {
                 console.error("Error loading diary entry:", error);
-                alert('일기를 불러오는 중 오류가 발생했습니다.');
+                await showAlert('일기를 불러오는 중 오류가 발생했습니다.'); // alert 대신 showAlert
                 diaryContentInput.value = '';
                 updateSelectedMoodEmoji(null);
                 currentDiaryEntryId = null; // _id 초기화
@@ -335,13 +335,13 @@
             event.preventDefault();
 
             if (!selectedDate) {
-                alert('일기를 저장할 날짜를 선택해주세요.');
+                await showAlert('일기를 저장할 날짜를 선택해주세요.'); // alert 대신 showAlert
                 return;
             }
 
             const content = diaryContentInput.value.trim();
             if (!content) {
-                alert('일기 내용을 입력해주세요.');
+                await showAlert('일기 내용을 입력해주세요.'); // alert 대신 showAlert
                 return;
             }
 
@@ -367,11 +367,11 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    alert(result.message || '일기가 성공적으로 저장되었습니다!');
+                    await showAlert(result.message || '일기가 성공적으로 저장되었습니다!'); // alert 대신 showAlert
                     renderCalendar(); // 현재 달의 캘린더를 다시 렌더링하여 이모티콘 표시
                     currentDiaryEntryId = result.diary_entry._id; // 새로 저장된 일기의 _id 저장
                 } else {
-                    alert(result.message || '일기 저장 중 오류가 발생했습니다.');
+                    await showAlert(result.message || '일기 저장 중 오류가 발생했습니다.'); // alert 대신 showAlert
                     console.error("Error saving diary entry:", result.message);
                     if (response.status === 401) { // 토큰 만료 또는 유효하지 않음
                         localStorage.removeItem('jwt_token');
@@ -380,23 +380,24 @@
                 }
             } catch (error) {
                 console.error("Error saving diary entry:", error);
-                alert('일기 저장 중 오류가 발생했습니다.');
+                await showAlert('일기 저장 중 오류가 발생했습니다.'); // alert 대신 showAlert
             }
         });
 
         // 일기 삭제 버튼 이벤트 리스너
         deleteDiaryButton.addEventListener('click', async () => {
             if (!selectedDate) {
-                alert('삭제할 일기의 날짜를 선택해주세요.');
+                await showAlert('삭제할 일기의 날짜를 선택해주세요.'); // alert 대신 showAlert
                 return;
             }
 
             if (!currentDiaryEntryId) {
-                alert('삭제할 일기 정보가 없습니다. 먼저 날짜를 선택하여 일기를 불러와주세요.');
+                await showAlert('삭제할 일기 정보가 없습니다. 먼저 날짜를 선택하여 일기를 불러와주세요.'); // alert 대신 showAlert
                 return;
             }
 
-            if (!confirm('정말로 이 일기를 삭제하시겠습니까?')) {
+            const confirmed = await showConfirm('정말로 이 일기를 삭제하시겠습니까?'); // confirm 대신 showConfirm
+            if (!confirmed) {
                 return;
             }
 
@@ -408,13 +409,13 @@
                 const deleteResult = await deleteResponse.json();
 
                 if (deleteResponse.ok) {
-                    alert(deleteResult.message || '일기가 성공적으로 삭제되었습니다.');
+                    await showAlert(deleteResult.message || '일기가 성공적으로 삭제되었습니다.'); // alert 대신 showAlert
                     diaryContentInput.value = ''; // 입력 필드 비우기
                     updateSelectedMoodEmoji(null); // 무드 선택 해제
                     currentDiaryEntryId = null; // _id 초기화
                     renderCalendar(); // 캘린더 다시 렌더링하여 이모티콘 제거
                 } else {
-                    alert(deleteResult.message || "일기 삭제 중 오류가 발생했습니다.");
+                    await showAlert(deleteResult.message || "일기 삭제 중 오류가 발생했습니다."); // alert 대신 showAlert
                     console.error("Error deleting diary entry:", deleteResult.message);
                     if (deleteResponse.status === 401) {
                         localStorage.removeItem('jwt_token');
@@ -423,7 +424,7 @@
                 }
             } catch (error) {
                 console.error("Error deleting diary entry:", error);
-                alert("일기 삭제 중 오류가 발생했습니다.");
+                await showAlert("일기 삭제 중 오류가 발생했습니다."); // alert 대신 showAlert
             }
         });
 
