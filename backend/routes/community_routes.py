@@ -1,387 +1,476 @@
 # backend/routes/community_routes.py
 import os
+import json
 from flask import Blueprint, request, jsonify, g, current_app
 from flask_pymongo import PyMongo
-from auth import token_required
-from mongo_models import MongoPostContent
-from maria_models import Post, User, Comment # Comment 모델 임포트
-from extensions import db
-from bson.objectid import ObjectId, InvalidId
+from auth import token_required, roles_required
+from maria_models import Post, Comment, User, PostLike, CommentLike
+from mongo_models import MongoPostContent # CommunityContent 대신 MongoPostContent 사용
+from extensions import db, mongo # mongo 임포트 추가
+from bson.objectid import ObjectId
 import datetime
+import uuid
 from werkzeug.utils import secure_filename
 
 community_bp = Blueprint('community_api', __name__)
 
-# 파일 업로드 경로 설정
+# UPLOAD_FOLDER 정의
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'frontend', 'static', 'uploads', 'community')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav'}
-
-# UPLOAD_FOLDER가 없으면 생성
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
-# 허용된 파일 확장자 확인 함수
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @community_bp.record_once
 def record(state):
-    if 'MONGO_DB' not in state.app.config:
-        state.app.config['MONGO_DB'] = PyMongo(state.app).db
+    # PyMongo 인스턴스를 앱 컨텍스트에 저장
+    state.app.config['MONGO_DB'] = PyMongo(state.app).db
 
-# MongoDB 컬렉션 참조 함수
 def get_mongo_post_content_collection():
+    # MongoDB post_contents 컬렉션 참조 함수
     return current_app.config['MONGO_DB'].post_contents
 
-# --- 게시글 관련 API 엔드포인트 ---
+# Helper to generate unique filename
+def generate_unique_filename(filename):
+    ext = filename.rsplit('.', 1)[1].lower()
+    unique_name = str(uuid.uuid4()) + '.' + ext
+    return unique_name
 
-# 게시글 생성
+# 게시글 생성 (POST)
 @community_bp.route('/posts', methods=['POST'])
 @token_required
+@roles_required('일반 사용자', '에디터', '운영자', '관리자') # 게시글 작성 권한
 def create_post():
-    title = request.form.get('title')
-    content = request.form.get('content')
-    category = request.form.get('category')
-    is_anonymous = request.form.get('is_anonymous') == 'true'
+    try:
+        title = request.form.get('title')
+        category = request.form.get('category')
+        content = request.form.get('content') # 게시글 본문 (HTML)
+        is_anonymous = request.form.get('is_anonymous') == 'true'
 
-    user_id = int(g.user_id)
-    user = db.session.get(User, user_id)
-    if not user:
-        return jsonify({'message': 'User not found'}), 404
+        current_app.logger.debug(f"게시글 생성 요청: title={title}, category={category}, is_anonymous={is_anonymous}")
+        current_app.logger.debug(f"게시글 본문 길이: {len(content) if content else 0}")
 
-    if not title or not content or not category:
-        return jsonify({'message': 'Title, content, and category are required'}), 400
+        if not title or not category or not content:
+            current_app.logger.warning("필수 필드 누락: 제목, 카테고리, 내용 중 하나 이상이 없습니다.")
+            return jsonify({'message': '제목, 카테고리, 내용을 모두 입력해주세요.'}), 400
 
-    attachment_paths = []
-    if 'attachments' in request.files:
-        files = request.files.getlist('attachments')
-        for file in files:
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
-                file.save(filepath)
-                attachment_paths.append(f'/static/uploads/community/{filename}')
-            else:
-                return jsonify({'message': f'허용되지 않는 파일 형식 또는 파일이 없습니다: {file.filename}'}), 400
+        # 1. MongoDB에 게시글 본문 저장
+        attachment_paths = []
+        if 'attachments' in request.files:
+            for file in request.files.getlist('attachments'):
+                if file.filename == '':
+                    continue
+                unique_filename = generate_unique_filename(secure_filename(file.filename))
+                file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                file.save(file_path)
+                attachment_paths.append(f'/static/uploads/community/{unique_filename}')
+            current_app.logger.debug(f"첨부 파일 저장 완료: {attachment_paths}")
 
-    new_mongo_content = MongoPostContent(content=content, attachment_paths=attachment_paths)
-    mongo_result = get_mongo_post_content_collection().insert_one(new_mongo_content.to_dict())
-    mongodb_content_id = str(mongo_result.inserted_id)
+        mongo_post_content = MongoPostContent(content=content, attachment_paths=attachment_paths)
+        
+        try:
+            # MongoDB에 저장하고 _id를 가져옴
+            inserted_mongo_doc = get_mongo_post_content_collection().insert_one(mongo_post_content.to_dict())
+            mongo_content_id = str(inserted_mongo_doc.inserted_id)
+            current_app.logger.info(f"MongoDB에 게시글 본문 저장 성공. MongoDB ID: {mongo_content_id}")
+        except Exception as e:
+            current_app.logger.error(f"MongoDB 저장 중 오류 발생: {e}")
+            return jsonify({'message': '게시글 본문 저장 중 오류가 발생했습니다.'}), 500
 
-    display_author_name = user.nickname if user.nickname and not is_anonymous else user.username if not is_anonymous else '익명'
+        # 2. MariaDB에 게시글 메타데이터 저장
+        author_id = g.user_id
+        # g.nickname이 없을 경우 g.username을 사용하거나 기본값 설정
+        author_nickname = g.nickname if g.nickname else g.username if g.username else "알 수 없음"
+        
+        new_post = Post(
+            title=title,
+            category=category,
+            author_id=author_id,
+            author_nickname=author_nickname,
+            is_anonymous=is_anonymous,
+            mongodb_content_id=mongo_content_id # MongoDB 문서 ID 연결
+        )
 
-    new_post = Post(
-        title=title,
-        author_id=user_id,
-        author_username=user.username,
-        category=category,
-        is_anonymous=is_anonymous,
-        display_author_name=display_author_name,
-        mongodb_content_id=mongodb_content_id
-    )
-    db.session.add(new_post)
-    db.session.commit()
+        db.session.add(new_post)
+        db.session.commit()
+        current_app.logger.info(f"MariaDB에 게시글 메타데이터 저장 성공. Post ID: {new_post.id}")
 
-    return jsonify({
-        'message': '게시글이 성공적으로 작성되었습니다!',
-        'post_id': new_post.id
-    }), 201
+        return jsonify({
+            'message': '게시글이 성공적으로 작성되었습니다!',
+            'post_id': new_post.id,
+            'mongodb_content_id': mongo_content_id
+        }), 201
 
-# 게시글 목록 조회
+    except Exception as e:
+        db.session.rollback() # 오류 발생 시 MariaDB 트랜잭션 롤백
+        current_app.logger.error(f"게시글 생성 중 예상치 못한 오류 발생: {e}", exc_info=True)
+        return jsonify({'message': '게시글 작성 중 서버 오류가 발생했습니다.'}), 500
+
+# 2. 모든 게시글 조회 (GET)
 @community_bp.route('/posts', methods=['GET'])
-def get_all_posts():
+def get_posts():
+    category = request.args.get('category')
     page = request.args.get('page', 1, type=int)
-    limit = request.args.get('limit', 10, type=int)
-    offset = (page - 1) * limit
+    per_page = request.args.get('per_page', 10, type=int)
 
-    posts = Post.query.order_by(Post.created_at.desc()).offset(offset).limit(limit).all()
-    total_posts = Post.query.count()
+    query = Post.query
+    if category and category != 'all':
+        query = query.filter_by(category=category)
+
+    # 최신순 정렬 (기본)
+    query = query.order_by(Post.created_at.desc())
+
+    paginated_posts = query.paginate(page=page, per_page=per_page, error_out=False)
+    posts = paginated_posts.items
 
     posts_data = []
     for post in posts:
-        content_preview = ''
-        if post.mongodb_content_id:
-            try:
-                mongo_content_data = get_mongo_post_content_collection().find_one({'_id': ObjectId(post.mongodb_content_id)})
-                if mongo_content_data:
-                    content_preview = mongo_content_data.get('content', '')
-            except InvalidId:
-                print(f"Warning: Invalid ObjectId for post {post.id}: {post.mongodb_content_id}. Skipping content load.")
-                content_preview = '[내용 로드 오류: 유효하지 않은 ID]'
-            except Exception as e:
-                print(f"Error loading MongoDB content for post {post.id}: {e}")
-                content_preview = '[내용 로드 오류]'
-        else:
-            content_preview = '[내용 없음]'
-
-        author = db.session.get(User, post.author_id)
-        display_author_name = author.nickname if author and author.nickname and not post.is_anonymous else author.username if author and not post.is_anonymous else '익명'
-
+        # 게시글 본문은 리스트에서 필요 없으므로 제외
         posts_data.append({
             'id': post.id,
             'title': post.title,
             'category': post.category,
-            'author_id': post.author_id,
-            'author_username': post.author_username,
-            'display_author_name': display_author_name,
-            'content_preview': content_preview[:100] + '...' if len(content_preview) > 100 else content_preview,
-            'created_at': post.created_at.isoformat(),
+            'author_nickname': '익명' if post.is_anonymous else post.author_nickname,
             'views': post.views,
-            'comment_count': len(post.comments)
+            'likes': post.likes,
+            'comment_count': len(post.comments), # 댓글 수 계산
+            'created_at': post.created_at.isoformat(),
+            'updated_at': post.updated_at.isoformat(),
+            'is_anonymous': post.is_anonymous
         })
 
     return jsonify({
-        'message': '게시글 목록 조회 성공',
         'posts': posts_data,
-        'total_posts': total_posts,
-        'page': page,
-        'limit': limit
+        'total_pages': paginated_posts.pages,
+        'current_page': paginated_posts.page,
+        'total_posts': paginated_posts.total
     }), 200
 
-# 게시글 상세 정보 조회
+
+# 3. 특정 게시글 조회 (GET)
 @community_bp.route('/posts/<int:post_id>', methods=['GET'])
-@token_required
 def get_post_detail(post_id):
     post = db.session.get(Post, post_id)
     if not post:
         return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
 
-    post.views = (post.views or 0) + 1
+    # 조회수 증가
+    post.views += 1
     db.session.commit()
 
-    mongo_content_data = None
+    # MongoDB에서 게시글 본문 내용 가져오기
+    mongo_content = None
+    attachment_paths = []
     if post.mongodb_content_id:
         try:
-            mongo_content_data = get_mongo_post_content_collection().find_one({'_id': ObjectId(post.mongodb_content_id)})
-        except InvalidId:
-            print(f"Warning: Invalid ObjectId for post {post.id} in get_post_detail: {post.mongodb_content_id}")
-            return jsonify({'message': '게시글 내용을 불러올 수 없습니다 (유효하지 않은 MongoDB ID).'}), 500
+            mongo_doc = get_mongo_post_content_collection().find_one({'_id': ObjectId(post.mongodb_content_id)})
+            if mongo_doc:
+                mongo_content = mongo_doc.get('content')
+                attachment_paths = mongo_doc.get('attachment_paths', [])
+                current_app.logger.debug(f"MongoDB에서 본문 로드 성공: Post ID {post_id}, MongoDB ID {post.mongodb_content_id}")
+            else:
+                current_app.logger.warning(f"MongoDB에서 해당 ID의 본문 문서({post.mongodb_content_id})를 찾을 수 없습니다.")
         except Exception as e:
-            print(f"Error loading MongoDB content for post {post.id} in get_post_detail: {e}")
-            return jsonify({'message': '게시글 내용을 불러오는 중 오류가 발생했습니다.'}), 500
+            current_app.logger.error(f"MongoDB에서 본문 로드 중 오류 발생: {e}", exc_info=True)
+            # 오류 발생 시에도 게시글 메타데이터는 반환
+    else:
+        current_app.logger.warning(f"게시글 {post_id}에 연결된 MongoDB content ID가 없습니다.")
 
-    if not mongo_content_data:
-        return jsonify({'message': '게시글 내용을 찾을 수 없습니다.'}), 404
-    
-    mongo_content = MongoPostContent.from_mongo(mongo_content_data)
 
-    author = db.session.get(User, post.author_id)
-    if not author:
-        return jsonify({'message': '작성자 정보를 찾을 수 없습니다.'}), 404
+    # 현재 사용자가 이 게시글에 공감했는지 확인 (로그인된 경우)
+    # g.user_id에 직접 접근하기 전에 속성 존재 여부 확인
+    user_id_from_g = getattr(g, 'user_id', None)
+    user_liked = False
+    if user_id_from_g: # ⭐ 수정: getattr 사용
+        existing_like = PostLike.query.filter_by(user_id=user_id_from_g, post_id=post_id).first()
+        if existing_like:
+            user_liked = True
 
-    return jsonify({
-        'message': '게시글 상세 정보 조회 성공',
-        'post': {
-            'id': post.id,
-            'title': post.title,
-            'category': post.category,
-            'author_id': post.author_id,
-            'author_username': post.author_username,
-            'is_anonymous': post.is_anonymous,
-            'display_author_name': author.nickname if author.nickname and not post.is_anonymous else author.username if not post.is_anonymous else '익명',
-            'content': mongo_content.content,
-            'attachment_paths': mongo_content.attachment_paths,
-            'created_at': post.created_at.isoformat(),
-            'updated_at': post.updated_at.isoformat(),
-            'views': post.views
-        },
-        'author': author.to_dict()
-    }), 200
+    post_data = {
+        'id': post.id,
+        'title': post.title,
+        'category': post.category,
+        'content': mongo_content, # MongoDB에서 가져온 본문 내용
+        'attachment_paths': attachment_paths, # MongoDB에서 가져온 첨부파일 경로
+        'author_id': post.author_id, # 작성자 ID 추가
+        'author_nickname': '익명' if post.is_anonymous else post.author_nickname,
+        'views': post.views,
+        'likes': post.likes,
+        'created_at': post.created_at.isoformat(),
+        'updated_at': post.updated_at.isoformat(),
+        'is_anonymous': post.is_anonymous,
+        'user_liked': user_liked # 사용자가 좋아요 눌렀는지 여부
+    }
+    return jsonify(post_data), 200
 
-# 게시글 수정
+# 4. 게시글 수정 (PUT)
 @community_bp.route('/posts/<int:post_id>', methods=['PUT'])
 @token_required
+@roles_required('일반 사용자', '에디터', '운영자', '관리자') # 게시글 수정 권한
 def update_post(post_id):
-    title = request.form.get('title')
-    content = request.form.get('content')
-    category = request.form.get('category')
-    is_anonymous = request.form.get('is_anonymous') == 'true'
-    
-    attachment_paths = []
-    if 'attachments' in request.files:
-        files = request.files.getlist('attachments')
-        for file in files:
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
-                file.save(filepath)
-                attachment_paths.append(f'/static/uploads/community/{filename}')
-            else:
-                return jsonify({'message': f'허용되지 않는 파일 형식 또는 파일이 없습니다: {file.filename}'}), 400
+    try:
+        post = db.session.get(Post, post_id)
+        if not post:
+            current_app.logger.warning(f"게시글 수정 실패: Post ID {post_id}를 찾을 수 없습니다.")
+            return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
 
-    user_id = int(g.user_id)
-    post = db.session.get(Post, post_id)
+        # 권한 확인: 본인 게시글이거나 관리자/운영자/에디터만 수정 가능
+        user_id = g.user_id
+        if post.author_id != user_id and not any(role in g.user_roles for role in ['관리자', '운영자', '에디터']):
+            current_app.logger.warning(f"권한 없음: 사용자 {user_id}가 게시글 {post_id}를 수정하려 했으나 권한이 없습니다.")
+            return jsonify({'message': '이 게시글을 수정할 권한이 없습니다.'}), 403
 
-    if not post:
-        return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
+        title = request.form.get('title')
+        category = request.form.get('category')
+        content = request.form.get('content') # 게시글 본문 (HTML)
+        is_anonymous = request.form.get('is_anonymous') == 'true'
+        
+        # 기존 첨부파일 유지 여부 (JSON 문자열로 넘어옴)
+        # 예: '["/static/uploads/community/abc.png", "/static/uploads/community/def.jpg"]'
+        existing_attachments_json = request.form.get('existing_attachments', '[]')
+        try:
+            existing_attachments = json.loads(existing_attachments_json)
+        except json.JSONDecodeError:
+            current_app.logger.error(f"existing_attachments 파싱 오류: {existing_attachments_json}")
+            existing_attachments = []
 
-    if post.author_id != user_id:
-        return jsonify({'message': '이 게시글을 수정할 권한이 없습니다.'}), 403
+        current_app.logger.debug(f"게시글 수정 요청: Post ID={post_id}, title={title}, category={category}, is_anonymous={is_anonymous}")
+        current_app.logger.debug(f"게시글 본문 길이: {len(content) if content else 0}")
+        current_app.logger.debug(f"기존 첨부파일: {existing_attachments}")
 
-    if not title or not content or not category:
-        return jsonify({'message': 'Title, content, and category are required'}), 400
+        if not title or not category or not content:
+            current_app.logger.warning("필수 필드 누락: 제목, 카테고리, 내용 중 하나 이상이 없습니다.")
+            return jsonify({'message': '제목, 카테고리, 내용을 모두 입력해주세요.'}), 400
 
-    post.title = title
-    post.category = category
-    post.is_anonymous = is_anonymous
-    
-    user = db.session.get(User, user_id)
-    post.display_author_name = user.nickname if user.nickname and not is_anonymous else user.username if not is_anonymous else '익명'
-    
-    post.updated_at = datetime.datetime.utcnow()
-    db.session.commit()
+        # 1. MongoDB 게시글 본문 업데이트 또는 새로 생성
+        new_attachment_paths = []
+        if 'attachments' in request.files:
+            for file in request.files.getlist('attachments'):
+                if file.filename == '':
+                    continue
+                unique_filename = generate_unique_filename(secure_filename(file.filename))
+                file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                file.save(file_path)
+                new_attachment_paths.append(f'/static/uploads/community/{unique_filename}')
+            current_app.logger.debug(f"새 첨부 파일 저장 완료: {new_attachment_paths}")
 
-    update_fields = {
-        'content': content,
-    }
-    if attachment_paths:
-        update_fields['attachment_paths'] = attachment_paths
+        # 기존 첨부파일과 새로 추가된 첨부파일 병합
+        final_attachment_paths = list(set(existing_attachments + new_attachment_paths))
+        current_app.logger.debug(f"최종 첨부파일 목록: {final_attachment_paths}")
 
-    get_mongo_post_content_collection().update_one(
-        {'_id': ObjectId(post.mongodb_content_id)},
-        {'$set': update_fields}
-    )
+        mongo_content_id = post.mongodb_content_id
+        if mongo_content_id:
+            try:
+                # 기존 MongoDB 문서 업데이트
+                get_mongo_post_content_collection().update_one(
+                    {'_id': ObjectId(mongo_content_id)},
+                    {'$set': {'content': content, 'attachment_paths': final_attachment_paths, 'updated_at': datetime.datetime.utcnow()}}
+                )
+                current_app.logger.info(f"MongoDB 게시글 본문 업데이트 성공. MongoDB ID: {mongo_content_id}")
+            except Exception as e:
+                current_app.logger.error(f"MongoDB 업데이트 중 오류 발생: {e}", exc_info=True)
+                return jsonify({'message': '게시글 본문 업데이트 중 오류가 발생했습니다.'}), 500
+        else:
+            # MongoDB content ID가 없으면 새로 생성
+            mongo_post_content = MongoPostContent(content=content, attachment_paths=final_attachment_paths)
+            try:
+                inserted_mongo_doc = get_mongo_post_content_collection().insert_one(mongo_post_content.to_dict())
+                mongo_content_id = str(inserted_mongo_doc.inserted_id)
+                post.mongodb_content_id = mongo_content_id # MariaDB에도 업데이트
+                current_app.logger.info(f"MongoDB 게시글 본문 새로 생성 성공. MongoDB ID: {mongo_content_id}")
+            except Exception as e:
+                current_app.logger.error(f"MongoDB 새로 생성 중 오류 발생: {e}", exc_info=True)
+                return jsonify({'message': '게시글 본문 저장 중 오류가 발생했습니다.'}), 500
 
-    return jsonify({'message': '게시글이 성공적으로 수정되었습니다!'}), 200
+        # 2. MariaDB 게시글 메타데이터 업데이트
+        post.title = title
+        post.category = category
+        post.is_anonymous = is_anonymous
+        post.updated_at = datetime.datetime.utcnow() # 업데이트 시간 갱신
+        
+        # 닉네임 업데이트 (수정 시에도 닉네임이 변경될 수 있으므로)
+        post.author_nickname = g.nickname if g.nickname else g.username if g.username else "알 수 없음"
 
-# 게시글 삭제
+        db.session.commit()
+        current_app.logger.info(f"MariaDB 게시글 메타데이터 업데이트 성공. Post ID: {post.id}")
+
+        return jsonify({
+            'message': '게시글이 성공적으로 수정되었습니다!',
+            'post_id': post.id,
+            'mongodb_content_id': mongo_content_id
+        }), 200
+
+    except Exception as e:
+        db.session.rollback() # 오류 발생 시 MariaDB 트랜잭션 롤백
+        current_app.logger.error(f"게시글 수정 중 예상치 못한 오류 발생: {e}", exc_info=True)
+        return jsonify({'message': '게시글 수정 중 서버 오류가 발생했습니다.'}), 500
+
+
+# 5. 게시글 삭제 (DELETE)
 @community_bp.route('/posts/<int:post_id>', methods=['DELETE'])
 @token_required
+@roles_required('일반 사용자', '운영자', '관리자') # 게시글 삭제 권한 (일반 사용자는 본인 글만)
 def delete_post(post_id):
-    user_id = int(g.user_id)
-    post = db.session.get(Post, post_id)
+    try:
+        post = db.session.get(Post, post_id)
+        if not post:
+            return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
 
-    if not post:
-        return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
+        user_id = g.user_id
+        if post.author_id != user_id and not ('관리자' in g.user_roles or '운영자' in g.user_roles):
+            return jsonify({'message': '이 게시글을 삭제할 권한이 없습니다.'}), 403
 
-    if post.author_id != user_id:
-        return jsonify({'message': '이 게시글을 삭제할 권한이 없습니다.'}), 403
+        # MongoDB에서 본문 내용 삭제
+        if post.mongodb_content_id:
+            try:
+                get_mongo_post_content_collection().delete_one({'_id': ObjectId(post.mongodb_content_id)})
+                current_app.logger.info(f"MongoDB 본문 삭제 성공: MongoDB ID {post.mongodb_content_id}")
+            except Exception as e:
+                current_app.logger.error(f"MongoDB 본문 삭제 중 오류 발생: {e}", exc_info=True)
+                # MongoDB 삭제 실패해도 MariaDB 삭제는 진행 (데이터 일관성 유지 노력)
 
-    if post.mongodb_content_id:
-        mongo_content_data = get_mongo_post_content_collection().find_one({'_id': ObjectId(post.mongodb_content_id)})
-        if mongo_content_data:
-            mongo_content = MongoPostContent.from_mongo(mongo_content_data)
-            for path in mongo_content.attachment_paths:
-                filename = os.path.basename(path)
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-                    print(f"Deleted attachment: {filepath}")
-            get_mongo_post_content_collection().delete_one({'_id': ObjectId(post.mongodb_content_id)})
+        # MariaDB에서 게시글 삭제
+        db.session.delete(post)
+        db.session.commit()
+        current_app.logger.info(f"MariaDB 게시글 삭제 성공: Post ID {post_id}")
 
-    db.session.delete(post)
-    db.session.commit()
+        return jsonify({'message': '게시글이 성공적으로 삭제되었습니다!'}), 200
 
-    return jsonify({'message': '게시글이 성공적으로 삭제되었습니다!'}), 200
+    except Exception as e:
+        db.session.rollback() # 오류 발생 시 MariaDB 트랜잭션 롤백
+        current_app.logger.error(f"게시글 삭제 중 예상치 못한 오류 발생: {e}", exc_info=True)
+        return jsonify({'message': '게시글 삭제 중 서버 오류가 발생했습니다.'}), 500
 
-# --- 댓글 관련 API 엔드포인트 ---
 
-# 댓글 작성
+# 1. 댓글 작성 (POST)
 @community_bp.route('/posts/<int:post_id>/comments', methods=['POST'])
 @token_required
 def create_comment(post_id):
-    data = request.get_json()
-    content = data.get('content')
-
-    user_id = int(g.user_id)
-    user = db.session.get(User, user_id)
-    if not user:
-        return jsonify({'message': 'User not found'}), 404
-
     post = db.session.get(Post, post_id)
     if not post:
         return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
+
+    data = request.get_json()
+    content = data.get('content')
 
     if not content:
         return jsonify({'message': '댓글 내용을 입력해주세요.'}), 400
 
-    # --- 수정된 부분: 댓글 작성자의 표시 이름 결정 ---
-    # 댓글은 익명 옵션이 없으므로, 닉네임이 있으면 닉네임, 없으면 username 사용
-    comment_display_name = user.nickname if user.nickname else user.username
-
     new_comment = Comment(
         post_id=post_id,
-        author_id=user_id,
-        author_username=user.username, # MariaDB에 저장되는 실제 username
-        content=content,
-        display_author_name=comment_display_name # 새로 추가된 필드에 표시 이름 저장
+        author_id=g.user_id,
+        author_nickname=g.nickname if g.nickname else g.username if g.username else "알 수 없음",
+        content=content
     )
     db.session.add(new_comment)
     db.session.commit()
 
-    return jsonify({
-        'message': '댓글이 성공적으로 작성되었습니다!',
-        'comment': new_comment.to_dict()
-    }), 201
+    return jsonify({'message': '댓글이 성공적으로 작성되었습니다!', 'comment_id': new_comment.id}), 201
 
-# 게시글의 모든 댓글 조회
+# 2. 게시글의 모든 댓글 조회 (GET)
 @community_bp.route('/posts/<int:post_id>/comments', methods=['GET'])
-@token_required
-def get_comments_for_post(post_id):
-    post = db.session.get(Post, post_id)
-    if not post:
-        return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
-
+def get_comments(post_id):
     comments = Comment.query.filter_by(post_id=post_id).order_by(Comment.created_at.asc()).all()
     comments_data = []
+
+    # g.user_id에 직접 접근하기 전에 속성 존재 여부 확인
+    user_id_from_g = getattr(g, 'user_id', None) # ⭐ 수정: getattr 사용
+
     for comment in comments:
-        # --- 수정된 부분: 댓글 작성자의 표시 이름 반환 ---
-        # Comment 모델에 display_author_name이 저장되어 있으므로 이를 사용
+        user_liked_comment = False
+        if user_id_from_g: # ⭐ 수정: user_id_from_g 사용
+            existing_like = CommentLike.query.filter_by(user_id=user_id_from_g, comment_id=comment.id).first()
+            if existing_like:
+                user_liked_comment = True
+
         comments_data.append({
             'id': comment.id,
-            'post_id': comment.post_id,
-            'author_id': comment.author_id,
-            'author_username': comment.author_username, # 실제 username (디버깅용 등)
-            'display_author_name': comment.display_author_name, # 표시될 이름 (닉네임 또는 username)
+            'author_nickname': comment.author_nickname,
             'content': comment.content,
             'created_at': comment.created_at.isoformat(),
-            'updated_at': comment.updated_at.isoformat()
+            'updated_at': comment.updated_at.isoformat(),
+            'likes': comment.likes,
+            'is_author': (comment.author_id == user_id_from_g), # 현재 로그인한 사용자가 작성자인지 여부
+            'user_liked': user_liked_comment # 현재 로그인한 사용자가 이 댓글에 좋아요를 눌렀는지 여부
         })
+    return jsonify({'comments': comments_data}), 200
 
-    return jsonify({
-        'message': '댓글 목록 조회 성공',
-        'comments': comments_data
-    }), 200
-
-# 댓글 수정
-@community_bp.route('/comments/<int:comment_id>', methods=['PUT'])
-@token_required
-def update_comment(comment_id):
-    data = request.get_json()
-    content = data.get('content')
-    user_id = int(g.user_id)
-
-    comment = db.session.get(Comment, comment_id)
-    if not comment:
-        return jsonify({'message': '댓글을 찾을 수 없습니다.'}), 404
-
-    if comment.author_id != user_id:
-        return jsonify({'message': '이 댓글을 수정할 권한이 없습니다.'}), 403
-
-    if not content:
-        return jsonify({'message': '댓글 내용을 입력해주세요.'}), 400
-
-    comment.content = content
-    comment.updated_at = datetime.datetime.utcnow()
-    db.session.commit()
-
-    return jsonify({'message': '댓글이 성공적으로 수정되었습니다!', 'comment': comment.to_dict()}), 200
-
-# 댓글 삭제
+# 3. 댓글 삭제 (DELETE)
 @community_bp.route('/comments/<int:comment_id>', methods=['DELETE'])
 @token_required
 def delete_comment(comment_id):
-    user_id = int(g.user_id)
-
     comment = db.session.get(Comment, comment_id)
     if not comment:
         return jsonify({'message': '댓글을 찾을 수 없습니다.'}), 404
 
-    if comment.author_id != user_id:
+    user_id = g.user_id
+    if comment.author_id != user_id and not ('관리자' in g.user_roles or '운영자' in g.user_roles):
         return jsonify({'message': '이 댓글을 삭제할 권한이 없습니다.'}), 403
 
     db.session.delete(comment)
     db.session.commit()
 
     return jsonify({'message': '댓글이 성공적으로 삭제되었습니다!'}), 200
+
+# 4. 게시글 공감/추천 (POST)
+@community_bp.route('/posts/<int:post_id>/like', methods=['POST'])
+@token_required
+def like_post(post_id):
+    user_id = int(g.user_id)
+    post = db.session.get(Post, post_id)
+    if not post:
+        return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
+
+    existing_like = PostLike.query.filter_by(user_id=user_id, post_id=post_id).first()
+
+    if existing_like:
+        # 이미 좋아요를 눌렀으면 좋아요 취소
+        db.session.delete(existing_like)
+        post.likes = post.likes - 1 if post.likes > 0 else 0
+        db.session.commit()
+        return jsonify({'message': '게시글 좋아요가 취소되었습니다.', 'likes': post.likes}), 200
+    else:
+        # 좋아요 추가
+        new_like = PostLike(user_id=user_id, post_id=post_id)
+        db.session.add(new_like)
+        post.likes += 1
+        db.session.commit()
+        return jsonify({'message': '게시글에 좋아요를 눌렀습니다!', 'likes': post.likes}), 200
+
+# 댓글 좋아요/좋아요 취소
+@community_bp.route('/comments/<int:comment_id>/like', methods=['POST'])
+@token_required
+def like_comment(comment_id):
+    user_id = int(g.user_id)
+    comment = db.session.get(Comment, comment_id)
+    if not comment:
+        return jsonify({'message': '댓글을 찾을 수 없습니다.'}), 404
+
+    existing_like = CommentLike.query.filter_by(user_id=user_id, comment_id=comment_id).first()
+
+    if existing_like:
+        # 이미 좋아요를 눌렀으면 좋아요 취소
+        db.session.delete(existing_like)
+        comment.likes = comment.likes - 1 if comment.likes > 0 else 0
+        db.session.commit()
+        return jsonify({'message': '댓글 좋아요가 취소되었습니다.', 'likes': comment.likes}), 200
+    else:
+        # 좋아요 추가
+        new_like = CommentLike(user_id=user_id, comment_id=comment_id)
+        db.session.add(new_like)
+        comment.likes += 1
+        db.session.commit()
+        return jsonify({'message': '댓글에 좋아요를 눌렀습니다!', 'likes': comment.likes}), 200
+
+# 게시글 신고
+@community_bp.route('/posts/<int:post_id>/report', methods=['POST'])
+@token_required
+def report_post(post_id):
+    # 신고 로직 구현 (예: 신고 테이블에 기록, 관리자에게 알림 등)
+    # 여기서는 단순히 성공 메시지만 반환
+    return jsonify({'message': '게시글이 신고되었습니다. 관리자가 검토할 예정입니다.'}), 200
+
+# 댓글 신고
+@community_bp.route('/comments/<int:comment_id>/report', methods=['POST'])
+@token_required
+def report_comment(comment_id):
+    # 신고 로직 구현
+    return jsonify({'message': '댓글이 신고되었습니다. 관리자가 검토할 예정입니다.'}), 200
