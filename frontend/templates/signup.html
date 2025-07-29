@@ -1,9 +1,9 @@
 <!--frontend/templates/signup.html-->
 {% extends "base.html" %}
 
-{% block title %}회원가입 - 영마인드링크{% endblock %}
+{% block title %}회원가입 - Mindbridge{% endblock %}
 
-{% block extra_head %}
+{% block head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login_signup.css') }}">
 {% endblock %}
 
@@ -11,9 +11,11 @@
     <div class="auth-container">
         <div class="auth-form-card">
             <h1 class="auth-title">회원가입</h1>
-            <p class="auth-subtitle">지금 바로 영마인드링크에 가입하고 시작하세요!</p>
+            <p class="auth-subtitle">지금 바로 Mindbridge에 가입하고 시작하세요!</p>
 
             <form class="auth-form" id="signupForm"> {# id="signupForm" 추가 #}
+                <div id="error-message" class="error-message" style="display: none;"></div> {# 에러 메시지 표시 영역 #}
+
                 <div class="form-group">
                     <label for="username" class="form-label">사용자 이름</label>
                     <input type="text" id="username" placeholder="사용자 이름을 입력하세요" class="input-field" required>
@@ -31,16 +33,28 @@
                     <input type="password" id="password" placeholder="비밀번호를 입력하세요" class="input-field" required>
                 </div>
                 <div class="form-group">
-                    <label for="confirm-password" class="form-label">비밀번호 확인</label>
-                    <input type="password" id="confirm-password" placeholder="비밀번호를 다시 입력하세요" class="input-field" required>
+                    <label for="gender" class="form-label">성별</label>
+                    <select id="gender" class="input-field" required>
+                        <option value="">선택하세요</option>
+                        <option value="남성">남성</option>
+                        <option value="여성">여성</option>
+                        <option value="기타">기타</option>
+                    </select>
                 </div>
-                <div class="button-group">
-                    <button type="submit" class="auth-button primary">회원가입</button>
+                <div class="form-group">
+                    <label for="age" class="form-label">나이</label>
+                    <input type="number" id="age" placeholder="나이를 입력하세요" class="input-field" required min="1">
                 </div>
+                <div class="form-group">
+                    <label for="major" class="form-label">전공</label>
+                    <input type="text" id="major" placeholder="전공을 입력하세요" class="input-field" required>
+                </div>
+                
+                <button type="submit" class="auth-button">회원가입</button>
             </form>
-
-            <div class="auth-links">
-                <a href="{{ url_for('login') }}" class="auth-link">이미 계정이 있으신가요? 로그인</a>
+            
+            <div class="auth-footer">
+                <p>이미 계정이 있으신가요? <a href="{{ url_for('login') }}">로그인</a></p>
             </div>
         </div>
     </div>
@@ -48,60 +62,75 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const signupForm = document.getElementById('signupForm');
-            const usernameInput = document.getElementById('username');
-            const nicknameInput = document.getElementById('nickname');
-            const emailInput = document.getElementById('email');
-            const passwordInput = document.getElementById('password');
-            const confirmPasswordInput = document.getElementById('confirm-password');
+            const errorMessageDiv = document.getElementById('error-message');
 
-            signupForm.addEventListener('submit', async function(event) {
-                event.preventDefault(); // 폼 기본 제출 방지
+            signupForm.addEventListener('submit', async function(e) {
+                e.preventDefault(); // <-- 이 줄이 핵심입니다. 폼의 기본 제출 동작을 막습니다.
+                console.log('회원가입 폼 제출 이벤트 발생. 기본 동작 방지.'); // 디버깅 로그
 
-                const username = usernameInput.value.trim();
-                const nickname = nicknameInput.value.trim();
-                const email = emailInput.value.trim();
-                const password = passwordInput.value;
-                const confirmPassword = confirmPasswordInput.value;
+                const username = document.getElementById('username').value;
+                const nickname = document.getElementById('nickname').value;
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const gender = document.getElementById('gender').value;
+                const age = document.getElementById('age').value;
+                const major = document.getElementById('major').value;
 
-                // 필수 필드 유효성 검사
-                if (!username || !email || !password || !confirmPassword) {
-                    alert('모든 필수 정보를 입력해주세요.');
+                // 나이 필드 유효성 검사 (숫자이고 0보다 커야 함)
+                const parsedAge = parseInt(age, 10);
+                if (isNaN(parsedAge) || parsedAge <= 0) {
+                    errorMessageDiv.textContent = '나이를 올바르게 입력해주세요.';
+                    errorMessageDiv.style.display = 'block';
+                    console.log('회원가입 실패: 유효하지 않은 나이'); // 디버깅 로그
                     return;
                 }
 
-                // 비밀번호 일치 여부 확인
-                if (password !== confirmPassword) {
-                    alert('비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+                // 필수 필드 클라이언트 측 유효성 검사 (HTML required 속성 외 추가)
+                if (!username || !email || !password || !gender || !major) {
+                    errorMessageDiv.textContent = '모든 필수 정보를 입력해주세요.';
+                    errorMessageDiv.style.display = 'block';
+                    console.log('회원가입 실패: 필수 필드 누락'); // 디버깅 로그
                     return;
                 }
+
+                console.log('회원가입 데이터 준비:', { username, nickname, email, gender, age: parsedAge, major }); // 디버깅 로그
 
                 try {
-                    const response = await fetch('/api/auth/signup', {
+                    // fetchWithAuth는 base.html에 정의되어 있으며, JWT 토큰을 자동으로 포함합니다.
+                    // 회원가입은 토큰이 필요 없으므로 일반 fetch를 사용하거나, fetchWithAuth가 토큰 없이도 작동하도록 해야 합니다.
+                    // 여기서는 fetchWithAuth가 토큰이 없을 때도 작동하도록 가정합니다.
+                    const response = await fetch('/api/auth/register', { // fetchWithAuth 대신 일반 fetch 사용 (회원가입은 토큰 필요 없음)
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
                             username: username,
-                            nickname: nickname, // 별명은 선택 사항이므로 빈 문자열도 허용
+                            nickname: nickname,
                             email: email,
-                            password: password
-                        })
+                            password: password,
+                            gender: gender,
+                            age: parsedAge,
+                            major: major
+                        }),
                     });
 
+                    console.log('서버 응답 받음, 상태 코드:', response.status); // 디버깅 로그
                     const result = await response.json();
+                    console.log('서버 응답 본문:', result); // 디버깅 로그
 
                     if (response.ok) {
-                        alert(result.message || '회원가입이 성공적으로 완료되었습니다! 로그인해주세요.');
-                        // 회원가입 성공 시 로그인 페이지로 리다이렉트
-                        window.location.href = "{{ url_for('login') }}";
+                        await showAlert(result.message || '회원가입이 성공적으로 완료되었습니다! 로그인해주세요.');
+                        window.location.href = "{{ url_for('login') }}"; // 성공 시 로그인 페이지로 이동
                     } else {
-                        // 회원가입 실패 시 오류 메시지 표시
-                        alert(result.message || '회원가입 실패. 다시 시도해주세요.');
+                        errorMessageDiv.textContent = result.message || '회원가입 실패. 다시 시도해주세요.';
+                        errorMessageDiv.style.display = 'block';
+                        console.log('회원가입 실패: 서버 응답 오류'); // 디버깅 로그
                     }
                 } catch (error) {
-                    console.error('Error during signup request:', error);
-                    alert('서버와 통신 중 오류가 발생했습니다. 다시 시도해주세요.');
+                    console.error('회원가입 요청 중 오류 발생:', error); // 디버깅 로그
+                    errorMessageDiv.textContent = '서버와 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+                    errorMessageDiv.style.display = 'block';
                 }
             });
         });

@@ -1,175 +1,310 @@
-/* frontend/static/css/login_signup.css */
+/* --- 로그인 및 회원가입 페이지 전용 스타일 --- */
 
+/* 전체 레이아웃을 중앙에 배치 */
 .auth-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: calc(100vh - 84px - 200px); /* 헤더와 푸터 제외한 최소 높이 */
-    flex-grow: 1;
-    background-color: #F5F7FA; /* 배경색 */
-    padding: 30px 20px; /* 내부 패딩 */
+    min-height: calc(100vh - var(--header-height)); /* 헤더 높이를 뺀 전체 높이 */
+    padding: 40px 20px;
+    background-color: var(--background-color); /* base.css의 변수 사용, 단색 배경 유지 */
+    overflow: auto; /* 내용이 길어져도 스크롤 가능 */
 }
 
-.auth-form-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    padding: 40px;
+/* 로그인/회원가입 폼을 감싸는 공통 박스 스타일 */
+.auth-form-wrapper, .auth-form-card { /* signup.html의 .auth-form-card도 포함 */
     width: 100%;
-    max-width: 450px; /* 폼 카드 최대 너비 */
+    max-width: 500px; /* 폼 최대 너비 유지 (로그인 페이지와 동일) */
+    background-color: #fff;
+    padding: 50px; /* 내부 여백 유지 (로그인 페이지와 동일) */
+    border-radius: 16px; /* 모서리 둥글게 유지 (로그인 페이지와 동일) */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* 부드러운 그림자 (로그인 페이지 스샷과 유사하게) */
+    transition: all 0.3s ease; /* 부드러운 전환 효과 유지 */
+    border: none; /* 테두리 제거 */
+    backdrop-filter: none; /* 블러 효과 제거 */
+}
+
+/* 폼 상단 헤더 (로고, 제목) */
+.auth-header {
     text-align: center;
+    margin-bottom: 35px; /* 간격 유지 */
 }
 
-.auth-title {
-    font-size: 32px;
-    font-weight: 700;
-    color: #2C3E50;
-    margin-bottom: 10px;
+.auth-logo {
+    width: 90px; /* 로고 크기 유지 */
+    height: auto;
+    margin-bottom: 20px; /* 간격 유지 */
+    transition: transform 0.3s ease;
+    filter: none; /* 로고 그림자 제거 */
 }
 
-.auth-subtitle {
-    font-size: 16px;
-    color: #6C7A89;
-    margin-bottom: 30px;
+.auth-logo:hover {
+    transform: scale(1.05); /* 로고 호버 효과 유지 */
+    filter: none; /* 호버 시 그림자도 제거 */
 }
 
-.auth-form {
-    width: 100%;
+.auth-header h2 {
+    font-size: 32px; /* 제목 글자 크기 유지 */
+    font-weight: 700; /* 굵기 유지 */
+    color: #2C3E50; /* 색상 유지 */
+    margin-bottom: 10px; /* 간격 유지 */
+    letter-spacing: normal; /* 글자 간격 기본으로 유지 */
 }
 
+.auth-header p {
+    font-size: 1.1em; /* 설명 텍스트 크기 유지 */
+    color: #7f8c8d; /* 색상 유지 */
+    line-height: 1.6;
+}
+
+/* 입력 필드 그룹 (로그인 페이지) */
+.input-group {
+    margin-bottom: 30px; /* NEW: 로그인 페이지 입력 필드 간격 증가 */
+}
+
+.input-group:last-of-type { /* 마지막 input-group 하단 여백 줄이기 */
+    margin-bottom: 25px; 
+}
+
+
+/* 폼 그룹 (회원가입 페이지) */
 .form-group {
-    margin-bottom: 20px;
-    text-align: left;
+    margin-bottom: 25px; /* NEW: 회원가입 페이지 입력 필드 간격 유지 */
 }
 
-.form-label {
+/* 라벨 공통 스타일 */
+.input-group label, .form-group label { /* 로그인/회원가입 라벨 공통 */
     display: block;
-    font-size: 15px;
-    color: #34495E;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     font-weight: 500;
+    font-size: 16px;
+    color: #34495e;
 }
 
-.input-field {
+/* 입력 필드 공통 스타일 */
+.input-group input, .form-group input[type="text"],
+.form-group input[type="email"], .form-group input[type="password"],
+.form-group input[type="number"], .form-group select { /* 모든 입력 필드 공통 */
     width: 100%;
-    height: 50px;
-    padding: 0 15px;
-    border: 1px solid #E0E0E0;
-    border-radius: 8px;
+    padding: 14px 18px;
+    border: 1px solid #bdc3c7;
+    border-radius: 10px;
     font-size: 16px;
     color: #333;
-    outline: none;
+    background-color: #FFFFFF;
+    box-shadow: none; /* 내부 그림자 제거 */
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.input-field:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+.input-group input:focus, .form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.25);
 }
 
-.input-field::placeholder {
-    color: #95A5A6;
+/* Select 박스 스타일 */
+.input-group select, .form-group select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236C7A89%22%20d%3D%22M287%2C197.3L159.9%2C69.9c-4.4-4.4-11.5-4.4-15.9%2C0L5.4%2C197.3c-4.4%2C4.4-4.4%2C11.5%2C0%2C15.9l15.9%2C15.9c4.4%2C4.4%2C11.5%2C4.4%2C15.9%2C0l110.5-110.5l110.5%2C110.5c4.4%2C4.4%2C11.5%2C4.4%2C15.9%2C0l15.9-15.9C291.4%2C208.8%2C291.4%2C201.7%2C287%2C197.3z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 12px;
+    padding-right: 40px;
 }
 
-.button-group {
-    margin-top: 30px;
-}
 
+/* 버튼 스타일 */
 .auth-button {
     width: 100%;
-    padding: 15px 20px;
-    background-color: #007bff;
-    color: white;
+    padding: 16px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
+    background-color: var(--primary-color);
+    color: #fff;
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: none; /* 그림자 제거 (로그인 페이지와 동일) */
 }
 
-.auth-button.primary:hover {
-    background-color: #0056b3;
+.auth-button:hover {
+    background-color: #2980b9;
     transform: translateY(-2px);
+    box-shadow: none; /* 그림자 제거 (로그인 페이지와 동일) */
 }
 
-.auth-links {
-    margin-top: 25px;
-    font-size: 14px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px; /* 링크와 구분선 사이 간격 */
+.auth-button:active {
+    transform: translateY(0);
+    box-shadow: none; /* 그림자 제거 (로그인 페이지와 동일) */
 }
 
-.auth-link {
-    color: #007bff;
-    font-weight: 500;
-    transition: color 0.3s ease;
+/* 에러 메시지 */
+.error-message {
+    background-color: #e74c3c20; /* 배경색 (원래대로) */
+    color: #e74c3c; /* 텍스트 색상 (원래대로) */
+    padding: 14px; /* 패딩 (원래대로) */
+    border-radius: 10px; /* 둥근 정도 (원래대로) */
+    margin-bottom: 25px; /* 간격 (원래대로) */
+    font-size: 15px; /* 글자 크기 (원래대로) */
+    text-align: center;
+    border: none; /* 보더 제거 (원래대로) */
+    box-shadow: none; /* 그림자 제거 (원래대로) */
+    font-weight: normal; /* 굵기 기본으로 (원래대로) */
 }
 
-.auth-link:hover {
-    color: #0056b3;
+/* 폼 하단 푸터 (회원가입, 비밀번호 찾기 링크) */
+.auth-footer {
+    margin-top: 30px; /* 간격 (원래대로) */
+    text-align: center;
+}
+
+.auth-footer p {
+    color: #7f8c8d; /* 색상 (원래대로) */
+    margin-bottom: 12px; /* 간격 (원래대로) */
+    font-size: 15px; /* 글자 크기 (원래대로) */
+}
+
+.auth-footer a {
+    color: var(--primary-color);
+    font-weight: 500; /* 굵기 (원래대로) */
+    text-decoration: underline; /* 밑줄 (원래대로) */
+    transition: color 0.2s ease;
+}
+
+.auth-footer a:hover {
+    color: #2980b9;
     text-decoration: underline;
 }
 
-.auth-separator {
-    color: #95A5A6;
+/* 다크 모드 스타일 */
+body.dark-mode .auth-container {
+    background-color: #2c3e50; /* 다크 모드 배경 단색으로 유지 */
+}
+
+body.dark-mode .auth-form-wrapper, body.dark-mode .auth-form-card { /* 다크 모드에서도 공통으로 적용 */
+    background-color: #34495e;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* 다크 모드 그림자 (원래대로) */
+    border: none; /* 다크 모드 테두리 제거 */
+}
+
+body.dark-mode .auth-header h2,
+body.dark-mode .form-label {
+    color: #ecf0f1;
+}
+
+body.dark-mode .auth-header p,
+body.dark-mode .auth-footer {
+    color: #bdc3c7;
+}
+
+body.dark-mode .input-field {
+    background-color: #4a6582;
+    border-color: #5b748f;
+    color: #ecf0f1;
+}
+
+body.dark-mode .input-field:focus {
+    border-color: #1abc9c;
+    box-shadow: 0 0 0 4px rgba(26, 188, 156, 0.25);
+    background-color: #4a6582;
+}
+
+body.dark-mode .input-field::placeholder {
+    color: #bdc3c7;
+}
+
+body.dark-mode .input-field select {
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23bdc3c7%22%20d%3D%22M287%2C197.3L159.9%2C69.9c-4.4-4.4-11.5-4.4-15.9%2C0L5.4%2C197.3c-4.4%2C4.4-4.4%2C11.5%2C0%2C15.9l15.9%2C15.9c4.4%2C4.4%2C11.5%2C4.4%2C15.9%2C0l110.5-110.5l110.5%2C110.5c4.4%2C4.4%2C11.5%2C4.4%2C15.9%2C0l15.9-15.9C291.4%2C208.8%2C291.4%2C201.7%2C287%2C197.3z%22%2F%3E%3C%2Fsvg%3E');
+}
+
+body.dark-mode .auth-button {
+    background-color: #1abc9c; /* 다크 모드 버튼 색상 유지 */
+    box-shadow: 0 4px 15px rgba(26, 188, 156, 0.3);
+}
+
+body.dark-mode .auth-button:hover {
+    background-color: #16a085;
+    box-shadow: 0 6px 20px rgba(26, 188, 156, 0.4);
+}
+
+body.dark-mode .error-message {
+    background-color: #5b2c2c;
+    color: #e74c3c;
+    border-color: #c0392b;
+    box-shadow: 0 2px 5px rgba(192, 57, 43, 0.2);
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-    .auth-container {
-        padding: 20px 15px;
+    .auth-form-wrapper, .auth-form-card {
+        padding: 35px;
+        margin: 20px;
+        border-radius: 15px;
     }
-    .auth-form-card {
-        padding: 30px;
-    }
-    .auth-title {
+    .auth-header h2 {
         font-size: 28px;
     }
-    .auth-subtitle {
+    .auth-header p {
+        font-size: 1.05em;
+    }
+    .form-label {
         font-size: 15px;
-        margin-bottom: 25px;
     }
     .input-field {
-        height: 45px;
+        padding: 12px 15px;
         font-size: 15px;
+        border-radius: 10px;
     }
     .auth-button {
-        padding: 12px 15px;
+        padding: 14px;
         font-size: 16px;
+        border-radius: 10px;
     }
-    .auth-links {
-        font-size: 13px;
-        flex-direction: column; /* 모바일에서 링크 세로 정렬 */
-        gap: 5px;
-    }
-    .auth-separator {
-        display: none; /* 모바일에서 구분선 숨김 */
+    .auth-footer {
+        font-size: 1em;
     }
 }
 
 @media (max-width: 480px) {
-    .auth-form-card {
+    .auth-form-wrapper, .auth-form-card {
         padding: 25px;
+        margin: 15px;
+        border-radius: 12px;
     }
-    .auth-title {
+    .auth-header h2 {
         font-size: 24px;
+        margin-bottom: 8px;
     }
-    .auth-subtitle {
-        font-size: 14px;
+    .auth-logo {
+        width: 80px;
+        margin-bottom: 15px;
+    }
+    .auth-header p {
+        font-size: 0.95em;
+    }
+    .form-group {
         margin-bottom: 20px;
     }
-    .input-field {
-        height: 40px;
-        font-size: 14px;
+    .form-label {
+        font-size: 15px;
+        margin-bottom: 8px;
     }
-    .auth-button {
-        padding: 10px 12px;
+    .input-field {
+        padding: 12px 15px;
         font-size: 15px;
     }
-    .auth-links {
-        font-size: 12px;
+    .auth-button {
+        padding: 14px;
+        font-size: 16px;
+    }
+    .error-message {
+        padding: 10px 15px;
+        font-size: 0.9em;
+    }
+    .auth-footer {
+        font-size: 0.9em;
     }
 }

@@ -1,372 +1,474 @@
 /* frontend/static/css/base.css */
 
-/* 모든 요소에 box-sizing 적용하여 패딩, 보더가 너비에 포함되도록 */
+/* --- 기본 스타일 초기화 및 설정 --- */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+:root {
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 80px;
+    --header-height: 60px;
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --background-color: #f4f7f9;
+    --text-color: #34495e;
+
+    /* 라이트 모드 기본 사이드바 색상 */
+    --sidebar-bg: #ffffff; 
+    --sidebar-text-color: #34495e;
+    --sidebar-hover-bg: #e0e0e0;
+}
+
+/* Dark Mode Variables */
+body.dark-mode {
+    --background-color: #2c3e50;
+    --sidebar-bg: #22303e;
+    --sidebar-text-color: #bdc3c7;
+    --sidebar-hover-bg: #34495e;
+    --text-color: #ecf0f1;
+    --primary-color: #1abc9c;
+    --secondary-color: #3498db;
+}
+
 * {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', sans-serif; /* Google Font 적용 */
 }
 
 body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Inter', sans-serif;
-    background-color: #F5F7FA; /* 전체 페이지 기본 배경색 */
+    font-family: 'Noto Sans KR', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
     line-height: 1.6;
-    color: #4D4D4D; /* 기본 텍스트 색상 */
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 a {
     text-decoration: none;
-    color: inherit;
+    color: var(--primary-color);
 }
 
 ul {
     list-style: none;
-    padding: 0;
-    margin: 0;
 }
 
-/* --- App Container (전체 앱 레이아웃) --- */
-.app-container {
+/* 전체 컨테이너 - 수정된 부분 */
+.container {
     display: flex;
-    flex-direction: column; /* 세로 방향으로 요소 정렬 (헤더, 메인 레이아웃 래퍼, 푸터) */
-    min-height: 100vh; /* 최소 화면 높이 */
-    width: 100%;
-    max-width: 1600px; /* 양쪽 여백 조절 */
-    margin: 0 auto; /* 중앙 정렬 */
-    background-color: #FFFFFF; /* 앱 컨테이너 배경색 */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); /* 은은한 그림자 */
+    min-height: 100vh;
+    background-color: var(--background-color);
+    transition: background-color 0.3s ease;
+    /* 기존의 빈 공간을 만드는 설정 제거 */
 }
 
-/* --- Header --- */
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 30px; /* 헤더 패딩 조정 */
-    background-color: #FFFFFF;
-    border-bottom: 1px solid #ECECEC;
-    height: 84px; /* 고정 높이 */
-    width: 100%;
-    flex-shrink: 0; /* 헤더가 줄어들지 않도록 */
-}
-
-.header-left, .header-right {
-    display: flex;
-    align-items: center;
-}
-
-.header-logo-link {
-    display: flex;
-    align-items: center;
-}
-
-.header-logo {
-    height: 50px; /* 로고 높이 조정 */
-    width: auto;
-    margin-right: 15px; /* 로고와 다른 요소 사이 간격 */
-}
-
-.header-auth-button {
-    padding: 8px 15px;
-    border-radius: 5px;
-    margin-left: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: background-color 0.2s ease;
-    white-space: nowrap; /* 버튼 텍스트 줄바꿈 방지 */
-}
-
-.header-auth-button.secondary {
-    background-color: transparent;
-    border: 1px solid #007bff;
-    color: #007bff;
-}
-
-.header-auth-button.secondary:hover {
-    background-color: #e0f2ff;
-}
-
-.header-auth-button.primary {
-    background-color: #007bff; /* 주 색상 */
-    border: 1px solid #007bff;
-    color: #FFFFFF;
-}
-
-.header-auth-button.primary:hover {
-    background-color: #0056b3;
-}
-
-.user-display-name { /* 새로 추가된 스타일 */
-    font-size: 16px;
-    font-weight: 600;
-    color: #34495E;
-    margin-right: 15px;
-    white-space: nowrap;
-}
-
-
-/* --- Main Layout Wrapper (사이드바 + 메인 콘텐츠) --- */
-.main-layout-wrapper {
-    display: flex; /* 사이드바와 메인 콘텐츠를 가로로 배치 */
-    flex-grow: 1; /* 남은 공간을 모두 차지하도록 */
-    overflow: hidden; /* 내부 스크롤 처리 */
-}
-
-/* --- Sidebar --- */
+/* --- Sidebar (PC/Laptop 전용 - 768px 초과) --- */
 .sidebar {
-    width: 250px; /* 사이드바 너비 */
-    background-color: #FFFFFF;
-    border-right: 1px solid #ECECEC;
-    padding: 20px 0;
-    flex-shrink: 0; /* 사이드바가 줄어들지 않도록 */
-    overflow-y: auto; /* 내용이 길어지면 스크롤 가능 */
+    width: var(--sidebar-width);
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-shrink: 0;
+    overflow-x: hidden;
+    transition: width 0.3s ease, background-color 0.3s ease, color 0.3s ease;
 }
 
-.sidebar-nav {
-    padding: 0 15px;
+/* 사이드바가 접혔을 때 */
+.container.sidebar-collapsed .sidebar {
+    width: var(--sidebar-collapsed-width);
+    align-items: center;
 }
 
-.sidebar-menu li {
+/* collapsed 상태에서 텍스트 숨기기 */
+.container.sidebar-collapsed .sidebar-nav span,
+.container.sidebar-collapsed .auth-link span,
+.container.sidebar-collapsed .welcome-message,
+.container.sidebar-collapsed .dark-mode-toggle span {
+    display: none !important;
+    opacity: 0;
+}
+
+.container.sidebar-collapsed .sidebar-nav a i,
+.container.sidebar-collapsed .auth-link i,
+.container.sidebar-collapsed .dark-mode-toggle i {
+    margin-right: 0 !important;
+}
+
+.container.sidebar-collapsed .logo {
+    width: 40px;
+    height: auto;
+}
+
+.sidebar-header {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.sidebar-header .logo {
+    width: 100px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* 사이드바 네비게이션 */
+.sidebar-nav ul {
+    padding: 0;
+    margin-top: 0;
+}
+
+.sidebar-nav li {
     margin-bottom: 10px;
 }
 
-.sidebar-link {
+.sidebar-nav a,
+.sidebar-footer .auth-link {
     display: flex;
     align-items: center;
     padding: 12px 15px;
     border-radius: 8px;
-    color: #555;
-    font-weight: 500;
+    color: var(--sidebar-text-color);
+    text-decoration: none;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.sidebar-link i {
-    margin-right: 10px;
-    font-size: 18px;
-    width: 24px; /* 아이콘 영역 고정 */
+.sidebar-nav a i {
+    font-size: 1.2em;
+    margin-right: 15px;
+    width: 20px;
     text-align: center;
+    transition: color 0.3s ease;
 }
 
-.sidebar-link span {
-    font-size: 16px;
+.sidebar-nav a:hover,
+.sidebar-footer .auth-link:hover {
+    background-color: var(--sidebar-hover-bg);
+    color: #fff;
 }
 
-.sidebar-link:hover {
+/* 사이드바 푸터 */
+.sidebar-footer {
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    transition: border-color 0.3s ease;
+}
+
+.sidebar-footer .welcome-message {
+    font-size: 0.9em;
+    color: var(--sidebar-text-color);
+    margin-bottom: 10px;
+    transition: color 0.3s ease;
+}
+
+.sidebar-footer .auth-link {
+    font-size: 0.95em;
+    margin-bottom: 10px;
+}
+
+/* 다크 모드 토글 버튼 */
+.dark-mode-toggle {
     background-color: #f0f0f0;
     color: #333;
-}
-
-.sidebar-link.active {
-    background-color: #e0f2ff; /* 활성 메뉴 배경색 */
-    color: #007bff; /* 활성 메뉴 텍스트 색상 */
-    font-weight: 600;
-}
-
-/* --- Main Content Area --- */
-.main-content-area {
-    flex-grow: 1; /* 남은 공간을 모두 차지 */
-    padding: 20px;
-    overflow-y: auto; /* 내용이 길어지면 스크롤 가능 */
-    background-color: #F5F7FA; /* 메인 콘텐츠 영역 배경색 */
-}
-
-/* --- Footer --- */
-.footer {
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
     display: flex;
-    justify-content: center; /* 푸터 섹션들을 중앙으로 정렬 */
-    align-items: flex-start;
-    padding: 30px 20px; /* 패딩 조정 */
-    background-color: #2C3E50;
-    color: #EEE;
-    border-top: 1px solid #444;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-    gap: 40px; /* 컬럼 간 간격 증가 */
-    margin-top: auto;
-    text-align: center; /* 텍스트 중앙 정렬 */
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.footer-section {
+.dark-mode-toggle i {
+    margin-right: 8px;
+    font-size: 1.1em;
+}
+
+.dark-mode-toggle:hover {
+    background-color: #e0e0e0;
+    color: #000;
+}
+
+body.dark-mode .dark-mode-toggle {
+    background-color: #556c86;
+    color: #ecf0f1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+body.dark-mode .dark-mode-toggle:hover {
+    background-color: #6c88a4;
+    color: #fff;
+}
+
+.sidebar-footer .dark-mode-toggle {
+    margin-top: 15px;
+    width: 100%;
+}
+
+/* --- Main Content Area - 수정된 부분 --- */
+.main-content {
+    flex: 1; /* flex-grow: 1 대신 flex: 1 사용으로 남은 공간 모두 차지 */
     display: flex;
     flex-direction: column;
-    align-items: center; /* 푸터 섹션 내부 요소들을 중앙으로 정렬 */
-    margin: 0; /* 기존 마진 제거 */
-    max-width: 300px;
+    background-color: var(--background-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    /* margin-left와 width 설정 제거 - flex 레이아웃이 자동으로 처리 */
 }
 
-.footer-logo {
-    height: 40px;
-    margin-bottom: 15px;
+/* 메인 헤더 */
+.main-header {
+    background-color: #ffffff;
+    padding: 0 20px;
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.footer-info h3 {
-    margin-bottom: 10px;
+body.dark-mode .main-header {
+    background-color: #3b506b;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* 헤더 제목 */
+.main-header h1 {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--text-color);
+    flex-grow: 1;
+    transition: color 0.3s ease;
+    margin-left: 0;
+}
+
+/* 헤더 다크 모드 토글 버튼 */
+.main-header .dark-mode-toggle {
+    display: flex;
+    margin-left: auto;
+}
+
+/* PC용 삼색바 토글 버튼 */
+#sidebar-toggle {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-color);
+    margin-right: 20px;
+    transition: color 0.3s ease;
+    display: block;
+}
+
+#sidebar-toggle:hover {
+    color: var(--primary-color);
+}
+
+.content-wrapper {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+/* --- Custom Alert Modal --- */
+.alert-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.alert-modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.alert-modal {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-mode .alert-modal {
+    background-color: #3b506b;
     color: #ecf0f1;
 }
 
-.footer-info p {
-    font-size: 14px;
+.alert-modal h3 {
+    font-size: 1.5em;
+    color: #333;
+    margin-bottom: 15px;
+    transition: color 0.3s ease;
+}
+
+body.dark-mode .alert-modal h3 {
+    color: #ecf0f1;
+}
+
+.alert-modal p {
+    font-size: 1.1em;
+    color: #666;
+    margin-bottom: 25px;
     line-height: 1.5;
-    margin-bottom: 5px;
+    transition: color 0.3s ease;
+}
+
+body.dark-mode .alert-modal p {
     color: #bdc3c7;
 }
 
-.footer-social h4 {
-    margin-bottom: 15px;
-    color: #ecf0f1;
+.alert-modal button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.social-icons {
-    display: flex;
-    gap: 15px; /* 아이콘 간 간격 */
+.alert-modal button:hover {
+    background-color: #2980b9;
 }
 
-.social-icons a {
-    color: #EEE;
-    font-size: 20px;
-    transition: color 0.2s ease;
-}
-
-.social-icons a:hover {
-    color: #007bff; /* 호버 시 색상 변경 */
-}
-
-
-
-/* 반응형 디자인 */
-@media (max-width: 992px) {
-    .header {
-        padding: 10px 20px;
-    }
-    .header-logo {
-        height: 45px;
-    }
-    .header-auth-button {
-        padding: 7px 12px;
-        font-size: 13px;
-    }
-    .user-display-name { /* 새로 추가된 스타일 */
-        font-size: 15px;
-        margin-right: 10px;
-    }
-    .footer {
-        flex-direction: column;
-        align-items: center;
-        padding: 30px 20px;
-        gap: 20px; /* 모바일에서 섹션 간 간격 조정 */
-    }
-    .footer-section {
-        width: 100%;
-        max-width: 300px; /* 모바일에서 최대 너비 제한 */
-    }
-}
-
+/* --- Mobile Specific Styles --- */
 @media (max-width: 768px) {
-    .header {
-        flex-direction: column;
-        height: auto;
-        padding: 15px 20px;
-    }
-    .header-logo {
-        max-width: 150px;
-    }
-    /* 모바일에서 사이드바가 상단 가로 메뉴로 변환 */
-    .main-layout-wrapper {
-        flex-direction: column;
-    }
+    /* 모바일에서는 사이드바를 오버레이로 처리 */
     .sidebar {
-        width: 100%;
-        height: auto; /* 높이 유동적 */
-        border-right: none;
-        border-bottom: 1px solid #ECECEC;
-        padding: 10px 0;
-    }
-    .sidebar-nav {
-        display: flex; /* 메뉴 아이템들을 가로로 배치 */
-        justify-content: space-around;
-    }
-    .sidebar-menu {
+        position: fixed;
+        top: 0;
+        left: 0; /* left를 0으로 설정 */
+        height: 100vh;
+        z-index: 1001;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+        background-color: var(--sidebar-bg);
+        transition: transform 0.3s ease-out, background-color 0.3s ease, color 0.3s ease;
         display: flex;
-        width: 100%;
-        justify-content: space-around;
-        padding: 0;
-        flex-wrap: wrap; /* 메뉴가 많아지면 줄바꿈 */
-    }
-    .sidebar-menu li {
-        margin-bottom: 0;
-        flex: 1; /* 각 메뉴가 동일한 공간 차지 */
-        text-align: center;
-        min-width: 100px; /* 너무 작아지지 않도록 */
-    }
-    .sidebar-link {
-        flex-direction: column; /* 아이콘과 텍스트를 세로로 */
-        padding: 8px 5px;
-        font-size: 12px;
-    }
-    .sidebar-link i {
-        margin-right: 0;
-        margin-bottom: 5px;
-        font-size: 16px;
-    }
-    .sidebar-link span {
-        font-size: 12px;
+        transform: translateX(-100%); /* 초기에는 왼쪽으로 완전히 숨김 */
     }
 
-    .main-content-area {
-        padding: 15px;
+    /* 모바일에서 사이드바가 열렸을 때 */
+    .container.mobile-sidebar-open .sidebar {
+        transform: translateX(0); /* 제자리로 이동하여 표시 */
     }
-
-    .footer-section {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        padding: 20px;
-    }
-    .footer-column { /* 이 클래스는 base.html에서 제거되었으므로, 여기서도 제거하거나 재정의 */
-        margin: 15px 0;
-        align-items: center;
-        max-width: 90%;
-    }
-    .user-display-name { /* 새로 추가된 스타일 */
-        font-size: 14px;
-        margin-right: 0; /* 모바일에서 간격 제거 */
-        margin-bottom: 10px; /* 세로 정렬 시 아래 여백 */
-    }
-    .header-right { /* 모바일에서 버튼들이 세로로 정렬되도록 */
-        flex-direction: column;
-        align-items: center;
-    }
-    .header-auth-button {
+    
+    .main-content {
+        /* 모바일에서는 margin과 width 제거 */
         margin-left: 0;
-        margin-top: 5px;
+        width: 100%;
+        padding-top: var(--header-height);
+    }
+
+    .main-header {
+        display: flex;
+        justify-content: space-between;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text-color);
+        padding: 10px 20px;
+        height: var(--header-height);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 1000;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .main-header h1 {
+        font-size: 1.2rem;
+        text-align: center;
+        flex-grow: 1;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    #sidebar-toggle {
+        display: block;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--sidebar-text-color);
+        margin-right: 15px;
+        transition: color 0.3s ease;
+    }
+
+    #sidebar-toggle:hover {
+        color: var(--primary-color);
+    }
+
+    .main-header .dark-mode-toggle {
+        margin-left: 15px;
+        background: none;
+        color: var(--sidebar-text-color);
+        box-shadow: none;
+        padding: 0;
+    }
+
+    .main-header .dark-mode-toggle i {
+        margin-right: 0;
+    }
+
+    .main-header .dark-mode-toggle span {
+        display: none;
+    }
+
+    /* 모바일 사이드바 오버레이 */
+    .mobile-sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .mobile-sidebar-overlay.visible {
+        opacity: 1;
+        visibility: visible;
     }
 }
 
 @media (max-width: 480px) {
-    .header-auth-button {
-        font-size: 12px;
-        padding: 6px 10px;
+    .main-header {
+        padding: 8px 10px;
     }
-    .sidebar-menu li {
-        min-width: 80px;
+    .main-header h1 {
+        font-size: 1rem;
     }
-    .sidebar-link {
-        font-size: 11px;
+    #sidebar-toggle {
+        font-size: 1.3rem;
     }
-    .sidebar-link i {
-        font-size: 14px;
-    }
-    .sidebar-link span {
-        font-size: 11px;
-    }
-    .footer-heading {
-        font-size: 15px;
-    }
-    .footer-text {
-        font-size: 12px;
-    }
-    .user-display-name {
-        font-size: 13px;
+    .main-header .dark-mode-toggle {
+        font-size: 0.7em;
     }
 }

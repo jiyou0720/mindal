@@ -5,8 +5,7 @@
 .page-content-wrapper {
     max-width: 1200px; /* 메인 콘텐츠 최대 너비 */
     margin: 0 auto; /* 중앙 정렬 */
-    padding: 30px 20px;
-    flex-grow: 1; /* 남은 공간을 채우도록 설정 */
+    padding: 30px 20px; /* base.css의 main-content-area 패딩에 추가 */
 }
 
 .page-title {
@@ -27,7 +26,7 @@
     background-color: #FFFFFF;
     border-radius: 12px;
     padding: 25px;
-    margin-bottom: 30px;
+    margin-bottom: 30px; /* 섹션 하단 간격 */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* 은은한 그림자 */
 }
 
@@ -36,186 +35,91 @@
     font-weight: 600;
     color: #34495E;
     margin-bottom: 20px;
-    border-bottom: 1px solid #F0F0F0;
+    border-bottom: 1px solid #E0E6ED;
     padding-bottom: 15px;
 }
 
-/* KPI Overview Section */
-.kpi-cards-container {
+.kpi-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* 반응형 그리드 */
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
 }
 
 .kpi-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    background-color: #F8F9FA;
+    background-color: #F8FAFC;
+    border: 1px solid #E9EEF4;
     border-radius: 10px;
+    padding: 20px;
     text-align: center;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .kpi-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .kpi-icon {
-    font-size: 36px;
-    color: #007bff; /* 포인트 색상 */
+    font-size: 3em;
+    color: var(--primary-color);
     margin-bottom: 10px;
 }
 
 .kpi-value {
-    font-size: 28px;
+    font-size: 2.5em;
     font-weight: 700;
     color: #2C3E50;
     margin-bottom: 5px;
 }
 
 .kpi-label {
-    font-size: 14px;
-    color: #7F8C8D;
+    font-size: 0.95em;
+    color: #6C7A89;
 }
 
-/* Insights Section (그래프/차트) */
-.insights-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 25px;
-}
-
-.insight-card {
-    background-color: #F8F9FA;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-}
-
-.card-subheading {
-    font-size: 20px;
-    font-weight: 600;
-    color: #34495E;
-    margin-bottom: 15px;
-    text-align: center;
-}
-
-.chart-area {
-    width: 100%;
-    min-height: 200px; /* 차트 영역 최소 높이 */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #e9ecef; /* 차트 배경색 */
-    border-radius: 8px;
-    margin-bottom: 15px;
-    overflow: hidden; /* 이미지 넘침 방지 */
-}
-
-.chart-area img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-}
-
-.chart-description {
-    font-size: 14px;
-    color: #7F8C8D;
-    text-align: center;
-}
-
-.keyword-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-    padding: 15px;
-    min-height: 100px; /* 키워드 목록 최소 높이 */
-}
-
-.keyword-item {
-    background-color: #007bff;
-    color: #FFFFFF;
-    padding: 8px 15px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 500;
-    white-space: nowrap; /* 줄바꿈 방지 */
-}
-
-
-/* Recent Activity Section */
-.activity-list-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.activity-item {
-    background-color: #F8F9FA;
-    border-left: 5px solid #007bff; /* 왼쪽 강조선 */
-    padding: 15px 20px;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.02);
-}
-
-.activity-type {
-    font-size: 15px;
-    font-weight: 600;
-    color: #007bff;
-    margin-bottom: 5px;
-}
-
-.activity-description {
-    font-size: 14px;
-    color: #4D4D4D;
-    margin-bottom: 5px;
-}
-
-.activity-date {
-    font-size: 12px;
+.kpi-info-message {
+    font-size: 0.85em;
     color: #95A5A6;
-    align-self: flex-end; /* 오른쪽 정렬 */
+    text-align: center;
+    margin-top: 20px;
 }
 
-/* Call to Action Section (CTA) */
-.cta-cards-container {
+.cta-section {
+    text-align: center;
+}
+
+.cta-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 25px;
+    margin-top: 20px;
 }
 
 .cta-card {
+    background-color: #F8FAFC;
+    border: 1px solid #E9EEF4;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
     align-items: center;
-    text-align: center;
-    padding: 30px 20px;
-    border-radius: 12px;
-    background-color: #FFFFFF;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-    color: #4D4D4D;
+    justify-content: center;
+    min-height: 180px;
 }
 
 .cta-card:hover {
-    transform: translateY(-8px);
+    transform: translateY(-5px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    background-color: #e0f2ff; /* 호버 시 배경색 */
 }
 
 .cta-icon {
-    font-size: 48px;
-    margin-bottom: 20px;
+    font-size: 3.5em;
     color: #007bff; /* 아이콘 색상 */
+    margin-bottom: 20px;
 }
 
 .cta-title {
@@ -231,7 +135,160 @@
     line-height: 1.4;
 }
 
-/* 반응형 디자인을 위한 추가 미디어 쿼리 */
+/* NEW: 공지사항 섹션 스타일 */
+.notice-section {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px; /* 다른 섹션과의 간격 */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.public-notices-list {
+    margin-top: 20px;
+}
+
+.notice-item {
+    background-color: #F8FAFC;
+    border: 1px solid #E9EEF4;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.notice-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.notice-item:last-child {
+    margin-bottom: 0;
+}
+
+.notice-title {
+    font-size: 1.15em;
+    font-weight: 600;
+    color: #34495E;
+    margin-bottom: 5px;
+}
+
+.notice-meta {
+    font-size: 0.85em;
+    color: #95A5A6;
+    margin-bottom: 10px;
+}
+
+.notice-content {
+    font-size: 0.95em;
+    color: #5A6B7F;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.read-more-notice {
+    display: inline-block;
+    font-size: 0.9em;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.read-more-notice:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+.loading-message, .error-message, .no-data-message {
+    text-align: center;
+    padding: 20px;
+    color: #6C7A89;
+    font-style: italic;
+}
+
+/* Dark mode adjustments */
+body.dark-mode .dashboard-section {
+    background-color: #3b506b;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .section-heading {
+    color: #ecf0f1;
+    border-bottom-color: #556c86;
+}
+
+body.dark-mode .kpi-card {
+    background-color: #4a6582;
+    border-color: #5b748f;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .kpi-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .kpi-icon {
+    color: var(--primary-color); /* Dark mode primary color */
+}
+
+body.dark-mode .kpi-value {
+    color: #ecf0f1;
+}
+
+body.dark-mode .kpi-label,
+body.dark-mode .kpi-info-message {
+    color: #bdc3c7;
+}
+
+body.dark-mode .cta-card {
+    background-color: #4a6582;
+    border-color: #5b748f;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .cta-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .cta-icon {
+    color: var(--primary-color); /* Dark mode primary color */
+}
+
+body.dark-mode .cta-title {
+    color: #ecf0f1;
+}
+
+body.dark-mode .cta-description {
+    color: #bdc3c7;
+}
+
+body.dark-mode .notice-item {
+    background-color: #4a6582;
+    border-color: #5b748f;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .notice-item:hover {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+body.dark-mode .notice-title {
+    color: #ecf0f1;
+}
+
+body.dark-mode .notice-meta,
+body.dark-mode .notice-content {
+    color: #bdc3c7;
+}
+
+body.dark-mode .read-more-notice {
+    color: var(--primary-color); /* Dark mode primary color */
+}
+
+
+/* 반응형 디자인 */
 @media (max-width: 992px) {
     .page-title {
         font-size: 28px;
@@ -256,32 +313,80 @@
     }
     .page-title {
         font-size: 24px;
-        text-align: center;
     }
     .page-description {
-        font-size: 15px;
-        text-align: center;
+        font-size: 14px;
+        margin-bottom: 20px;
     }
-    .kpi-cards-container,
-    .insights-container,
-    .cta-cards-container {
-        grid-template-columns: 1fr; /* 모바일에서는 1열로 */
+    .dashboard-section {
+        padding: 20px;
+        margin-bottom: 20px;
     }
     .section-heading {
         font-size: 20px;
-        text-align: center;
+        margin-bottom: 15px;
     }
-    .kpi-card, .insight-card, .cta-card {
+    /* 모바일: KPI 카드 세로 정렬 */
+    .kpi-cards-grid {
+        grid-template-columns: 1fr; /* 모바일에서는 한 줄에 하나의 카드 */
+        gap: 15px;
+    }
+    .kpi-card {
         padding: 15px;
+    }
+    .kpi-icon {
+        font-size: 2em;
+    }
+    .kpi-value {
+        font-size: 1.8em;
+    }
+    /* 모바일: CTA 카드 세로 정렬 */
+    .cta-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    .cta-card {
+        padding: 20px;
+    }
+    .cta-icon {
+        font-size: 40px;
+    }
+    .notice-item {
+        padding: 12px 15px;
+        margin-bottom: 10px;
+    }
+    .notice-title {
+        font-size: 1em;
+    }
+    .notice-meta, .notice-content {
+        font-size: 0.8em;
     }
 }
 
 @media (max-width: 480px) {
-    .kpi-value {
-        font-size: 22px;
+    .page-title {
+        font-size: 20px;
     }
-    .kpi-label {
+    .page-description {
         font-size: 13px;
+    }
+    .section-heading {
+        font-size: 18px;
+    }
+    .kpi-card {
+        padding: 12px;
+    }
+    .kpi-icon {
+        font-size: 1.8em;
+    }
+    .kpi-value {
+        font-size: 1.5em;
+    }
+    .cta-card {
+        padding: 15px;
+    }
+    .cta-icon {
+        font-size: 30px;
     }
     .cta-title {
         font-size: 18px;

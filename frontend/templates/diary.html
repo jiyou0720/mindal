@@ -3,12 +3,9 @@
 
 {% block title %}오늘, 일기 - 영마인드링크{% endblock %}
 
-{% block extra_head %}
+{% block head %}
+    {# diary.css 파일만 외부 링크로 로드합니다. #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/diary.css') }}">
-    {# Firebase SDK CDN 링크는 이제 필요 없습니다. Flask 백엔드 API를 사용합니다. #}
-    {# <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script> #}
-    {# <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script> #}
-    {# <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script> #}
 {% endblock %}
 
 {% block content %}
@@ -17,40 +14,38 @@
             <div class="diary-header-section">
                 <h1 class="diary-page-title">오늘, 나의 일기</h1>
                 <div class="diary-random-title-box">
-                    <div class="diary-random-title-text">오늘의 랜덤 일기 - 만나서 반가워요!</div>
+                    <p id="randomDiaryTitle" class="diary-random-title-text">오늘 하루는 어떠셨나요?</p>
                 </div>
             </div>
 
             <div class="diary-calendar-container">
                 <div class="calendar-navigation">
                     <button id="prevMonth" class="nav-button"><i class="fas fa-chevron-left"></i></button>
-                    <span id="currentMonthYear" class="month-year-display"></span>
+                    <h2 id="currentMonthYear" class="calendar-title"></h2>
                     <button id="nextMonth" class="nav-button"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <div class="calendar-grid">
-                    <div class="calendar-weekdays">
-                        <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
-                    </div>
-                    <div class="calendar-days" id="calendarDays">
-                        <!-- 날짜가 여기에 동적으로 삽입됩니다 -->
-                    </div>
+                <div class="calendar-weekdays">
+                    <span>일</span>
+                    <span>월</span>
+                    <span>화</span>
+                    <span>수</span>
+                    <span>목</span>
+                    <span>금</span>
+                    <span>토</span>
                 </div>
+                <div id="calendarDays" class="calendar-days">
+                    <!-- 날짜가 여기에 동적으로 삽입됩니다 -->
+                </div>
+
+                {# 로그인 필요 오버레이는 제거되었습니다. #}
             </div>
 
-            <div class="diary-entry-section">
+            <!-- id="diaryEntrySection" 추가 -->
+            <div class="diary-entry-section" id="diaryEntrySection">
                 <div class="diary-entry-header">
                     <h2 id="diaryEntryTitle">날짜를 선택하여 일기를 작성하세요.</h2>
-                    <div class="mood-selection-container" id="moodEmojisContainer">
-                        <span class="mood-emoji" data-mood="happy">😊</span>
-                        <span class="mood-emoji" data-mood="neutral">😐</span>
-                        <span class="mood-emoji" data-mood="sad">😔</span>
-                        <span class="mood-emoji" data-mood="angry">😠</span>
-                        <span class="mood-emoji" data-mood="excited">🤩</span>
-                        <span class="mood-emoji" data-mood="calm">😌</span>
-                        <span class="mood-emoji" data-mood="anxious">😟</span>
-                        <span class="mood-emoji" data-mood="grateful">🙏</span>
-                        <span class="mood-emoji" data-mood="tired">😫</span>
-                        <span class="mood-emoji" data-mood="lonely">🥺</span>
+                    <div id="moodSelectionContainer" class="mood-selection-container mood-emojis">
+                        <!-- 기분 이모지들이 여기에 JS로 생성됩니다 -->
                     </div>
                 </div>
                 <form id="diaryEntryForm" class="diary-entry-form">
@@ -62,341 +57,302 @@
                 </form>
             </div>
         </div>
-
-        <!-- 로그인 오버레이 (초기에는 숨겨져 있음) -->
-        <div class="login-overlay hidden" id="loginOverlay">
-            <div class="login-prompt-card">
-                <h2>로그인이 필요합니다</h2>
-                <p>이 기능을 사용하려면 로그인하거나 회원가입을 해주세요.</p>
-                <div class="prompt-buttons">
-                    <a href="{{ url_for('login') }}" class="btn primary">로그인</a>
-                    <a href="{{ url_for('signup') }}" class="btn secondary">회원가입</a>
-                </div>
-            </div>
-        </div>
     </div>
+{% endblock %}
 
-    <script>
-        // 전역 변수 설정
+{% block scripts %}
+    <script type="module">
+        // Firebase 관련 라이브러리 임포트 제거됨
+
+        // Firebase 설정 관련 변수 제거됨
+        // let app, db, auth, userId = null;
+        // let isAuthReady = false; // 인증 준비 상태를 추적 (이제 Flask 백엔드 인증 사용)
+
+        // 기분 이모지 매핑
         const moodEmojis = {
             'happy': '😊', 'neutral': '😐', 'sad': '😔', 'angry': '😠',
             'excited': '🤩', 'calm': '😌', 'anxious': '😟', 'grateful': '🙏',
             'tired': '😫', 'lonely': '🥺'
         };
 
-        let currentActiveDateElement = null; // 현재 선택된 날짜 DOM 요소
-        let selectedDate = null; // 현재 선택된 날짜 (Date 객체)
-        let selectedMood = null; // 선택된 무드 키
+        // 현재 달력에 표시될 날짜
+        let currentDate = new Date();
+        let selectedDate = null; // 선택된 날짜
+        let selectedMood = null; // 선택된 기분 이모지 키
         let currentDiaryEntryId = null; // 현재 로드된 일기의 MongoDB _id (삭제용)
 
-        // --- 여기에 currentMonth 변수를 추가했습니다 ---
-        let currentMonth = new Date(); // 캘린더의 현재 표시 월을 나타내는 Date 객체
-
         // DOM 요소 가져오기
-        const calendarDaysContainer = document.getElementById('calendarDays');
-        const currentMonthYearSpan = document.getElementById('currentMonthYear');
-        const prevMonthButton = document.getElementById('prevMonth');
-        const nextMonthButton = document.getElementById('nextMonth');
-        const diaryEntryForm = document.getElementById('diaryEntryForm');
-        const diaryContentInput = document.getElementById('diaryContent');
-        const saveDiaryButton = document.getElementById('saveDiary');
-        const deleteDiaryButton = document.getElementById('deleteDiary');
-        const diaryContentWrapperOuter = document.getElementById('diaryContentWrapperOuter');
-        const loginOverlay = document.getElementById('loginOverlay');
-        const moodEmojisContainer = document.getElementById('moodEmojisContainer');
-        const diaryEntryTitle = document.getElementById('diaryEntryTitle'); // 추가된 제목 요소
+        const currentMonthYearEl = document.getElementById('currentMonthYear');
+        const calendarDaysEl = document.getElementById('calendarDays');
+        const prevMonthBtn = document.getElementById('prevMonth');
+        const nextMonthBtn = document.getElementById('nextMonth');
+        const diaryEntrySection = document.getElementById('diaryEntrySection'); // ID 추가됨
+        const diaryEntryTitle = document.getElementById('diaryEntryTitle');
+        const diaryContent = document.getElementById('diaryContent');
+        const moodSelectionContainer = document.getElementById('moodSelectionContainer');
+        const saveDiaryBtn = document.getElementById('saveDiary');
+        const deleteDiaryBtn = document.getElementById('deleteDiary');
+        const randomDiaryTitle = document.getElementById('randomDiaryTitle');
 
-        // JWT 토큰이 필요한 API 요청을 위한 fetch 래퍼 함수 (base.html에 정의됨)
-        // 이 함수가 없으면 로그인 체크나 일기 저장/로드 시 오류 발생
-        // base.html에서 정의되었으므로 여기서는 선언하지 않음
+        // 일기 데이터 저장 객체 (로컬 캐시 역할)
+        let diaryEntries = {};
 
-        // UI 업데이트 함수
-        function showLoginRequiredUI() {
-            diaryContentWrapperOuter.classList.add('hidden');
-            loginOverlay.classList.remove('hidden');
-        }
+        // 랜덤 일기 제목 목록
+        const randomTitles = [
+            "오늘 하루는 어떠셨나요?",
+            "기억하고 싶은 순간을 기록해보세요.",
+            "당신의 감정을 표현해보세요.",
+            "오늘의 작은 행복을 찾아보세요.",
+            "마음을 정리하는 시간을 가져보세요.",
+            "오늘의 당신은 어떤가요?"
+        ];
 
-        function showDiaryContentUI() {
-            diaryContentWrapperOuter.classList.remove('hidden');
-            loginOverlay.classList.add('hidden');
-        }
+        // 랜덤 일기 제목 설정 함수
+        const setRandomDiaryTitle = () => {
+            const randomIndex = Math.floor(Math.random() * randomTitles.length);
+            randomDiaryTitle.textContent = randomTitles[randomIndex];
+        };
 
-        // 로그인 상태 확인 및 UI 업데이트 함수
-        async function checkLoginStatusAndUpdateUI() {
-            const token = localStorage.getItem('jwt_token');
-
-            if (!token) {
-                console.log("No JWT token found. Showing login required UI.");
-                showLoginRequiredUI();
-                return;
+        // 기분 이모지 렌더링
+        const renderMoodEmojis = () => {
+            moodSelectionContainer.innerHTML = ''; // 기존 이모지 초기화
+            for (const moodKey in moodEmojis) {
+                const emojiSpan = document.createElement('span');
+                emojiSpan.classList.add('mood-emoji');
+                emojiSpan.textContent = moodEmojis[moodKey];
+                emojiSpan.dataset.mood = moodKey; // 데이터 속성에 기분 키 저장
+                emojiSpan.addEventListener('click', () => selectMood(moodKey));
+                moodSelectionContainer.appendChild(emojiSpan);
             }
+        };
 
-            try {
-                const response = await fetchWithAuth('/api/auth/me', {
-                    method: 'GET'
-                });
-
-                if (response.ok) {
-                    console.log("Token verified successfully. Showing diary content.");
-                    showDiaryContentUI();
-                    renderCalendar(); // 토큰 확인 성공 시 캘린더 렌더링
-                } else {
-                    console.error("Failed to verify token (server error or invalid token). Showing login required UI.");
-                    localStorage.removeItem('jwt_token'); // 유효하지 않은 토큰 제거
-                    showLoginRequiredUI();
-                }
-            } catch (error) {
-                console.error("Failed to verify token (network error or unexpected response):", error);
-                localStorage.removeItem('jwt_token'); // 네트워크 오류 시에도 토큰 제거
-                showLoginRequiredUI();
+        // 기분 선택 함수
+        const selectMood = (moodKey) => {
+            selectedMood = moodKey;
+            // 모든 이모지에서 'selected' 클래스 제거
+            document.querySelectorAll('.mood-emoji').forEach(emoji => {
+                emoji.classList.remove('selected');
+            });
+            // 선택된 이모지에 'selected' 클래스 추가
+            const selectedEmojiEl = document.querySelector(`.mood-emoji[data-mood="${moodKey}"]`);
+            if (selectedEmojiEl) {
+                selectedEmojiEl.classList.add('selected');
             }
-        }
+        };
 
         // 캘린더 렌더링 함수
-        async function renderCalendar() { // async 키워드 추가
-            calendarDaysContainer.innerHTML = ''; // 기존 날짜 지우기
-            const year = currentMonth.getFullYear();
-            const month = currentMonth.getMonth(); // 0-11
-            currentMonthYearSpan.textContent = `${year}년 ${month + 1}월`;
+        const renderCalendar = async (year, month) => { // async 추가
+            currentMonthYearEl.textContent = `${year}년 ${month + 1}월`;
+            calendarDaysEl.innerHTML = ''; // 기존 날짜들 초기화
 
-            // 해당 월의 첫 번째 날 (요일을 알기 위함)
-            const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 = 일요일, 6 = 토요일
-            // 해당 월의 마지막 날
-            const lastDateOfMonth = new Date(year, month + 1, 0).getDate();
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); // 해당 월의 첫째 날 요일 (0: 일요일, 6: 토요일)
+            const daysInMonth = new Date(year, month + 1, 0).getDate(); // 해당 월의 마지막 날짜
 
-            // --- 월별 일기 요약 데이터 가져오기 ---
+            // --- 월별 일기 요약 데이터 가져오기 (Flask 백엔드 API 사용) ---
             let monthlySummary = {};
             try {
                 const summaryResponse = await fetchWithAuth(`/api/diary/entries/month_summary?year=${year}&month=${month + 1}`);
                 if (summaryResponse.ok) {
                     const summaryResult = await summaryResponse.json();
                     monthlySummary = summaryResult.summary;
-                    console.log("Monthly summary fetched:", monthlySummary); // 디버깅용
+                    console.log("Monthly summary fetched from Flask backend:", monthlySummary);
                 } else if (summaryResponse.status === 401) {
+                    // 로그인 세션이 만료되었음을 알리고, 토큰 삭제
+                    console.warn("Monthly summary fetch failed: Login session expired or invalid token. Displaying calendar without user-specific data.");
                     localStorage.removeItem('jwt_token');
-                    showLoginRequiredUI();
-                    alert("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
+                    // showAlert("로그인 세션이 만료되었습니다. 다시 로그인해주세요."); // 너무 자주 뜰 수 있으므로 주석 처리
                 } else {
-                    console.error("Failed to fetch monthly summary:", summaryResponse.status);
+                    const errorData = await summaryResponse.json();
+                    window.showAlert(errorData.message || "월별 요약 정보를 불러오는 데 실패했습니다.", "오류"); // 에러 메시지 추가
+                    console.error("Failed to fetch monthly summary from Flask backend:", summaryResponse.status, errorData.message);
                 }
             } catch (error) {
-                console.error("Error fetching monthly summary:", error);
+                console.error("Error fetching monthly summary from Flask backend:", error);
+                window.showAlert("월별 요약 정보를 불러오는 중 네트워크 오류가 발생했습니다.", "오류"); // 네트워크 에러 메시지 추가
             }
-            // ------------------------------------
+            // ----------------------------------------------------------
 
-            // 이전 달의 날짜 채우기 (첫째 날 이전의 빈 칸)
+            // 이전 달의 빈 칸 채우기
             for (let i = 0; i < firstDayOfMonth; i++) {
                 const emptyDay = document.createElement('div');
                 emptyDay.classList.add('calendar-day', 'empty');
-                calendarDaysContainer.appendChild(emptyDay);
+                calendarDaysEl.appendChild(emptyDay);
             }
 
             // 현재 달의 날짜 채우기
-            for (let date = 1; date <= lastDateOfMonth; date++) {
-                const dayElement = document.createElement('div');
-                dayElement.classList.add('calendar-day');
-                dayElement.textContent = date;
-                dayElement.dataset.date = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.classList.add('calendar-day');
+                dayEl.textContent = day;
+                dayEl.dataset.date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`; // YYYY-MM-DD 형식으로 저장
 
-                // 오늘 날짜 표시
+                const fullDate = new Date(year, month, day);
                 const today = new Date();
-                if (date === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                    dayElement.classList.add('today');
+                // 오늘 날짜 표시
+                if (fullDate.toDateString() === today.toDateString()) {
+                    dayEl.classList.add('today');
                 }
 
-                // --- 일기 존재 여부 및 기분 이모티콘 표시 ---
-                const cellDateKey = dayElement.dataset.date; // YYYY-MM-DD 형식
-                if (monthlySummary[cellDateKey] && monthlySummary[cellDateKey].has_entry) {
-                    const moodEmojiKey = monthlySummary[cellDateKey].mood_emoji_key;
-                    if (moodEmojiKey && moodEmojis[moodEmojiKey]) {
-                        const emojiSpan = document.createElement('span');
-                        emojiSpan.classList.add('calendar-mood-emoji');
-                        emojiSpan.textContent = moodEmojis[moodEmojiKey];
-                        dayElement.appendChild(document.createElement('br')); // 날짜 아래에 이모티콘을 위해 줄 바꿈
-                        dayElement.appendChild(emojiSpan);
-                        dayElement.classList.add('has-diary-entry'); // CSS 스타일링을 위한 클래스 추가
-                    }
+                // 일기 데이터가 있는 날짜 표시 및 이모지 추가 (Flask 백엔드 데이터 사용)
+                const dateKey = dayEl.dataset.date;
+                if (monthlySummary[dateKey] && monthlySummary[dateKey].has_entry) {
+                    dayEl.classList.add('has-diary-entry');
+                    const moodEmoji = document.createElement('span');
+                    moodEmoji.classList.add('mood-display-emoji');
+                    moodEmoji.textContent = moodEmojis[monthlySummary[dateKey].mood_emoji_key] || ''; // 저장된 기분 이모지 표시
+                    dayEl.appendChild(moodEmoji);
                 }
-                // -----------------------------------------
 
-                dayElement.addEventListener('click', () => {
-                    selectDate(dayElement);
-                });
-                calendarDaysContainer.appendChild(dayElement);
+                dayEl.addEventListener('click', () => selectDate(dayEl.dataset.date));
+                calendarDaysEl.appendChild(dayEl);
             }
+        };
 
-            // `loadAndDisplayDiaryEntries`는 이제 `renderCalendar` 안에서 통합되었습니다.
-            // 따라서 이 함수는 더 이상 캘린더 렌더링 후에 직접 호출할 필요가 없습니다.
-            // loadAndDisplayDiaryEntries(year, month + 1); // 이 줄은 이제 필요 없음
-        }
+        // 날짜 선택 함수
+        const selectDate = async (dateString) => {
 
-        // 날짜 선택 시 처리
-        async function selectDate(dayElement) {
+                   
+            // Firebase 인증 관련 userId, isAuthReady 체크 제거
+            // 이제 Flask 백엔드의 인증 상태에 따라 API 요청이 처리됩니다.
+
             // 이전에 선택된 날짜의 'selected' 클래스 제거
-            if (currentActiveDateElement) {
-                currentActiveDateElement.classList.remove('selected');
+            const prevSelected = document.querySelector('.calendar-day.selected');
+            if (prevSelected) {
+                prevSelected.classList.remove('selected');
             }
 
-            // 새롭게 선택된 날짜에 'selected' 클래스 추가
-            dayElement.classList.add('selected');
-            currentActiveDateElement = dayElement; // 현재 활성 날짜 요소 업데이트
+            // 새로 선택된 날짜에 'selected' 클래스 추가
+            const newSelected = document.querySelector(`.calendar-day[data-date="${dateString}"]`);
+            if (newSelected) {
+                newSelected.classList.add('selected');
+            }
 
-            const dateString = dayElement.dataset.date; // "YYYY-MM-DD"
-            selectedDate = new Date(dateString); // Date 객체로 저장
+            selectedDate = new Date(dateString);
+            diaryEntryTitle.textContent = `${selectedDate.getFullYear()}년 ${selectedDate.getMonth() + 1}월 ${selectedDate.getDate()}일`;
+            diaryEntrySection.classList.remove('hidden'); // 일기 섹션 표시
 
-            // 제목 업데이트
-            const dateParts = dateString.split('-');
-            diaryEntryTitle.textContent = `${dateParts[0]}년 ${parseInt(dateParts[1])}월 ${parseInt(dateParts[2])}일 일기`;
-
-            // 선택된 날짜의 일기 불러오기
-            await loadDiaryEntry(dateString);
-        }
-
-        // 일기 로드 함수
-        async function loadDiaryEntry(dateString) {
+            // 해당 날짜의 일기 데이터 로드 (Flask 백엔드 API 사용)
             try {
-                // 백엔드 API 경로 수정: /api/diary/entries/by_date?date=YYYY-MM-DD
-                const response = await fetchWithAuth(`/api/diary/entries/by_date?date=${dateString}`, {
+                const response = await fetchWithAuth(`/api/diary/entries?date=${dateString}`, {
                     method: 'GET'
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.diary_entry) {
-                        diaryContentInput.value = data.diary_entry.content;
-                        updateSelectedMoodEmoji(data.diary_entry.mood_emoji_key);
-                        currentDiaryEntryId = data.diary_entry._id; // 로드된 일기의 _id 저장
+                    if (data.diary_entry) { // 단일 일기 조회 형식에 맞춰 수정
+                        diaryContent.value = data.diary_entry.content;
+                        selectMood(data.diary_entry.mood_emoji_key);
+                        currentDiaryEntryId = data.diary_entry._id; // MongoDB _id 저장
                     } else {
-                        diaryContentInput.value = ''; // 일기 없으면 내용 비우기
-                        updateSelectedMoodEmoji(null); // 무드 선택 해제
+                        diaryContent.value = ''; // 일기 없으면 내용 비우기
+                        selectedMood = null; // 기분 선택 해제
                         currentDiaryEntryId = null; // _id 초기화
+                        document.querySelectorAll('.mood-emoji').forEach(emoji => {
+                            emoji.classList.remove('selected');
+                        });
                     }
                 } else if (response.status === 404) {
                     console.log(`No diary entry found for ${dateString}.`);
-                    diaryContentInput.value = ''; // 일기 없으면 내용 비우기
-                    updateSelectedMoodEmoji(null); // 무드 선택 해제
-                    currentDiaryEntryId = null; // _id 초기화
+                    diaryContent.value = '';
+                    selectedMood = null;
+                    currentDiaryEntryId = null;
+                    document.querySelectorAll('.mood-emoji').forEach(emoji => {
+                        emoji.classList.remove('selected');
+                    });
+                } else if (response.status === 401) {
+                    localStorage.removeItem('jwt_token');
+                    // window.location.href = "{{ url_for('login') }}"; // 로그인 페이지로 리디렉션 제거
                 } else {
                     const errorData = await response.json();
-                    alert(errorData.message || '일기를 불러오는 데 실패했습니다.');
-                    diaryContentInput.value = '';
-                    updateSelectedMoodEmoji(null);
-                    currentDiaryEntryId = null; // _id 초기화
+                    window.showAlert(errorData.message || '일기를 불러오는 데 실패했습니다.', "오류");
+                    diaryContent.value = '';
+                    selectedMood = null;
+                    currentDiaryEntryId = null;
+                    document.querySelectorAll('.mood-emoji').forEach(emoji => {
+                        emoji.classList.remove('selected');
+                    });
                 }
             } catch (error) {
-                console.error("Error loading diary entry:", error);
-                alert('일기를 불러오는 중 오류가 발생했습니다.');
-                diaryContentInput.value = '';
-                updateSelectedMoodEmoji(null);
-                currentDiaryEntryId = null; // _id 초기화
+                console.error("Error loading diary entry from Flask backend:", error);
+                window.showAlert('일기를 불러오는 중 오류가 발생했습니다.', "오류");
+                diaryContent.value = '';
+                selectedMood = null;
+                currentDiaryEntryId = null;
+                document.querySelectorAll('.mood-emoji').forEach(emoji => {
+                    emoji.classList.remove('selected');
+                });
             }
-        }
+        };
 
-        // 무드 이모티콘 선택 상태 업데이트
-        function updateSelectedMoodEmoji(moodKey) {
-            selectedMood = moodKey; // 전역 변수 업데이트
-            document.querySelectorAll('.mood-emoji').forEach(emojiSpan => {
-                emojiSpan.classList.remove('selected');
-                if (emojiSpan.dataset.mood === moodKey) {
-                    emojiSpan.classList.add('selected');
-                }
-            });
-        }
-
-        // 월별 일기 존재 여부 로드 및 표시 (이제 renderCalendar에 통합됨)
-        // 이 함수는 더 이상 직접 호출되지 않습니다.
-        async function loadAndDisplayDiaryEntries(year, month) {
-            // 이 함수는 이제 renderCalendar 내에서 통합되어 사용됩니다.
-            // 따라서 이 함수 자체는 더 이상 캘린더 렌더링 후에 직접 호출할 필요가 없습니다.
-            // 이전 버전의 코드를 참고하여 제거하거나 주석 처리하세요.
-        }
-
-
-        // 이벤트 리스너
-        prevMonthButton.addEventListener('click', () => {
-            currentMonth.setMonth(currentMonth.getMonth() - 1);
-            renderCalendar();
-            diaryContentInput.value = ''; // 월 변경 시 일기 내용 초기화
-            diaryEntryTitle.textContent = '날짜를 선택하여 일기를 작성하세요.';
-            updateSelectedMoodEmoji(null); // 무드 선택 해제
-            currentDiaryEntryId = null; // _id 초기화
-        });
-
-        nextMonthButton.addEventListener('click', () => {
-            currentMonth.setMonth(currentMonth.getMonth() + 1);
-            renderCalendar();
-            diaryContentInput.value = ''; // 월 변경 시 일기 내용 초기화
-            diaryEntryTitle.textContent = '날짜를 선택하여 일기를 작성하세요.';
-            updateSelectedMoodEmoji(null); // 무드 선택 해제
-            currentDiaryEntryId = null; // _id 초기화
-        });
-
-        diaryEntryForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-
+        // 일기 저장 함수 (Flask 백엔드 API 사용)
+        const saveDiary = async () => {
             if (!selectedDate) {
-                alert('일기를 저장할 날짜를 선택해주세요.');
+                window.showAlert("날짜가 선택되지 않았습니다.", "오류");
                 return;
             }
 
-            const content = diaryContentInput.value.trim();
-            if (!content) {
-                alert('일기 내용을 입력해주세요.');
+            const dateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+            const content = diaryContent.value.trim();
+
+            if (!content && !selectedMood) {
+                const confirmed = await window.showConfirm("일기 내용과 기분 선택이 모두 비어있습니다. 이 일기를 삭제하시겠습니까?");
+                if (confirmed) {
+                    await deleteDiaryEntry(); // dateKey는 여기서 사용되지 않으므로 제거
+                    window.showAlert("일기가 삭제되었습니다.", "알림");
+                } else {
+                    window.showAlert("일기 삭제를 취소했습니다.", "알림");
+                }
                 return;
             }
 
-            // 'YYYY-MM-DD' 형식으로 변환
-            const year = selectedDate.getFullYear();
-            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-            const day = String(selectedDate.getDate()).padStart(2, '0');
-            const dateForApi = `${year}-${month}-${day}`;
+            if (!selectedMood) {
+                window.showAlert("기분을 선택해주세요!", "알림");
+                return;
+            }
 
             try {
-                const response = await fetchWithAuth('/api/diary/entries', {
-                    method: 'POST',
+                const method = currentDiaryEntryId ? 'PUT' : 'POST'; // 기존 일기면 PUT, 새 일기면 POST
+                const url = currentDiaryEntryId ? `/api/diary/entries/${currentDiaryEntryId}` : '/api/diary/entries';
+
+                const response = await fetchWithAuth(url, {
+                    method: method,
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        date: dateForApi,
+                        title: `${dateKey} 일기`, // 제목은 날짜로 자동 생성
                         content: content,
-                        mood_emoji_key: selectedMood // 선택된 무드 이모티콘 키 전송
+                        date: dateKey,
+                        mood_emoji_key: selectedMood
                     })
                 });
 
                 const result = await response.json();
 
                 if (response.ok) {
-                    alert(result.message || '일기가 성공적으로 저장되었습니다!');
-                    renderCalendar(); // 현재 달의 캘린더를 다시 렌더링하여 이모티콘 표시
-                    currentDiaryEntryId = result.diary_entry._id; // 새로 저장된 일기의 _id 저장
-                } else {
-                    alert(result.message || '일기 저장 중 오류가 발생했습니다.');
-                    console.error("Error saving diary entry:", result.message);
-                    if (response.status === 401) { // 토큰 만료 또는 유효하지 않음
-                        localStorage.removeItem('jwt_token');
-                        showLoginRequiredUI();
+                    window.showAlert(result.message || "일기가 성공적으로 저장되었습니다!", "저장 완료");
+                    // 저장 후 캘린더 다시 렌더링하여 이모지 업데이트
+                    renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+                    if (method === 'POST' && result.diary_entry && result.diary_entry._id) {
+                        currentDiaryEntryId = result.diary_entry._id; // 새로 저장된 일기의 _id 업데이트
                     }
+                } else if (response.status === 401) {
+                    localStorage.removeItem('jwt_token');
+                    // window.location.href = "{{ url_for('login') }}"; // 로그인 페이지로 리디렉션 제거
+                } else {
+                    window.showAlert(result.message || `일기 저장 중 오류가 발생했습니다.`, "저장 오류");
+                    console.error("Error saving diary entry from Flask backend:", result.message);
                 }
-            } catch (error) {
-                console.error("Error saving diary entry:", error);
-                alert('일기 저장 중 오류가 발생했습니다.');
+            } catch (e) {
+                console.error("일기 저장 오류:", e);
+                window.showAlert(`일기 저장 중 오류가 발생했습니다: ${e.message}`, "저장 오류");
             }
-        });
+        };
 
-        // 일기 삭제 버튼 이벤트 리스너
-        deleteDiaryButton.addEventListener('click', async () => {
-            if (!selectedDate) {
-                alert('삭제할 일기의 날짜를 선택해주세요.');
-                return;
-            }
-
+        // 일기 삭제 함수 (Flask 백엔드 API 사용)
+        const deleteDiaryEntry = async () => { // dateKey 인자 제거
             if (!currentDiaryEntryId) {
-                alert('삭제할 일기 정보가 없습니다. 먼저 날짜를 선택하여 일기를 불러와주세요.');
-                return;
-            }
-
-            if (!confirm('정말로 이 일기를 삭제하시겠습니까?')) {
+                window.showAlert('삭제할 일기 정보가 없습니다.', '오류');
                 return;
             }
 
@@ -408,42 +364,103 @@
                 const deleteResult = await deleteResponse.json();
 
                 if (deleteResponse.ok) {
-                    alert(deleteResult.message || '일기가 성공적으로 삭제되었습니다.');
-                    diaryContentInput.value = ''; // 입력 필드 비우기
-                    updateSelectedMoodEmoji(null); // 무드 선택 해제
+                    window.showAlert(deleteResult.message || '일기가 성공적으로 삭제되었습니다.', "삭제 완료");
+                    diaryContent.value = ''; // 일기 내용 초기화
+                    selectedMood = null; // 기분 초기화
                     currentDiaryEntryId = null; // _id 초기화
-                    renderCalendar(); // 캘린더 다시 렌더링하여 이모티콘 제거
+                    document.querySelectorAll('.mood-emoji').forEach(emoji => {
+                        emoji.classList.remove('selected');
+                    });
+                    renderCalendar(currentDate.getFullYear(), currentDate.getMonth()); // 캘린더 다시 렌더링
+                    diaryEntrySection.classList.add('hidden'); // 일기 섹션 숨기기
+                } else if (deleteResponse.status === 401) {
+                    localStorage.removeItem('jwt_token');
+                    // window.location.href = "{{ url_for('login') }}"; // 로그인 페이지로 리디렉션 제거
                 } else {
-                    alert(deleteResult.message || "일기 삭제 중 오류가 발생했습니다.");
-                    console.error("Error deleting diary entry:", deleteResult.message);
-                    if (deleteResponse.status === 401) {
-                        localStorage.removeItem('jwt_token');
-                        showLoginRequiredUI();
-                    }
+                    window.showAlert(deleteResult.message || "일기 삭제 중 오류가 발생했습니다.", "삭제 오류");
+                    console.error("Error deleting diary entry from Flask backend:", deleteResult.message);
                 }
-            } catch (error) {
-                console.error("Error deleting diary entry:", error);
-                alert("일기 삭제 중 오류가 발생했습니다.");
+            } catch (e) {
+                console.error("일기 삭제 오류:", e);
+                window.showAlert(`일기 삭제 중 오류가 발생했습니다: ${e.message}`, "삭제 오류");
             }
+        };
+
+        // 일기 삭제 버튼 클릭 핸들러
+        const handleDeleteButtonClick = async () => {
+            if (!selectedDate) {
+                window.showAlert('삭제할 일기의 날짜를 선택해주세요.', '알림');
+                return;
+            }
+
+            if (!currentDiaryEntryId) {
+                window.showAlert('삭제할 일기 정보가 없습니다. 먼저 날짜를 선택하여 일기를 불러와주세요.', '알림');
+                return;
+            }
+
+            const confirmed = await window.showConfirm("정말로 이 일기를 삭제하시겠습니까?");
+            if (confirmed) {
+                await deleteDiaryEntry(); // 인자 없이 호출 (currentDiaryEntryId 사용)
+            } else {
+                window.showAlert("일기 삭제를 취소했습니다.", "알림");
+            }
+        };
+
+        // 이벤트 리스너
+        prevMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+            diaryContent.value = ''; // 월 변경 시 일기 내용 초기화
+            diaryEntryTitle.textContent = '날짜를 선택하여 일기를 작성하세요.';
+            selectedMood = null; // 기분 초기화
+            currentDiaryEntryId = null; // _id 초기화
+            document.querySelectorAll('.mood-emoji').forEach(emoji => { emoji.classList.remove('selected'); });
+            diaryEntrySection.classList.add('hidden'); // 일기 섹션 숨기기
         });
 
-        // 무드 이모티콘 선택 이벤트 리스너
-        moodEmojisContainer.addEventListener('click', (event) => {
-            const target = event.target.closest('.mood-emoji');
-            if (target) {
-                // 모든 이모티콘에서 'selected' 클래스 제거
-                document.querySelectorAll('.mood-emoji').forEach(emojiSpan => {
-                    emojiSpan.classList.remove('selected');
-                });
-                // 클릭된 이모티콘에 'selected' 클래스 추가
-                target.classList.add('selected');
-                selectedMood = target.dataset.mood; // 선택된 무드 키 저장
-            }
+        nextMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+            diaryContent.value = ''; // 월 변경 시 일기 내용 초기화
+            diaryEntryTitle.textContent = '날짜를 선택하여 일기를 작성하세요.';
+            selectedMood = null; // 기분 초기화
+            currentDiaryEntryId = null; // _id 초기화
+            document.querySelectorAll('.mood-emoji').forEach(emoji => { emoji.classList.remove('selected'); });
+            diaryEntrySection.classList.add('hidden'); // 일기 섹션 숨기기
         });
 
-        // DOMContentLoaded 이벤트 리스너를 사용하여 DOM이 완전히 로드된 후 로그인 상태 확인
-        document.addEventListener('DOMContentLoaded', () => {
-            checkLoginStatusAndUpdateUI();
-        });
+        saveDiaryBtn.addEventListener('click', saveDiary);
+        deleteDiaryBtn.addEventListener('click', handleDeleteButtonClick);
+
+        // 초기 로드 시 실행
+        window.onload = async () => {
+            setRandomDiaryTitle(); // 랜덤 일기 제목 설정
+            renderMoodEmojis(); // 기분 이모지 렌더링
+            // Firebase 초기화 대신 Flask 백엔드 인증 상태 확인 및 캘린더 렌더링
+            await checkLoginStatusAndUpdateUI();
+        };
+
+        // checkLoginStatusAndUpdateUI 함수 (base.html에 정의된 fetchWithAuth 사용)
+        async function checkLoginStatusAndUpdateUI() {
+            const token = localStorage.getItem('jwt_token');
+            if (token) {
+                try {
+                    const response = await fetchWithAuth('/api/auth/me', { method: 'GET' });
+                    if (response.ok) {
+                        console.log("Token verified successfully. User is logged in.");
+                    } else {
+                        console.error("Failed to verify token (server error or invalid token). User is not logged in.");
+                        localStorage.removeItem('jwt_token');
+                    }
+                } catch (error) {
+                    console.error("Failed to verify token (network error or unexpected response):", error);
+                    localStorage.removeItem('jwt_token');
+                }
+            } else {
+                console.log("No JWT token found. User is not logged in.");
+            }
+            // 로그인 상태와 관계없이 캘린더는 항상 렌더링
+            renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        }
     </script>
 {% endblock %}
