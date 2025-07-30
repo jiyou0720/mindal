@@ -1,6 +1,6 @@
 import os
 import logging
-import sys # sys 모듈 임포트
+import sys
 from logging.handlers import RotatingFileHandler
 from flask import Flask, render_template, g, request, jsonify
 from flask_cors import CORS
@@ -88,7 +88,7 @@ def create_app():
     from backend.routes.mood_routes import mood_bp
     from backend.routes.dashboard_routes import dashboard_bp 
     from backend.routes.chat_routes import chat_bp
-    from backend.routes.inquiry_routes import inquiry_bp # NEW: 문의사항 블루프린트 임포트
+    from backend.routes.inquiry_routes import inquiry_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
@@ -98,7 +98,7 @@ def create_app():
     app.register_blueprint(mood_bp, url_prefix='/api/mood')
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
-    app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry') # NEW: 문의사항 블루프린트 등록
+    app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
 
 
     # --- 전역 컨텍스트 및 에러 핸들러 ---
@@ -114,7 +114,8 @@ def create_app():
         app.logger.error(f"An unhandled exception occurred: {e}", exc_info=True)
         if request.path.startswith('/api/'):
             return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}), 500
-        return render_template('500.html', error_message=str(e)), 500
+        # 500.html이 없으므로 404.html을 사용하거나, 간단한 텍스트 응답을 반환
+        return render_template('404.html', error_message=str(e)), 500 # 500.html 대신 404.html 사용
 
     # ----------------------------------------------------------------
     # Frontend Routes (HTML Rendering)
@@ -177,7 +178,7 @@ def create_app():
     def community_edit(post_id):
         return render_template('community_edit.html', post_id=post_id)
     
-    @app.route('/inquiry') # NEW: 사용자 문의사항 제출 페이지 라우트
+    @app.route('/inquiry')
     def inquiry():
         return render_template('inquiry.html')
 
@@ -222,7 +223,7 @@ def create_app():
     def chatbot_feedback():
         return render_template('chatbot_feedback.html')
 
-    @app.route('/admin/inquiry_management') # NEW: 관리자 문의사항 관리 페이지 라우트
+    @app.route('/admin/inquiry_management')
     def admin_inquiry_management():
         return render_template('admin_inquiry_management.html')
 
