@@ -1,0 +1,101 @@
+2025-07-25 09:38:57,199 INFO: Response: GET /api/community/posts/4 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:05,613 INFO: Request: POST /api/community/posts/4/comments [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:05,632 INFO: Response: POST /api/community/posts/4/comments 201 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:05,641 INFO: Request: GET /api/community/posts/4 [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:05,659 INFO: Response: GET /api/community/posts/4 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:10,704 INFO: Request: GET /my_page [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:10,707 ERROR: An unhandled exception occurred: Could not build url for endpoint 'edit_my_page'. Did you mean 'my_page' instead? [in C:\mindai\backend\app.py:123]
+Traceback (most recent call last):
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 808, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\mindai\backend\app.py", line 154, in my_page
+    return render_template('my_page.html')
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1304, in render
+    self.environment.handle_exception()
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 939, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\mindai\frontend\templates\my_page.html", line 2, in top-level template code
+    {% extends "base.html" %}
+  File "C:\mindai\frontend\templates\base.html", line 32, in top-level template code
+    {% block content %}{% endblock %}
+  File "C:\mindai\frontend\templates\my_page.html", line 108, in block 'content'
+    window.location.href = "{{ url_for('edit_my_page') }}"; // 새로운 수정 페이지로 이동
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1027, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1016, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\werkzeug\routing\map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'edit_my_page'. Did you mean 'my_page' instead?
+2025-07-25 09:39:10,710 INFO: Response: GET /my_page 500 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:19,291 INFO: Request: GET /login [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:19,295 INFO: Response: GET /login 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:19,314 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:19,316 INFO: Response: GET /static/css/base.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:19,320 INFO: Request: GET /static/css/login_signup.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:19,355 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:19,357 INFO: Response: GET /static/css/login_signup.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:19,357 INFO: Response: GET /static/images/main_logo.png 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:21,760 INFO: Request: GET /forgot_password [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:21,766 INFO: Response: GET /forgot_password 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:21,808 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:21,810 INFO: Response: GET /static/css/base.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:21,815 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:21,817 INFO: Response: GET /static/images/main_logo.png 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:27,762 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:27,763 INFO: Response: GET /static/css/base.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:31,521 INFO: Request: GET /forgot_password [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:31,522 INFO: Response: GET /forgot_password 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:31,546 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:31,547 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:31,549 INFO: Response: GET /static/css/base.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:31,551 INFO: Response: GET /static/images/main_logo.png 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:36,011 INFO: Request: GET /forgot_password [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:36,013 INFO: Response: GET /forgot_password 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:36,027 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:36,029 INFO: Response: GET /static/css/base.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:39:36,035 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:39:36,037 INFO: Response: GET /static/images/main_logo.png 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:38,340 INFO: Request: GET /login [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:38,341 INFO: Response: GET /login 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:38,445 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:38,448 INFO: Response: GET /static/css/base.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:38,478 INFO: Request: GET /static/css/login_signup.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:38,479 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:38,482 INFO: Response: GET /static/css/login_signup.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:38,482 INFO: Response: GET /static/images/main_logo.png 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:40,896 INFO: Request: POST /api/auth/login [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:40,994 INFO: login_user: Roles found for user 'admin': ['관리자'] [in C:\mindai\backend\routes\auth_routes.py:148]
+2025-07-25 09:41:40,995 INFO: Response: POST /api/auth/login 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:41,013 INFO: Request: GET / [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:41,014 INFO: Response: GET / 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:41,046 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:41,048 INFO: Response: GET /static/css/base.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:41,049 INFO: Request: GET /static/css/index.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:41,050 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:41,053 INFO: Response: GET /static/css/index.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:41,054 INFO: Response: GET /static/images/main_logo.png 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:41,357 INFO: Request: GET /api/dashboard/stats [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:41,358 INFO: Request: GET /api/auth/check_auth [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:41,366 INFO: Response: GET /api/auth/check_auth 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:41,368 INFO: Response: GET /api/dashboard/stats 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:41:41,378 INFO: Request: GET /api/admin/menu_items/my_menu [in C:\mindai\backend\app.py:95]
+2025-07-25 09:41:41,382 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['관리자'] [in C:\mindai\backend\routes\admin_routes.py:154]
+2025-07-25 09:41:41,384 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
+2025-07-25 09:41:41,385 INFO: Response: GET /api/admin/menu_items/my_menu 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:42:35,149 INFO: Flask app created [in C:\mindai\backend\app.py:63]
+2025-07-25 09:42:35,676 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:24]
+2025-07-25 09:42:36,354 INFO: Request: GET / [in C:\mindai\backend\app.py:95]
+2025-07-25 09:42:36,368 INFO: Response: GET / 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:42:36,400 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:42:36,403 INFO: Request: GET /static/css/index.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:42:36,403 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:42:36,570 INFO: Response: GET /static/css/index.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:42:36,572 INFO: Response: GET /static/css/base.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:42:36,574 INFO: Response: GET /static/images/main_logo.png 200 [in C:\mindai\backend\app.py:106]

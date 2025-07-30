@@ -1,150 +1,120 @@
 # backend/routes/login_register_routes.py
-from flask import Blueprint, request, jsonify, g
-import jwt # Import jwt
-import datetime # Import datetime
-import os # Import os for JWT_SECRET_KEY
+from flask import Blueprint, request, jsonify, current_app, g
 from werkzeug.security import generate_password_hash, check_password_hash
-from maria_models import User # User 모델 임포트
+from maria_models import User, Role, UserRole
 from extensions import db
-import random
-import string # random과 string 모듈 임포트
-from auth import token_required, generate_numeric_uid # auth.py에서 데코레이터와 유틸리티 함수 임포트
+from backend.routes.auth_routes import token_required
+import jwt
+import datetime
+import uuid
 
-auth_bp = Blueprint('auth_api', __name__) # auth_bp Blueprint를 여기서 정의
+auth_bp = Blueprint('auth_api', __name__)
 
-# 회원가입
-@auth_bp.route('/register', methods=['POST']) # /signup 대신 /register로 통일
+# 사용자 등록 (회원가입)
+@auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
     username = data.get('username')
+    nickname = data.get('nickname')
     email = data.get('email')
     password = data.get('password')
-    nickname = data.get('nickname') # 닉네임 필드 추가
+    gender = data.get('gender')
+    age = data.get('age')
+    major = data.get('major')
 
-    if not username or not email or not password:
-        return jsonify({'message': 'Username, email, and password are required'}), 400
-
-    if User.query.filter_by(email=email).first():
-        return jsonify({'message': 'Email already registered'}), 409
+    if not username or not email or not password or not gender or not age or not major:
+        return jsonify({'message': '모든 필수 정보를 입력해주세요.'}), 400
 
     if User.query.filter_by(username=username).first():
-        return jsonify({'message': 'Username already taken'}), 409
+        return jsonify({'message': '이미 존재하는 사용자 이름입니다.'}), 409
+    
+    if User.query.filter_by(email=email).first():
+        return jsonify({'message': '이미 가입된 이메일 주소입니다.'}), 409
 
-    # 사용자 UID 생성 (auth.py에서 임포트한 함수 사용)
-    generated_uid = None
-    max_retries = 5 # UID 생성 실패 시 최대 재시도 횟수
-    for _ in range(max_retries):
-        temp_uid = generate_numeric_uid(length=5) # 5자리 UID 생성
-        if not User.query.filter_by(user_uid=temp_uid).first():
-            generated_uid = temp_uid
-            break
+    if nickname and User.query.filter_by(nickname=nickname).first():
+        return jsonify({'message': '이미 존재하는 별명입니다.'}), 409
 
-    if not generated_uid:
-        return jsonify({'message': 'Failed to generate a unique user UID. Please try again.'}), 500
+    # user_uid 생성 (짧은 고유 ID)
+    user_uid = str(uuid.uuid4().hex)[:10] # 10자리 문자열로 제한
 
     new_user = User(
         username=username,
+        nickname=nickname,
         email=email,
-        user_uid=generated_uid, # 생성된 UID 할당
-        nickname=nickname # 닉네임 추가
+        user_uid=user_uid,
+        gender=gender,
+        age=age,
+        major=major
     )
-    new_user.set_password(password) # 비밀번호 해싱
+    new_user.set_password(password)
+
+    # 기본 역할 할당
+    default_role = Role.query.filter_by(name='일반 사용자').first()
+    if not default_role:
+        default_role = Role(name='일반 사용자', description='기본 사용자 역할')
+        db.session.add(default_role)
+        db.session.commit()
+
+    user_role_association = UserRole(user=new_user, role=default_role)
     db.session.add(new_user)
+    db.session.add(user_role_association)
     db.session.commit()
 
-    return jsonify({'message': 'User registered successfully!'}), 201
+    return jsonify({'message': '회원가입이 성공적으로 완료되었습니다!'}), 201
 
-# 로그인
+# 사용자 로그인
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
 
-    if not email or not password:
-        return jsonify({'message': 'Email and password are required'}), 400
-
     user = User.query.filter_by(email=email).first()
 
     if not user or not user.check_password(password):
-        return jsonify({'message': 'Invalid credentials'}), 401
+        return jsonify({'message': '잘못된 이메일 또는 비밀번호입니다.'}), 401
 
-    # 로그인 성공 시 JWT 토큰 생성 (여기서 직접 생성)
     token = jwt.encode({
-        'user_uid': user.user_uid,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24) # 24시간 유효
-    }, os.getenv('JWT_SECRET_KEY'), algorithm="HS256")
+        'user_id': user.id,
+        'username': user.username,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24) # 토큰 만료 시간 24시간
+    },
+    current_app.config['JWT_SECRET_KEY'],
+    algorithm='HS256'
+    )
+    
+
+    user_roles_list = [user_role_obj.role.name for user_role_obj in user.user_roles_association]
 
     return jsonify({
-        'message': 'Login successful!',
+        'message': '로그인 성공!',
         'token': token,
-        'user_uid': user.user_uid,
-        'user_id': user.id, # MariaDB의 user_id도 함께 반환
-        'nickname': user.nickname, # 닉네임도 함께 반환
-        'is_admin': user.is_admin # 관리자 여부도 함께 반환
+        'user_id': user.id,
+        'username': user.username,
+        'nickname': user.nickname,
+        'roles': user_roles_list
     }), 200
 
-# 사용자 정보 조회 (로그인 상태 확인)
+
 @auth_bp.route('/me', methods=['GET'])
-@token_required # JWT 토큰 필요 (auth.py에서 임포트)
-def get_current_user_info(): # 함수 이름 유지
-    """
-    현재 로그인된 사용자의 정보를 반환합니다.
-    """
-    user_id = int(g.user_id) # token_required 데코레이터에서 설정된 사용자 ID
-    user = User.query.get(user_id) # MariaDB에서 사용자 조회
+@token_required
+def get_current_user():
+    user_id = g.user_id
+    user = db.session.get(User, user_id)
 
     if not user:
-        return jsonify({'message': 'User not found'}), 404
+        return jsonify({'message': '사용자를 찾을 수 없습니다.'}), 404
+    
+    user_roles_list = [user_role_obj.role.name for user_role_obj in user.user_roles_association]
 
-    # 사용자 정보를 딕셔너리로 반환 (비밀번호 해시는 제외)
     return jsonify({
-        'id': user.id,
+        'user_id': user.id,
         'username': user.username,
+        'nickname': user.nickname,
         'email': user.email,
         'user_uid': user.user_uid,
-        'nickname': user.nickname, # 닉네임 반환
-        'is_admin': user.is_admin, # 관리자 여부 반환
-        'created_at': user.created_at.isoformat(),
-        'updated_at': user.updated_at.isoformat()
+        'gender': user.gender,
+        'age': user.age,
+        'major': user.major,
+        'roles': user_roles_list
     }), 200
-
-# 비밀번호 찾기 (재설정 요청)
-@auth_bp.route('/forgot_password_request', methods=['POST'])
-def forgot_password_request():
-    data = request.get_json()
-    email = data.get('email')
-
-    if not email:
-        return jsonify({'message': 'Email is required'}), 400
-
-    user = User.query.filter_by(email=email).first()
-
-    if not user:
-        # 보안을 위해 이메일이 존재하지 않아도 존재하지 않는다는 메시지를 직접적으로 주지 않는 것이 좋음
-        return jsonify({'message': 'If an account with that email exists, a password reset link will be sent.'}), 200
-
-    # 실제 환경에서는 여기에서 비밀번호 재설정 토큰을 생성하고, 사용자 이메일로 링크를 전송하는 로직이 들어갑니다.
-    return jsonify({'message': 'Password reset link sent to your email if the account exists.'}), 200
-
-# 비밀번호 재설정 (새 비밀번호 설정) - 실제로는 토큰 검증 로직 필요
-@auth_bp.route('/reset_password', methods=['POST'])
-def reset_password():
-    data = request.get_json()
-    # reset_token = data.get('token') # 이메일을 통해 받은 재설정 토큰
-    email = data.get('email') # 어떤 사용자의 비밀번호를 재설정하는지 식별
-    new_password = data.get('new_password')
-
-    if not email or not new_password:
-        return jsonify({'message': 'Email and new password are required'}), 400
-
-    user = User.query.filter_by(email=email).first()
-
-    if not user:
-        return jsonify({'message': 'User not found'}), 404
-
-    # 실제 환경에서는 여기서 reset_token을 검증하는 로직이 필요합니다.
-    user.set_password(new_password)
-    db.session.commit()
-
-    return jsonify({'message': 'Password has been reset successfully!'}), 200

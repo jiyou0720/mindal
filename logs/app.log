@@ -1,0 +1,8 @@
+2025-07-25 17:05:48,914 INFO: Flask app created [in C:\mindai\backend\app.py:66]
+2025-07-25 17:05:49,392 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:23]
+2025-07-25 17:05:49,404 INFO: Flask app created [in C:\mindai\backend\app.py:66]
+2025-07-25 17:05:49,408 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:23]
+2025-07-25 17:09:48,339 INFO: Flask app created [in C:\mindai\backend\app.py:66]
+2025-07-25 17:09:48,781 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:23]
+2025-07-25 17:09:48,794 INFO: Flask app created [in C:\mindai\backend\app.py:66]
+2025-07-25 17:09:48,797 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:23]
