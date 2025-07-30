@@ -1,3 +1,4 @@
+<!--frontend/templates/community_edit.html-->
 {% extends "base.html" %}
 
 {% block title %}게시글 수정 - Mindbridge{% endblock %}
@@ -8,182 +9,150 @@
 {% endblock %}
 
 {% block content %}
-    <div class="community-create-container">
-        <h1 class="create-post-title">게시글 수정</h1>
-        <form id="editPostForm" class="create-post-form">
-            <div class="form-group">
-                <label for="postTitle">제목</label>
-                <input type="text" id="postTitle" name="title" required placeholder="게시글 제목을 입력하세요">
-            </div>
+    <div class="community-edit-container">
+        <h1>게시글 수정</h1>
+        <p class="page-description">게시글 내용을 수정하고 업데이트할 수 있습니다.</p>
 
+        <form id="editPostForm" class="post-form">
+            <input type="hidden" id="postId" value="{{ post_id }}">
             <div class="form-group">
                 <label for="postCategory">카테고리</label>
-                <select id="postCategory" name="category" required>
+                <select id="postCategory" required>
                     <option value="">카테고리 선택</option>
-                    <option value="자유 게시판">자유 게시판</option>
-                    <option value="질문 게시판">질문 게시판</option>
-                    <option value="정보 공유">정보 공유</option>
-                    <option value="건의 사항">건의 사항</option>
+                    {# 백엔드에서 오는 값과 정확히 일치하도록 value 속성 수정 #}
+                    <option value="자유 게시판">자유게시판</option> {# '자유 게시판'으로 수정 #}
+                    <option value="질문과답변">질문과답변</option>
+                    <option value="정보공유">정보공유</option>
+                    <option value="고민나눔">고민나눔</option>
+                    <option value="익명게시판">익명게시판</option>
                 </select>
             </div>
-
+            <div class="form-group">
+                <label for="postTitle">제목</label>
+                <input type="text" id="postTitle" required placeholder="게시글 제목을 입력하세요.">
+            </div>
             <div class="form-group">
                 <label for="postContent">내용</label>
-                <textarea id="postContent" name="content" rows="10" placeholder="내용을 입력하세요..." required></textarea>
+                <textarea id="postContent" rows="15" required placeholder="게시글 내용을 입력하세요."></textarea>
             </div>
-
-            <div class="form-group attachment-upload-group">
-                <label for="attachmentUpload">첨부 파일</label>
-                <input type="file" id="attachmentUpload" name="attachments" multiple accept="image/*,audio/*">
-                <p class="file-info">이미지 또는 오디오 파일을 첨부할 수 있습니다.</p>
-            </div>
-
-            <div id="currentAttachments" class="current-attachments">
-                <!-- 현재 첨부파일이 여기에 표시됩니다 -->
-            </div>
-
             <div class="form-group checkbox-group">
-                <input type="checkbox" id="isAnonymous" name="is_anonymous">
+                <input type="checkbox" id="isAnonymous">
                 <label for="isAnonymous">익명으로 작성</label>
             </div>
-
             <div class="button-group">
                 <button type="submit" class="button primary">수정 완료</button>
-                <button type="button" class="button secondary" onclick="history.back()">취소</button>
+                <button type="button" id="cancelEditButton" class="button secondary">취소</button>
             </div>
         </form>
     </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // URL 경로에서 게시글 ID를 정확히 추출
-            // 예: /community/14/edit -> ["", "community", "14", "edit"]
-            // 여기서 14를 가져오려면 인덱스 2를 사용
-            const pathSegments = window.location.pathname.split('/');
-            const postId = pathSegments[pathSegments.length - 2]; // <<< 이 부분 수정
+        // base.html에서 전역으로 선언된 loginUrl, homeUrl, fetchWithAuth, showAlert, showConfirm 사용
+        const postId = document.getElementById('postId').value;
+        const postCategorySelect = document.getElementById('postCategory');
+        const postTitleInput = document.getElementById('postTitle');
+        const postContentTextarea = document.getElementById('postContent');
+        const isAnonymousCheckbox = document.getElementById('isAnonymous');
+        const editPostForm = document.getElementById('editPostForm');
+        const cancelEditButton = document.getElementById('cancelEditButton');
 
-            const editPostForm = document.getElementById('editPostForm');
-            const postTitleInput = document.getElementById('postTitle');
-            const postCategorySelect = document.getElementById('postCategory');
-            const postContentTextarea = document.getElementById('postContent');
-            const isAnonymousCheckbox = document.getElementById('isAnonymous');
-            const attachmentUploadInput = document.getElementById('attachmentUpload');
-            const currentAttachmentsContainer = document.getElementById('currentAttachments');
+        const communityListUrl = "{{ url_for('community_list') }}"; 
 
-            const loginUrl = "{{ url_for('login') }}";
-            const communityListUrl = "{{ url_for('community') }}";
-            const communityDetailUrlBase = "{{ url_for('community') }}" + "/";
-
-
-            const currentUserId = localStorage.getItem('user_id');
-            let currentUserRoles = [];
-            const userRolesString = localStorage.getItem('user_roles');
-            if (userRolesString) {
-                try {
-                    currentUserRoles = JSON.parse(userRolesString);
-                } catch (e) {
-                    console.error("Error parsing user roles from localStorage:", e);
-                }
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                await showAlert('로그인이 필요합니다.');
+                window.location.href = loginUrl;
+                return;
             }
-            console.log("Current user roles:", currentUserRoles);
-
-            const isAdmin = () => currentUserRoles.includes('관리자');
-
-            let existingAttachments = [];
-
-            async function fetchPostDetailForEdit() {
-                const token = localStorage.getItem('jwt_token');
-                if (!token) {
-                    await showAlert('로그인이 필요합니다.');
-                    window.location.href = loginUrl;
+            
+            // 게시글 데이터 불러오기
+            try {
+                const response = await fetchWithAuth(`/api/community/posts/${postId}`);
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    await showAlert(errorData.message || '게시글을 불러오는 데 실패했습니다.');
+                    window.location.href = communityListUrl; // 오류 시 목록으로 돌아가기
                     return;
                 }
+                const post = await response.json();
 
-                try {
-                    // 올바른 postId를 사용하여 API 호출
-                    const response = await fetchWithAuth(`/api/community/posts/${postId}`, {
-                        method: 'GET'
-                    });
-                    const result = await response.json();
-
-                    if (response.ok) {
-                        const post = result;
-                        const mongoContent = post.content;
-
-                        if (parseInt(post.author_id) !== parseInt(currentUserId) && !isAdmin()) {
-                            await showAlert('이 게시글을 수정할 권한이 없습니다.');
-                            window.location.href = `${communityDetailUrlBase}${postId}`;
-                            return;
-                        }
-
-                        postTitleInput.value = post.title;
-                        postCategorySelect.value = post.category;
-                        postContentTextarea.value = mongoContent;
-                        isAnonymousCheckbox.checked = post.is_anonymous;
-
-                        existingAttachments = [];
-                        renderCurrentAttachments();
-
-                    } else {
-                        await showAlert(result.message || '게시글을 불러오는 데 실패했습니다.');
-                        window.location.href = communityListUrl;
-                    }
-                } catch (error) {
-                    console.error('Error fetching post detail for edit:', error);
-                    await showAlert('게시글 정보를 불러오는 중 오류가 발생했습니다.');
+                // 현재 사용자가 게시글 작성자인지 확인
+                const currentUserResponse = await fetchWithAuth('/api/auth/me');
+                const currentUserData = await currentUserResponse.json();
+                if (currentUserData.user.id !== post.user_id) { // post.user_id로 변경 (백엔드 응답에 user_id가 직접 포함될 가능성)
+                    await showAlert('게시글 수정 권한이 없습니다.');
                     window.location.href = communityListUrl;
-                }
-            }
-
-            function renderCurrentAttachments() {
-                currentAttachmentsContainer.innerHTML = '';
-            }
-
-            editPostForm.addEventListener('submit', async function(event) {
-                event.preventDefault();
-
-                const token = localStorage.getItem('jwt_token');
-                if (!token) {
-                    await showAlert('로그인이 필요합니다.');
-                    window.location.href = loginUrl;
                     return;
                 }
 
-                const formData = new FormData();
-                formData.append('title', postTitleInput.value.trim());
-                formData.append('category', postCategorySelect.value);
-                formData.append('content', postContentTextarea.value.trim());
-                formData.append('is_anonymous', isAnonymousCheckbox.checked ? 'true' : 'false');
+                // 카테고리 설정: 백엔드에서 받은 post.category 값을 직접 할당
+                // 이 값이 select 옵션의 value와 정확히 일치해야 합니다.
+                postCategorySelect.value = post.category || ''; 
+                console.log("DEBUG: Loaded post category from backend:", `"${post.category}"`); // 불러온 카테고리 값 확인 (따옴표로 감싸서 공백 확인)
+                console.log("DEBUG: Current select element's value after assignment:", `"${postCategorySelect.value}"`); // select에 할당된 값 확인 (따옴표로 감싸서 공백 확인)
+                console.log("DEBUG: All select options values:", Array.from(postCategorySelect.options).map(option => `"${option.value}"`)); // 모든 옵션 값 확인
 
-                try {
-                    const response = await fetchWithAuth(`/api/community/posts/${postId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: formData
-                    });
-                    const result = await response.json();
+                postTitleInput.value = post.title;
+                postContentTextarea.value = post.content;
+                isAnonymousCheckbox.checked = post.is_anonymous;
 
-                    console.log("--- Server Response ---");
-                    console.log("Status:", response.status);
-                    console.log("Result:", result);
-                    console.log("-----------------------");
+            } catch (error) {
+                console.error('게시글 로드 중 오류 발생:', error);
+                await showAlert('게시글을 불러오는 중 네트워크 오류가 발생했습니다.');
+                window.location.href = communityListUrl;
+            }
+        });
 
+        // 수정 완료 버튼 클릭 시
+        editPostForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-                    if (response.ok) {
-                        await showAlert(result.message || '게시글이 성공적으로 수정되었습니다!');
-                        window.location.href = `${communityDetailUrlBase}${postId}`;
-                    } else {
-                        await showAlert(result.message || '게시글 수정에 실패했습니다.');
-                    }
-                } catch (error) {
-                    console.error('Error updating post:', error);
-                    await showAlert('게시글 수정 중 오류가 발생했습니다. 다시 시도해주세요.');
+            const updatedData = {
+                title: postTitleInput.value.trim(),
+                content: postContentTextarea.value.trim(),
+                category: postCategorySelect.value,
+                is_anonymous: isAnonymousCheckbox.checked
+            };
+
+            if (!updatedData.title || !updatedData.content || !updatedData.category) {
+                await showAlert('제목, 내용, 카테고리를 모두 입력해주세요.');
+                return;
+            }
+
+            const confirmed = await showConfirm('게시글을 수정하시겠습니까?');
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth(`/api/community/posts/${postId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    await showAlert(result.message || '게시글이 성공적으로 수정되었습니다.');
+                    window.location.href = `/community/${postId}`; // 수정된 게시글 상세 페이지로 이동
+                } else {
+                    await showAlert(result.message || '게시글 수정에 실패했습니다.');
                 }
-            });
+            } catch (error) {
+                console.error('게시글 수정 중 오류 발생:', error);
+                await showAlert('게시글 수정 중 네트워크 오류가 발생했습니다.');
+            }
+        });
 
-            fetchPostDetailForEdit();
+        // 취소 버튼 클릭 시
+        cancelEditButton.addEventListener('click', () => {
+            window.location.href = communityListUrl; // 커뮤니티 목록으로 돌아가기
         });
     </script>
 {% endblock %}

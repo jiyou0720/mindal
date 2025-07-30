@@ -1,274 +1,191 @@
-/* frontend/static/css/community_create.css */
+/* frontend/static/css/community_edit.css */
 
-.community-create-container {
+/* community_edit.html 전용 스타일 */
+
+/* 컨테이너 및 제목 */
+.community-edit-container {
     max-width: 800px;
-    margin: 30px auto;
+    margin: 40px auto;
     padding: 30px;
     background-color: #FFFFFF;
     border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-}
-
-.create-post-title {
-    font-size: 2.2em;
-    color: #333;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     text-align: center;
-    margin-bottom: 30px;
+}
+
+.community-edit-container h1 {
+    font-size: 2.5em;
+    color: #2C3E50;
+    margin-bottom: 10px;
     font-weight: 700;
-    border-bottom: 1px solid #e0e0e0;
-    padding-bottom: 15px;
 }
 
-.create-post-form .form-group {
-    margin-bottom: 25px;
-}
-
-.create-post-form label {
-    display: block;
+.community-edit-container .page-description {
     font-size: 1.1em;
-    color: #555;
-    margin-bottom: 8px;
-    font-weight: 600;
+    color: #6C7A89;
+    margin-bottom: 40px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 20px;
 }
 
-.create-post-form input[type="text"],
-.create-post-form textarea,
-.create-post-form select {
+/* 폼 스타일 */
+.post-form {
+    text-align: left;
+    padding: 20px;
+    background-color: #F8FAFC;
+    border: 1px solid #E9EEF4;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 1em;
+    font-weight: 600;
+    color: #34495E;
+    margin-bottom: 8px;
+}
+
+.form-group input[type="text"],
+.form-group select,
+.form-group textarea {
     width: 100%;
     padding: 12px 15px;
     border: 1px solid #DCE4EC;
     border-radius: 8px;
     font-size: 1em;
     color: #4D4D4D;
-    background-color: #F8FAFC;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-color: #FFFFFF;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.create-post-form input[type="text"]:focus,
-.create-post-form textarea:focus,
-.create-post-form select:focus {
+.form-group input[type="text"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
     border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
     outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
-.create-post-form textarea {
+.form-group textarea {
     resize: vertical;
-    min-height: 150px;
-    line-height: 1.6;
+    min-height: 200px; /* 텍스트 에어리어 높이 증가 */
 }
 
-.create-post-form input::placeholder,
-.create-post-form textarea::placeholder {
-    color: #AAB7C4;
-}
-
-/* Checkbox specific styling */
-.form-group.checkbox-group {
+/* 체크박스 그룹 */
+.checkbox-group {
     display: flex;
     align-items: center;
+    margin-top: 15px;
     margin-bottom: 25px;
 }
 
-.form-group.checkbox-group input[type="checkbox"] {
-    width: auto; /* 기본 너비 유지 */
+.checkbox-group input[type="checkbox"] {
     margin-right: 10px;
-    appearance: none; /* 기본 스타일 제거 */
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    width: 20px;
-    height: 20px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    outline: none;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
-    position: relative;
-    background-color: #F8FAFC;
-    transition: all 0.2s ease;
 }
 
-.form-group.checkbox-group input[type="checkbox"]:checked {
-    background-color: #007bff;
-    border-color: #007bff;
-}
-
-.form-group.checkbox-group input[type="checkbox"]:checked::before {
-    content: '\2713'; /* 체크 표시 */
-    display: block;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.form-group.checkbox-group label {
+.checkbox-group label {
     margin-bottom: 0;
-    cursor: pointer;
-    font-weight: 500;
+    font-weight: normal;
     color: #4D4D4D;
 }
 
-
-/* File input styling */
-.file-info {
-    font-size: 0.9em;
-    color: #888;
-    margin-top: 5px;
-}
-
-.current-attachments-preview {
-    margin-top: 15px;
-    border-top: 1px dashed #E0E6ED;
-    padding-top: 15px;
-}
-
-.attachment-item {
-    display: flex;
-    align-items: center;
-    background-color: #F0F4F8;
-    border: 1px solid #DCE4EC;
-    border-radius: 6px;
-    padding: 8px 12px;
-    margin-bottom: 8px;
-    font-size: 0.95em;
-    color: #5A6B7F;
-    justify-content: space-between;
-}
-
-.attachment-item i {
-    margin-right: 8px;
-    color: #007bff;
-}
-
-.attachment-item a {
-    color: #337AB7;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.attachment-item a:hover {
-    text-decoration: underline;
-}
-
-.remove-attachment {
-    cursor: pointer;
-    color: #FF6B6B;
-    margin-left: 15px;
-    transition: color 0.2s ease;
-}
-
-.remove-attachment:hover {
-    color: #E63946;
-}
-
-/* Form actions (buttons) */
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 15px;
+/* 버튼 그룹 */
+.button-group {
+    text-align: right;
     margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #E9EEF4;
 }
 
-.form-actions .button {
+.button-group .button {
     padding: 12px 25px;
     font-size: 1em;
     font-weight: 600;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    border: none;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-left: 10px; /* 버튼 간 간격 */
 }
 
-.form-actions .button.primary {
+.button-group .button.primary {
     background-color: #007bff;
     color: white;
-    border: none;
 }
 
-.form-actions .button.primary:hover {
+.button-group .button.primary:hover {
     background-color: #0056b3;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
 }
 
-.form-actions .button.secondary {
-    background-color: #F0F4F8;
+.button-group .button.secondary {
+    background-color: #E9EEF4;
     color: #5A6B7F;
     border: 1px solid #DCE4EC;
 }
 
-.form-actions .button.secondary:hover {
-    background-color: #E0E6ED;
+.button-group .button.secondary:hover {
+    background-color: #DDE4EB;
     color: #2C3E50;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .community-create-container {
-        padding: 20px;
+    .community-edit-container {
         margin: 20px auto;
+        padding: 25px;
     }
-    .create-post-title {
-        font-size: 1.8em;
-        margin-bottom: 20px;
+    .community-edit-container h1 {
+        font-size: 2em;
     }
-    .create-post-form label {
+    .community-edit-container .page-description {
         font-size: 1em;
+        margin-bottom: 30px;
     }
-    .create-post-form input[type="text"],
-    .create-post-form textarea,
-    .create-post-form select {
+    .post-form {
+        padding: 15px;
+    }
+    .form-group input, .form-group select, .form-group textarea {
         padding: 10px 12px;
         font-size: 0.95em;
     }
-    .create-post-form textarea {
-        min-height: 120px;
+    .button-group {
+        text-align: center; /* 모바일에서 버튼 중앙 정렬 */
     }
-    .form-actions {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .form-actions .button {
+    .button-group .button {
         width: 100%;
-        padding: 10px 20px;
-        font-size: 0.95em;
+        margin-left: 0;
+        margin-bottom: 10px; /* 버튼 세로 간격 */
     }
 }
 
 @media (max-width: 480px) {
-    .community-create-container {
-        padding: 15px;
+    .community-edit-container {
         margin: 15px auto;
+        padding: 20px;
     }
-    .create-post-title {
-        font-size: 1.5em;
-        margin-bottom: 15px;
+    .community-edit-container h1 {
+        font-size: 1.8em;
     }
-    .create-post-form label {
+    .community-edit-container .page-description {
+        font-size: 0.9em;
+        margin-bottom: 25px;
+    }
+    .form-group label {
         font-size: 0.9em;
     }
-    .create-post-form input[type="text"],
-    .create-post-form textarea,
-    .create-post-form select {
-        padding: 8px 10px;
+    .form-group input, .form-group select, .form-group textarea {
         font-size: 0.9em;
-    }
-    .create-post-form textarea {
-        min-height: 100px;
-    }
-    .file-info {
-        font-size: 0.8em;
-    }
-    .attachment-item {
-        font-size: 0.85em;
-        padding: 6px 10px;
     }
 }

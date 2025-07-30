@@ -41,7 +41,7 @@
                             <th>액션</th>
                         </tr>
                     </thead>
-                    <tbody id="inquiryTableBody">
+                    <tbody id="inquiryTableBody"> {# 이 ID를 사용합니다 #}
                         <tr><td colspan="8" class="loading-row">문의사항을 불러오는 중...</td></tr>
                     </tbody>
                 </table>
@@ -88,7 +88,8 @@
 
 {% block scripts %}
     <script>
-        const inquiryTableBody = document.getElementById('inquiryTableBody');
+        // DOM 요소 가져오기
+        const inquiryTableBody = document.getElementById('inquiryTableBody'); // 이 ID를 사용합니다.
         const inquirySearchInput = document.getElementById('inquirySearchInput');
         const inquiryStatusFilter = document.getElementById('inquiryStatusFilter');
         const searchInquiryButton = document.getElementById('searchInquiryButton');
@@ -152,8 +153,8 @@
             }
         }
 
-        // 모든 문의사항 불러오기
-        async function fetchAllInquiries() {
+        // 모든 문의사항 불러오기 (함수 이름 변경)
+        async function fetchAdminInquiries() {
             inquiryTableBody.innerHTML = '<tr><td colspan="8" class="loading-row">문의사항을 불러오는 중...</td></tr>';
             noInquiriesMessage.classList.add('hidden');
 
@@ -167,7 +168,7 @@
                 }
                 const data = await response.json();
                 allInquiries = data.inquiries || [];
-                renderInquiryTable(allInquiries);
+                renderAdminInquiryTable(allInquiries); // 렌더링 함수 이름 변경
             } catch (error) {
                 console.error('문의사항 목록 로드 중 오류 발생:', error);
                 await showAlert('문의사항 목록을 불러오는 중 네트워크 오류가 발생했습니다.');
@@ -175,8 +176,8 @@
             }
         }
 
-        // 문의사항 테이블 렌더링
-        function renderInquiryTable(inquiriesToRender) {
+        // 문의사항 테이블 렌더링 (함수 이름 변경)
+        function renderAdminInquiryTable(inquiriesToRender) {
             inquiryTableBody.innerHTML = '';
             if (inquiriesToRender.length === 0) {
                 noInquiriesMessage.classList.remove('hidden');
@@ -186,8 +187,21 @@
 
             inquiriesToRender.forEach(inquiry => {
                 const row = inquiryTableBody.insertRow();
-                const displayCreatedAt = inquiry.created_at ? new Date(inquiry.created_at).toLocaleDateString() : '-';
-                const displayRepliedAt = inquiry.replied_at ? new Date(inquiry.replied_at).toLocaleDateString() : '-';
+                // 날짜 파싱 및 포맷팅 함수
+                const formatDate = (dateString) => {
+                    try {
+                        if (!dateString) return '-';
+                        const date = new Date(dateString);
+                        if (isNaN(date.getTime())) return 'Invalid Date'; // 유효하지 않은 날짜 처리
+                        return date.toLocaleDateString(); // YYYY. M. D. 형식으로 변환
+                    } catch (e) {
+                        console.error('Date parsing error:', e, dateString);
+                        return 'Invalid Date';
+                    }
+                };
+
+                const displayCreatedAt = formatDate(inquiry.created_at);
+                const displayRepliedAt = formatDate(inquiry.replied_at);
                 
                 let statusText = '';
                 let statusClass = '';
@@ -210,15 +224,15 @@
                 }
 
                 row.innerHTML = `
-                    <td>${inquiry._id.substring(0, 8)}...</td>
+                    <td>${String(inquiry._id).substring(0, 8)}...</td>
                     <td>${inquiry.title}</td>
                     <td>${inquiry.username || '-'}</td>
-                    <td>${inquiry.email || '-'}</td>
+                    <td>${inquiry.user_email || '-'}</td> {# 이메일 필드 사용 #}
                     <td class="${statusClass}">${statusText}</td>
                     <td>${displayCreatedAt}</td>
                     <td>${displayRepliedAt}</td>
                     <td class="action-cell">
-                        <button class="button small secondary view-inquiry-button" data-inquiry-id="${inquiry._id}">상세/처리</button>
+                        <button class="button small secondary view-inquiry-button" data-inquiry-id="${String(inquiry._id)}">상세/처리</button>
                     </td>
                 `;
             });
@@ -234,26 +248,44 @@
         // 문의사항 상세 모달 열기
         async function openInquiryDetailModal(inquiryId) {
             currentViewingInquiryId = inquiryId;
+            console.log("Attempting to open modal for inquiry ID:", inquiryId);
             try {
                 const response = await fetchWithAuth(`/api/admin/inquiries/${inquiryId}`);
+                
                 if (!response || !response.ok) {
                     const errorData = response ? await response.json() : {};
+                    console.error("Failed to fetch inquiry detail:", errorData.message || response.statusText);
                     await showAlert(errorData.message || '문의사항 상세 정보를 불러오는 데 실패했습니다.');
                     return;
                 }
                 const inquiry = await response.json();
+                console.log("Fetched inquiry detail:", inquiry);
+
+                // 날짜 파싱 및 포맷팅 함수 (시간 포함)
+                const formatDateTime = (dateString) => {
+                    try {
+                        if (!dateString) return '-';
+                        const date = new Date(dateString);
+                        if (isNaN(date.getTime())) return 'Invalid Date';
+                        return date.toLocaleString(); // 현지화된 날짜 및 시간 형식으로 변환
+                    } catch (e) {
+                        console.error('Date parsing error:', e, dateString);
+                        return 'Invalid Date';
+                    }
+                };
 
                 detailInquiryId.textContent = inquiry._id;
                 detailInquiryTitle.textContent = inquiry.title;
                 detailInquiryAuthor.textContent = inquiry.username || '-';
-                detailInquiryEmail.textContent = inquiry.email || '-';
+                detailInquiryEmail.textContent = inquiry.user_email || '-'; 
                 detailInquiryStatus.textContent = inquiry.status === 'pending' ? '대기 중' : (inquiry.status === 'replied' ? '답변 완료' : '종료됨');
-                detailInquiryCreatedAt.textContent = inquiry.created_at ? new Date(inquiry.created_at).toLocaleString() : '-';
+                detailInquiryCreatedAt.textContent = formatDateTime(inquiry.created_at);
                 detailInquiryContent.innerHTML = inquiry.content;
 
                 replyContentInput.value = inquiry.reply_content || '';
-                repliedBySpan.textContent = inquiry.replied_by_nickname || inquiry.replied_by_username || '없음';
-                repliedAtSpan.textContent = inquiry.replied_at ? new Date(inquiry.replied_at).toLocaleString() : '없음';
+                repliedAtSpan.textContent = inquiry.replied_by_username || '없음'; // 이름으로 나타냄 (관리자및 운영자가 답변을 하면 이름으로 나타냄)
+                // repliedBySpan.textContent = inquiry.replied_by_nickname || inquiry.replied_by_username || '없음';
+                repliedAtSpan.textContent = formatDateTime(inquiry.replied_at);
 
                 // 상태 변경 드롭다운 초기화
                 changeStatusSelect.value = inquiry.status;
@@ -263,6 +295,7 @@
                 deleteInquiryButton.onclick = () => deleteInquiry(inquiryId);
                 
                 inquiryDetailModal.classList.add('visible');
+                console.log("Inquiry detail modal should be visible now.");
             }
             catch (error) {
                 console.error('문의사항 상세 정보 로드 중 오류 발생:', error);
@@ -304,7 +337,7 @@
                 if (response.ok) {
                     await showAlert(result.message || '답변이 성공적으로 제출되었습니다.');
                     inquiryDetailModal.classList.remove('visible');
-                    fetchAllInquiries(); // 목록 새로고침
+                    fetchAdminInquiries(); // 목록 새로고침 (함수 이름 변경)
                 } else {
                     await showAlert(result.message || '답변 제출에 실패했습니다.');
                 }
@@ -336,7 +369,7 @@
                 if (response.ok) {
                     await showAlert(result.message || '상태가 성공적으로 변경되었습니다.');
                     inquiryDetailModal.classList.remove('visible');
-                    fetchAllInquiries(); // 목록 새로고침
+                    fetchAdminInquiries(); // 목록 새로고침 (함수 이름 변경)
                 } else {
                     await showAlert(result.message || '상태 변경에 실패했습니다.');
                     e.target.value = allInquiries.find(i => i._id === currentViewingInquiryId)?.status || ''; // 변경 취소
@@ -363,7 +396,7 @@
                 if (response.ok) {
                     await showAlert(result.message || '문의사항이 성공적으로 삭제되었습니다.');
                     inquiryDetailModal.classList.remove('visible');
-                    fetchAllInquiries(); // 목록 새로고침
+                    fetchAdminInquiries(); // 목록 새로고침 (함수 이름 변경)
                 } else {
                     await showAlert(result.message || '문의사항 삭제에 실패했습니다.');
                 }
@@ -381,13 +414,13 @@
             const filteredInquiries = allInquiries.filter(inquiry => {
                 const titleMatch = inquiry.title.toLowerCase().includes(searchTerm);
                 const usernameMatch = (inquiry.username && inquiry.username.toLowerCase().includes(searchTerm));
-                const emailMatch = (inquiry.email && inquiry.email.toLowerCase().includes(searchTerm));
+                const emailMatch = (inquiry.user_email && inquiry.user_email.toLowerCase().includes(searchTerm));
                 
                 const statusMatch = statusFilter === '' || inquiry.status === statusFilter;
 
                 return (titleMatch || usernameMatch || emailMatch) && statusMatch;
             });
-            renderInquiryTable(filteredInquiries);
+            renderAdminInquiryTable(filteredInquiries); // 렌더링 함수 이름 변경
         });
 
         inquirySearchInput.addEventListener('keypress', (e) => {
@@ -400,7 +433,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const hasAccess = await checkAdminOrOperatorAccess();
             if (hasAccess) {
-                fetchAllInquiries();
+                fetchAdminInquiries(); // 함수 이름 변경
             }
         });
     </script>

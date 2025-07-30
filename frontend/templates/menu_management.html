@@ -106,7 +106,6 @@
 
             try {
                 console.log('checkAdminAccess (menu_management): /api/auth/me 호출 시도');
-                // debugger; // 디버깅 완료 후 주석 처리 또는 제거
                 const response = await fetchWithAuth('/api/auth/me', { method: 'GET' });
                 console.log('checkAdminAccess (menu_management): /api/auth/me fetchWithAuth 호출 결과:', response);
 
@@ -178,7 +177,10 @@
 
             menuItems.forEach(item => {
                 const row = menuTableBody.insertRow();
-                const requiredRoles = item.required_roles && item.required_roles.length > 0 ? item.required_roles.join(', ') : '없음';
+                // required_roles가 배열이 아닐 경우를 대비하여 안전하게 처리
+                const requiredRoles = Array.isArray(item.required_roles) && item.required_roles.length > 0 
+                                    ? item.required_roles.join(', ') 
+                                    : '없음';
                 row.innerHTML = `
                     <td>${item._id}</td>
                     <td>${item.name}</td>
@@ -194,9 +196,9 @@
             });
 
             document.querySelectorAll('.edit-menu-button').forEach(button => {
-                button.addEventListener('click', (e) => {
+                button.addEventListener('click', async (e) => { // async 추가
                     const menuId = e.target.dataset.menuId;
-                    openMenuModalForEdit(menuId);
+                    await openMenuModalForEdit(menuId); // await 추가
                 });
             });
 
@@ -214,6 +216,7 @@
                 const response = await fetchWithAuth('/api/admin/roles');
                 if (response.ok) {
                     allRoles = (await response.json()).roles;
+                    console.log('fetchAllRolesForModal: 모든 역할 로드됨', allRoles);
                 } else {
                     console.error('Failed to load all roles for modal:', await response.json());
                     await showAlert('역할 정보를 불러오는 데 실패했습니다.');
@@ -230,35 +233,52 @@
             modalTitle.textContent = '새 메뉴 추가';
             menuForm.reset();
             editingMenuId = null;
-            renderRoleCheckboxes([]); // 빈 배열로 초기화
+            renderRoleCheckboxes([]); // 빈 배열로 초기화 (새 메뉴는 할당된 역할 없음)
             menuModal.classList.add('visible');
         });
 
         // 메뉴 수정 모달 열기
         async function openMenuModalForEdit(menuId) {
-            const menu = (await fetchWithAuth(`/api/admin/menu_items/${menuId}`)).json();
-            if (!menu) {
-                await showAlert('메뉴 정보를 불러오는 데 실패했습니다.');
-                return;
-            }
+            try {
+                const response = await fetchWithAuth(`/api/admin/menu_items/${menuId}`);
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    await showAlert(errorData.message || '메뉴 정보를 불러오는 데 실패했습니다.');
+                    return;
+                }
+                const menu = await response.json();
+                console.log('openMenuModalForEdit: 불러온 메뉴 정보', menu);
 
-            modalTitle.textContent = '메뉴 수정';
-            editingMenuId = menuId;
-            document.getElementById('menuId').value = menuId;
-            document.getElementById('menuName').value = menu.name;
-            document.getElementById('menuUrl').value = menu.url;
-            document.getElementById('menuIcon').value = menu.icon_class || '';
-            document.getElementById('menuOrder').value = menu.order;
-            renderRoleCheckboxes(menu.required_roles || []);
-            menuModal.classList.add('visible');
+                modalTitle.textContent = '메뉴 수정';
+                editingMenuId = menuId;
+                document.getElementById('menuId').value = menuId;
+                document.getElementById('menuName').value = menu.name;
+                document.getElementById('menuUrl').value = menu.url;
+                document.getElementById('menuIcon').value = menu.icon_class || '';
+                document.getElementById('menuOrder').value = menu.order;
+                
+                // 메뉴에 할당된 역할 목록을 전달하여 체크박스 렌더링
+                renderRoleCheckboxes(menu.required_roles || []); 
+                
+                menuModal.classList.add('visible');
+            } catch (error) {
+                console.error('메뉴 정보 로드 중 오류 발생:', error);
+                await showAlert('메뉴 정보를 불러오는 중 네트워크 오류가 발생했습니다.');
+            }
         }
 
         // 역할 체크박스 렌더링
         function renderRoleCheckboxes(selectedRoles) {
             const requiredRolesCheckboxes = document.getElementById('requiredRolesCheckboxes');
-            requiredRolesCheckboxes.innerHTML = '';
+            requiredRolesCheckboxes.innerHTML = ''; // 기존 체크박스 초기화
+            
+            if (allRoles.length === 0) {
+                requiredRolesCheckboxes.innerHTML = '<p style="color: red;">역할 정보를 불러올 수 없습니다.</p>';
+                return;
+            }
+
             allRoles.forEach(role => {
-                const isChecked = selectedRoles.includes(role.name);
+                const isChecked = selectedRoles.includes(role.name); // 역할 이름으로 비교
                 const checkboxDiv = document.createElement('div');
                 checkboxDiv.className = 'role-checkbox-item';
                 checkboxDiv.innerHTML = `
@@ -283,6 +303,7 @@
                 url: document.getElementById('menuUrl').value,
                 icon_class: document.getElementById('menuIcon').value,
                 order: parseInt(document.getElementById('menuOrder').value),
+                // 선택된 역할들의 이름을 배열로 수집
                 required_roles: Array.from(document.querySelectorAll('#requiredRolesCheckboxes input[type="checkbox"]:checked')).map(cb => cb.value)
             };
 
