@@ -89,6 +89,7 @@ def create_app():
     from backend.routes.dashboard_routes import dashboard_bp 
     from backend.routes.chat_routes import chat_bp
     from backend.routes.inquiry_routes import inquiry_bp
+    from backend.routes.psych_test_routes import psych_test_bp # NEW: 심리 테스트 블루프린트 임포트
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
@@ -99,6 +100,7 @@ def create_app():
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
     app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
+    app.register_blueprint(psych_test_bp, url_prefix='/api/psych_test') # NEW: 심리 테스트 블루프린트 등록
 
 
     # --- 전역 컨텍스트 및 에러 핸들러 ---
@@ -114,7 +116,6 @@ def create_app():
         app.logger.error(f"An unhandled exception occurred: {e}", exc_info=True)
         if request.path.startswith('/api/'):
             return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}), 500
-        # 500.html이 없으므로 404.html을 사용하거나, 간단한 텍스트 응답을 반환
         return render_template('404.html', error_message=str(e)), 500 # 500.html 대신 404.html 사용
 
     # ----------------------------------------------------------------
@@ -181,6 +182,19 @@ def create_app():
     @app.route('/inquiry')
     def inquiry():
         return render_template('inquiry.html')
+
+    # --- NEW: Psych Test Routes ---
+    @app.route('/psych_test')
+    def psych_test_list():
+        return render_template('psych_test_list.html')
+
+    @app.route('/psych_test/<string:test_id>')
+    def psych_test_take(test_id):
+        return render_template('psych_test_take.html', test_id=test_id)
+
+    @app.route('/psych_test/result/<string:result_id>')
+    def psych_test_result(result_id):
+        return render_template('psych_test_result.html', result_id=result_id)
 
     # --- Admin Routes ---
     @app.route('/admin/dashboard')

@@ -27,19 +27,20 @@ def initialize_menus():
             {'name': '내 마음 일기', 'url': '/diary', 'icon': 'fas fa-book-medical', 'order': 30},
             {'name': 'AI 챗봇', 'url': '/ai_chat', 'icon': 'fas fa-robot', 'order': 40},
             {'name': '나의 변화', 'url': '/my_changes', 'icon': 'fas fa-chart-line', 'order': 50},
-            {'name': '문의사항', 'url': '/inquiry', 'icon': 'fas fa-question-circle', 'order': 60}, # NEW: 문의사항 메뉴
+            {'name': '문의사항', 'url': '/inquiry', 'icon': 'fas fa-question-circle', 'order': 60},
+            {'name': '심리 테스트', 'url': '/psych_test', 'icon': 'fas fa-brain', 'order': 70}, # NEW: 심리 테스트 메뉴 추가
             # 관리자 메뉴
             {'name': '관리자 대시보드', 'url': '/admin/dashboard', 'icon': 'fas fa-tachometer-alt', 'order': 100},
             {'name': '사용자 관리', 'url': '/admin/user_management', 'icon': 'fas fa-users-cog', 'order': 110},
             {'name': '메뉴 관리', 'url': '/admin/menu_management', 'icon': 'fas fa-bars', 'order': 120},
             {'name': '역할-메뉴 할당', 'url': '/admin/role_menu_assignment', 'icon': 'fas fa-user-tag', 'order': 130},
             {'name': '공지사항 관리', 'url': '/admin/notice_management', 'icon': 'fas fa-bullhorn', 'order': 140},
-            {'name': 'DB 관리', 'url': '/admin/db_management', 'icon': 'fas fa-database', 'order': 150}, # NEW
-            {'name': '게시글 관리', 'url': '/admin/post_management', 'icon': 'fas fa-file-alt', 'order': 160}, # NEW
-            {'name': 'CMS 관리', 'url': '/admin/cms_management', 'icon': 'fas fa-cogs', 'order': 170}, # NEW
-            {'name': '데이터 분석', 'url': '/admin/data_analytics', 'icon': 'fas fa-chart-pie', 'order': 180}, # NEW
-            {'name': '챗봇 피드백', 'url': '/admin/chatbot_feedback', 'icon': 'fas fa-comments', 'order': 190}, # NEW
-            {'name': '문의사항 관리', 'url': '/admin/inquiry_management', 'icon': 'fas fa-envelope-open-text', 'order': 195}, # NEW: 문의사항 관리 메뉴
+            {'name': 'DB 관리', 'url': '/admin/db_management', 'icon': 'fas fa-database', 'order': 150},
+            {'name': '게시글 관리', 'url': '/admin/post_management', 'icon': 'fas fa-file-alt', 'order': 160},
+            {'name': 'CMS 관리', 'url': '/admin/cms_management', 'icon': 'fas fa-cogs', 'order': 170},
+            {'name': '데이터 분석', 'url': '/admin/data_analytics', 'icon': 'fas fa-chart-pie', 'order': 180},
+            {'name': '챗봇 피드백', 'url': '/admin/chatbot_feedback', 'icon': 'fas fa-comments', 'order': 190},
+            {'name': '문의사항 관리', 'url': '/admin/inquiry_management', 'icon': 'fas fa-envelope-open-text', 'order': 195},
         ]
 
         menu_ids_map = {} # 메뉴 이름과 MongoDB _id를 매핑
@@ -70,9 +71,9 @@ def initialize_menus():
         # 3. 역할별 메뉴 할당
         # '관리자' 역할에는 모든 메뉴를 할당
         admin_menu_names = [
-            '홈', '커뮤니티', '내 마음 일기', 'AI 챗봇', '나의 변화', '문의사항', # NEW
+            '홈', '커뮤니티', '내 마음 일기', 'AI 챗봇', '나의 변화', '문의사항', '심리 테스트', # 심리 테스트 추가
             '관리자 대시보드', '사용자 관리', '메뉴 관리', '역할-메뉴 할당', '공지사항 관리',
-            'DB 관리', '게시글 관리', 'CMS 관리', '데이터 분석', '챗봇 피드백', '문의사항 관리' # NEW
+            'DB 관리', '게시글 관리', 'CMS 관리', '데이터 분석', '챗봇 피드백', '문의사항 관리'
         ]
         admin_menu_ids = [menu_ids_map[name] for name in admin_menu_names if name in menu_ids_map]
         
@@ -83,10 +84,10 @@ def initialize_menus():
         )
         print("'관리자' 역할에 메뉴 할당 완료.")
 
-        # '운영자' 역할에는 특정 메뉴를 할당 (공지사항 관리, 게시글 관리 포함)
+        # '운영자' 역할에는 특정 메뉴를 할당 (공지사항 관리, 게시글 관리, 문의사항 관리 포함)
         operator_menu_names = [
-            '홈', '커뮤니티', '내 마음 일기', 'AI 챗봇', '나의 변화', '문의사항', # NEW
-            '공지사항 관리', '게시글 관리', '문의사항 관리' # NEW
+            '홈', '커뮤니티', '내 마음 일기', 'AI 챗봇', '나의 변화', '문의사항', '심리 테스트', # 심리 테스트 추가
+            '공지사항 관리', '게시글 관리', '문의사항 관리'
         ]
         operator_menu_ids = [menu_ids_map[name] for name in operator_menu_names if name in menu_ids_map]
         
@@ -97,10 +98,10 @@ def initialize_menus():
         )
         print("'운영자' 역할에 메뉴 할당 완료.")
 
-        # '개발자' 역할에는 특정 메뉴를 할당 (DB 관리, 챗봇 피드백 포함)
+        # '개발자' 역할에는 특정 메뉴를 할당 (DB 관리, 챗봇 피드백, 문의사항 포함)
         developer_menu_names = [
-            '홈', '커뮤니티', '내 마음 일기', 'AI 챗봇', '나의 변화', '문의사항', # NEW
-            'DB 관리', '챗봇 피드백' # NEW
+            '홈', '커뮤니티', '내 마음 일기', 'AI 챗봇', '나의 변화', '문의사항', '심리 테스트', # 심리 테스트 추가
+            'DB 관리', '챗봇 피드백' 
         ]
         developer_menu_ids = [menu_ids_map[name] for name in developer_menu_names if name in menu_ids_map]
         assignments_collection.update_one(
@@ -110,10 +111,10 @@ def initialize_menus():
         )
         print("'개발자' 역할에 메뉴 할당 완료.")
 
-        # '연구자' 역할에는 특정 메뉴를 할당 (DB 관리, 데이터 분석 포함)
+        # '연구자' 역할에는 특정 메뉴를 할당 (DB 관리, 데이터 분석, 문의사항 포함)
         researcher_menu_names = [
-            '홈', '커뮤니티', '내 마음 일기', 'AI 챗봇', '나의 변화', '문의사항', # NEW
-            'DB 관리', '데이터 분석' # NEW
+            '홈', '커뮤니티', '내 마음 일기', 'AI 챗봇', '나의 변화', '문의사항', '심리 테스트', # 심리 테스트 추가
+            'DB 관리', '데이터 분석'
         ]
         researcher_menu_ids = [menu_ids_map[name] for name in researcher_menu_names if name in menu_ids_map]
         assignments_collection.update_one(
@@ -123,8 +124,8 @@ def initialize_menus():
         )
         print("'연구자' 역할에 메뉴 할당 완료.")
 
-        # '일반 사용자' 역할에는 사용자 메뉴만 할당 (변동 없음)
-        user_menu_names = ['홈', '커뮤니티', '내 마음 일기', 'AI 챗봇', '나의 변화', '문의사항'] # NEW: 문의사항 메뉴 추가
+        # '일반 사용자' 역할에는 사용자 메뉴만 할당 (문의사항, 심리 테스트 포함)
+        user_menu_names = ['홈', '커뮤니티', '내 마음 일기', 'AI 챗봇', '나의 변화', '문의사항', '심리 테스트'] # 심리 테스트 메뉴 추가
         user_menu_ids = [menu_ids_map[name] for name in user_menu_names if name in menu_ids_map]
         
         assignments_collection.update_one(

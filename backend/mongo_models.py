@@ -248,3 +248,123 @@ class Inquiry:
             replied_at=replied_at,
             replied_by_user_id=replied_by_user_id
         )
+
+# NEW: PsychTest Model for psychological tests
+class PsychTest:
+    def __init__(self, title, description, test_type, questions=None, created_at=None, _id=None):
+        self._id = _id if _id else ObjectId()
+        self.title = title # 테스트 제목 (예: MBTI 성격 유형 테스트)
+        self.description = description # 테스트 설명
+        self.test_type = test_type # "personality", "emotion_diagnosis"
+        self.questions = questions if questions is not None else [] # PsychQuestion 객체들의 리스트 또는 참조 ID
+        self.created_at = created_at if created_at is not None else datetime.datetime.utcnow()
+
+    def to_dict(self):
+        return {
+            "_id": self._id,
+            "title": self.title,
+            "description": self.description,
+            "test_type": self.test_type,
+            "questions": self.questions, # 질문 객체 자체를 포함하거나, 질문 ID 리스트를 포함
+            "created_at": self.created_at.isoformat(),
+        }
+
+    @staticmethod
+    def from_mongo(data):
+        _id = data.get('_id')
+        title = data.get('title')
+        description = data.get('description')
+        test_type = data.get('test_type')
+        questions = data.get('questions', [])
+        created_at = data.get('created_at')
+
+        if isinstance(created_at, str):
+            created_at = datetime.datetime.fromisoformat(created_at)
+
+        return PsychTest(
+            _id=_id,
+            title=title,
+            description=description,
+            test_type=test_type,
+            questions=questions,
+            created_at=created_at
+        )
+
+# NEW: PsychQuestion Model for individual test questions
+class PsychQuestion:
+    def __init__(self, test_id, question_text, options, order, _id=None):
+        self._id = _id if _id else ObjectId()
+        self.test_id = test_id # 어떤 테스트에 속하는 질문인지 (PsychTest의 _id 참조)
+        self.question_text = question_text # 질문 내용
+        self.options = options # [{ "text": "선택지1", "score": 1 }, { "text": "선택지2", "score": 2 }]
+        self.order = order # 질문 순서
+
+    def to_dict(self):
+        return {
+            "_id": self._id,
+            "test_id": self.test_id,
+            "question_text": self.question_text,
+            "options": self.options,
+            "order": self.order
+        }
+
+    @staticmethod
+    def from_mongo(data):
+        _id = data.get('_id')
+        test_id = data.get('test_id')
+        question_text = data.get('question_text')
+        options = data.get('options', [])
+        order = data.get('order')
+
+        return PsychQuestion(
+            _id=_id,
+            test_id=test_id,
+            question_text=question_text,
+            options=options,
+            order=order
+        )
+
+# NEW: PsychTestResult Model for storing user's test results
+class PsychTestResult:
+    def __init__(self, user_id, test_id, answers, result_summary, result_details=None, created_at=None, _id=None):
+        self._id = _id if _id else ObjectId()
+        self.user_id = user_id # 테스트를 수행한 사용자 ID
+        self.test_id = test_id # 수행한 테스트 ID (PsychTest의 _id 참조)
+        self.answers = answers # [{"question_id": "...", "selected_option_index": 0, "score": 1}]
+        self.result_summary = result_summary # 결과 요약 (예: "당신은 외향적인 성격입니다.")
+        self.result_details = result_details # 상세 결과 데이터 (그래프 데이터, 추가 설명 등)
+        self.created_at = created_at if created_at is not None else datetime.datetime.utcnow()
+
+    def to_dict(self):
+        return {
+            "_id": self._id,
+            "user_id": self.user_id,
+            "test_id": self.test_id,
+            "answers": self.answers,
+            "result_summary": self.result_summary,
+            "result_details": self.result_details,
+            "created_at": self.created_at.isoformat(),
+        }
+
+    @staticmethod
+    def from_mongo(data):
+        _id = data.get('_id')
+        user_id = data.get('user_id')
+        test_id = data.get('test_id')
+        answers = data.get('answers', [])
+        result_summary = data.get('result_summary')
+        result_details = data.get('result_details')
+        created_at = data.get('created_at')
+
+        if isinstance(created_at, str):
+            created_at = datetime.datetime.fromisoformat(created_at)
+
+        return PsychTestResult(
+            _id=_id,
+            user_id=user_id,
+            test_id=test_id,
+            answers=answers,
+            result_summary=result_summary,
+            result_details=result_details,
+            created_at=created_at
+        )
