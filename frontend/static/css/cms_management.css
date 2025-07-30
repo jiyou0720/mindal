@@ -94,8 +94,11 @@ h1 {
     transform: translateY(-1px);
 }
 
-.content-management-area {
-    margin-top: 30px;
+
+
+/* JavaScript에서 .hidden 클래스를 토글할 때 사용 */
+.hidden {
+    display: none !important; /* 다른 CSS 규칙보다 우선하도록 !important 사용 */
 }
 
 .initial-message {
