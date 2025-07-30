@@ -1,0 +1,91 @@
+2025-07-28 09:58:58,315 ERROR: An unhandled exception occurred: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in C:\mindai\backend\app.py:122]
+Traceback (most recent call last):
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 808, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\mindai\backend\app.py", line 188, in community_edit
+    return render_template('community_edit.html', post_id=post_id)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1304, in render
+    self.environment.handle_exception()
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 939, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\mindai\frontend\templates\community_edit.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\mindai\frontend\templates\base.html", line 32, in top-level template code
+    {% block content %}{% endblock %}
+  File "C:\mindai\frontend\templates\community_edit.html", line 74, in block 'content'
+    const communityListUrl = "{{ url_for('community') }}";
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1027, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1016, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\werkzeug\routing\map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'community'. Did you mean 'community_list' instead?
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1417, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 825, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 715, in handle_user_exception
+    return self.ensure_sync(handler)(e)  # type: ignore[no-any-return]
+  File "C:\mindai\backend\app.py", line 127, in handle_exception
+    return render_template('500.html', error_message=str(e)), 500 # 500.html捞 绝栏骨肺 烙矫肺 俊矾 皋矫瘤 流立 钎矫
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1084, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1013, in get_template
+    return self._load_template(name, globals)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 972, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: 500.html
+2025-07-28 09:59:05,735 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:05,738 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:06,713 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:06,716 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:07,492 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:07,496 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:09,262 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:09,268 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:17,352 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:17,358 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:20,744 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:20,748 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:24,121 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:24,128 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:33,977 ERROR: An unhandled exception occurred: toggle_post_suspension() got an unexpected keyword argument 'post_id' [in C:\mindai\backend\app.py:122]
+Traceback (most recent call last):
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 808, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\mindai\backend\routes\auth_routes.py", line 55, in decorated
+    return f(*args, **kwargs)
+  File "C:\mindai\backend\routes\auth_routes.py", line 66, in decorated_function
+    return f(*args, **kwargs)
+TypeError: toggle_post_suspension() got an unexpected keyword argument 'post_id'
+2025-07-28 09:59:39,706 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:39,711 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:42,499 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:42,501 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:51,378 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:51,381 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:52,609 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:52,613 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
