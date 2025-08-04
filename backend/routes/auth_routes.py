@@ -11,7 +11,7 @@ import string
 
 auth_bp = Blueprint('auth_api', __name__)
 
-# JWT 토큰 검증 데코레이터
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -34,9 +34,7 @@ def token_required(f):
             g.username = data['username']
             g.nickname = data.get('nickname')
             g.user_uid = data.get('user_uid')
-            g.email = data.get('email') # JWT 토큰에서 이메일 가져와 g 객체에 할당
-            
-            # DB에서 최신 역할 정보 가져와 g.user_roles에 할당
+            g.email = data.get('email') 
             user = db.session.get(User, g.user_id)
             if user:
                 g.user_roles = [role.name for role in user.roles]
@@ -56,7 +54,6 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorated
 
-# 역할 기반 접근 제어 데코레이터
 def roles_required(roles):
     def decorator(f):
         @wraps(f)
@@ -68,7 +65,6 @@ def roles_required(roles):
         return decorated_function
     return decorator
 
-# 사용자 UID 생성 (숫자 10자리)
 def generate_numeric_uid(length=10):
     return ''.join(random.choices(string.digits, k=length))
 
@@ -119,16 +115,14 @@ def register():
         )
         new_user.set_password(password)
 
-        # 기본 역할 '일반 사용자' 할당
+        # 기본역할 - 일반 사용자
         default_role = Role.query.filter_by(name='일반 사용자').first()
         if default_role:
             new_user.roles.append(default_role)
             current_app.logger.info("Default role '일반 사용자' assigned to new user.")
         else:
             current_app.logger.error("Default role '일반 사용자' not found in DB. Please run initialize_roles.py.")
-            # 역할 할당 실패 시, 사용자 생성은 진행하되 로그를 남김 (또는 에러 반환)
-            # 여기서는 사용자 생성은 진행하고 경고를 남깁니다.
-            # 만약 역할 할당이 필수적이라면 여기서 500 에러를 반환해야 합니다.
+
 
         db.session.add(new_user)
         db.session.commit()
@@ -150,8 +144,8 @@ def login_user():
 
     if not user or not user.check_password(password):
         return jsonify({'message': '잘못된 이메일 또는 비밀번호입니다.'}), 401
+    
 
-    # 사용자 역할 정보 로드 (JWT에 포함하기 위해)
     user_roles_list = [user_role_obj.name for user_role_obj in user.roles]
 
     token = jwt.encode({
@@ -159,8 +153,8 @@ def login_user():
         'username': user.username,
         'nickname': user.nickname,
         'user_uid': user.user_uid,
-        'email': user.email, # 이메일도 토큰에 포함
-        'roles': user_roles_list, # 역할 목록을 토큰에 포함
+        'email': user.email, 
+        'roles': user_roles_list, 
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24) # 토큰 만료 시간 24시간
     },
     current_app.config['JWT_SECRET_KEY'],
@@ -174,12 +168,10 @@ def login_user():
         'username': user.username,
         'nickname': user.nickname,
         'user_uid': user.user_uid,
-        'email': user.email, # 프론트엔드에서 바로 사용할 수 있도록 이메일도 반환
+        'email': user.email, 
         'roles': user_roles_list
     })
     
-    # 로그인 성공 시 프론트엔드에 메뉴 캐시 삭제 지시 (쿠키 또는 헤더를 통해)
-    # response.headers['X-Clear-Menu-Cache'] = 'true' # 이 부분은 요청에 의해 제거됨
     
     return response, 200
 
@@ -193,8 +185,7 @@ def get_current_user():
     if not user:
         return jsonify({'message': '사용자를 찾을 수 없습니다.'}), 404
     
-    # User 모델의 to_dict 메서드를 사용하여 사용자 정보 반환
-    # to_dict 메서드에 roles가 포함되어 있으므로 별도로 추가할 필요 없음
+    
     return jsonify({'user': user.to_dict()}), 200
 
 # 사용자 프로필 업데이트
@@ -224,7 +215,6 @@ def update_profile():
         db.session.add(nickname_history_entry)
         user.nickname = new_nickname
 
-    # 다른 필드 업데이트
     user.gender = data.get('gender', user.gender)
     user.age = data.get('age', user.age)
     user.major = data.get('major', user.major)
@@ -232,14 +222,13 @@ def update_profile():
 
     try:
         db.session.commit()
-        # 업데이트된 사용자 정보를 to_dict()로 반환
         return jsonify({'message': '프로필이 성공적으로 업데이트되었습니다.', 'user': user.to_dict()}), 200
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error updating profile for user {user_id}: {e}", exc_info=True)
         return jsonify({'message': '프로필 업데이트 실패.'}), 500
 
-# 닉네임 변경 이력 조회
+# 닉네임 변경 이력 조회 (지금 DB연결 x)
 @auth_bp.route('/nickname_history', methods=['GET'])
 @token_required
 def get_nickname_history():
@@ -267,7 +256,7 @@ def forgot_password_request():
     current_app.logger.info(f"Password reset requested for email: {email}")
     return jsonify({'message': '비밀번호 재설정 링크가 이메일로 전송되었습니다.'}), 200
 
-# 비밀번호 재설정
+# 비밀번호 재설정 미완
 @auth_bp.route('/reset_password', methods=['POST'])
 def reset_password():
     data = request.get_json()
