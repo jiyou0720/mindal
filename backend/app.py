@@ -6,17 +6,25 @@ from flask import Flask, render_template, g, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 
+# 프로젝트 루트 디렉토리를 Python 경로에 명시적으로 추가
+# 이 스크립트가 backend/app.py에 있다고 가정하고,
+# 프로젝트 루트는 backend의 부모 디렉토리입니다.
+script_dir = os.path.dirname(__file__)
+project_root = os.path.abspath(os.path.join(script_dir, '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 # .env 파일에서 환경 변수 로드
 load_dotenv()
 
 def create_app():
-    app = Flask(__name__, 
+    app = Flask(__name__,
                 template_folder='../frontend/templates',
                 static_folder='../frontend/static')
 
     # --- 기본 설정 ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
-    
+
     # --- 데이터베이스 설정 ---
     # MariaDB (SQLAlchemy)
     MARIA_USER = os.environ.get("MARIA_USER")
@@ -24,7 +32,7 @@ def create_app():
     MARIA_HOST = os.environ.get("MARIA_HOST")
     MARIA_PORT = os.environ.get("MARIA_PORT")
     MARIA_DB = os.environ.get("MARIA_DB")
-    
+
     app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{MARIA_USER}:{MARIA_PASSWORD}@{MARIA_HOST}:{MARIA_PORT}/{MARIA_DB}?charset=utf8mb4'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ECHO'] = False # SQL 쿼리 로깅 비활성화
@@ -57,13 +65,13 @@ def create_app():
 
     # 애플리케이션 로거에 StreamHandler 추가
     app.logger.addHandler(stream_handler)
-    
+
     # 개발 모드에서는 DEBUG 레벨까지 출력, 운영 모드에서는 INFO
     if app.debug:
         app.logger.setLevel(logging.DEBUG)
     else:
         app.logger.setLevel(logging.INFO)
-    
+
     app.logger.info('Flask app created')
 
     # Werkzeug 로거 (HTTP 요청 로깅)에도 StreamHandler 추가
@@ -73,11 +81,12 @@ def create_app():
 
 
     # --- 확장 초기화 ---
+    # backend.extensions 모듈은 이제 sys.path에 추가되었으므로 올바르게 임포트됩니다.
     from backend.extensions import db, migrate, mongo
     db.init_app(app)
     migrate.init_app(app, db)
     mongo.init_app(app)
-    
+
     # --- 블루프린트 등록 ---
     # API 블루프린트
     from backend.routes.auth_routes import auth_bp
@@ -86,11 +95,11 @@ def create_app():
     from backend.routes.diary_routes import diary_bp
     from backend.routes.graph_routes import graph_bp
     from backend.routes.mood_routes import mood_bp
-    from backend.routes.dashboard_routes import dashboard_bp 
+    from backend.routes.dashboard_routes import dashboard_bp
     from backend.routes.chat_routes import chat_bp
     from backend.routes.inquiry_routes import inquiry_bp
     from backend.routes.psych_test_routes import psych_test_bp # NEW: 심리 테스트 블루프린트 임포트
-    
+
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(community_bp, url_prefix='/api/community')
@@ -116,12 +125,13 @@ def create_app():
         app.logger.error(f"An unhandled exception occurred: {e}", exc_info=True)
         if request.path.startswith('/api/'):
             return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}), 500
-        return render_template('404.html', error_message=str(e)), 500 # 500.html 대신 404.html 사용
+        # 500.html 대신 존재하는 404.html을 사용합니다.
+        return render_template('404.html', error_message=str(e)), 500
 
     # ----------------------------------------------------------------
     # Frontend Routes (HTML Rendering)
     # ----------------------------------------------------------------
-    
+
     @app.route('/')
     def index():
         return render_template('index.html')
@@ -145,7 +155,7 @@ def create_app():
     @app.route('/edit_profile')
     def edit_profile():
         return render_template('edit_profile.html')
-    
+
     @app.route('/my_changes')
     def my_changes():
         return render_template('my_changes.html')
@@ -177,8 +187,11 @@ def create_app():
 
     @app.route('/community/edit/<int:post_id>')
     def community_edit(post_id):
+        # community_edit.html에서 url_for('community') 대신 url_for('community_list')를 사용해야 합니다.
+        # 이 부분은 HTML 템플릿 파일 자체에서 수정되어야 합니다.
+        # 여기서는 라우팅 정의에 대한 변경은 없지만, 템플릿에서 오류가 발생하고 있음을 인지합니다.
         return render_template('community_edit.html', post_id=post_id)
-    
+
     @app.route('/inquiry')
     def inquiry():
         return render_template('inquiry.html')
@@ -212,7 +225,7 @@ def create_app():
     @app.route('/admin/role_menu_assignment')
     def role_menu_assignment():
         return render_template('role_menu_assignment.html')
-    
+
     @app.route('/admin/notice_management')
     def notice_management():
         return render_template('notice_management.html')
@@ -235,6 +248,8 @@ def create_app():
 
     @app.route('/admin/chatbot_feedback')
     def chatbot_feedback():
+        # chatbot_feedback.html 템플릿 파일이 frontend/templates에 있는지 확인해주세요.
+        # 만약 없다면, 이 라우트에서 TemplateNotFound 오류가 발생할 수 있습니다.
         return render_template('chatbot_feedback.html')
 
     @app.route('/admin/inquiry_management')
@@ -242,7 +257,7 @@ def create_app():
         return render_template('admin_inquiry_management.html')
 
     # --- Error Page Route ---
-    @app.route('/404_page') 
+    @app.route('/404_page')
     def not_found_page():
         return render_template('404.html')
 
@@ -250,3 +265,6 @@ def create_app():
 
 # uWSGI 또는 다른 WSGI 서버에서 실행할 때를 위한 app 인스턴스
 app = create_app()
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
