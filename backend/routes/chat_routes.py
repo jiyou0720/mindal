@@ -1,177 +1,189 @@
-# backend/routes/chat_routes.py
-from flask import Blueprint, request, jsonify, g, current_app
-from backend.extensions import mongo
-from backend.routes.auth_routes import token_required
-from backend.mongo_models import ChatHistory  # 수정됨
-from bson.objectid import ObjectId
-import datetime
-import requests
 import os
+from flask import Blueprint, request, jsonify, g, current_app
+import requests
+import json
+from backend.routes.auth_routes import token_required
+from backend.mongo_models import ChatHistory
+from datetime import datetime
+import time
 
 chat_bp = Blueprint('chat_api', __name__)
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+# Exponential backoff function for API retries
+def exponential_backoff(retries, base_delay=1):
+    delay = base_delay * (2 ** retries)
+    time.sleep(delay)
 
-@chat_bp.route('/send_message', methods=['POST'])
+@chat_bp.route('/openai', methods=['POST'])
 @token_required
-def send_message():
-    user_id = g.user_id
+def chat_with_openai():
+    user_id = g.user_id # Get user_id from token_required decorator
     data = request.get_json()
     user_message = data.get('message')
-    chat_style = data.get('chat_style', 'empathy')
-    conversation_history = data.get('history', [])
+    chat_session_id = data.get('chat_session_id') # Get session ID from request
+    chat_style = data.get('chat_style', 'default') # Get chat style for initial prompt
 
     if not user_message:
-        return jsonify({'message': '메시지를 입력해주세요.'}), 400
+        return jsonify({'error': 'Message is required'}), 400
 
-    if not GEMINI_API_KEY:
-        current_app.logger.error("GEMINI_API_KEY is not set in environment variables.")
-        return jsonify({'message': '서버 설정 오류: 챗봇 서비스를 이용할 수 없습니다.'}), 500
+    api_key = current_app.config.get('OPENAI_API_KEY') # Use OPENAI_API_KEY
+    if not api_key:
+        current_app.logger.error("OpenAI API key is not configured!")
+        return jsonify({'error': 'Server configuration error: OpenAI API key missing.'}), 500
 
+    # Retrieve recent chat history for context
+    chat_history_docs = ChatHistory.get_history(user_id, chat_session_id, limit=10) # Limit context to 10 messages
+
+    # Construct chat history for OpenAI API, including the new user message
+    openai_chat_history = []
+    
+    # System message for chatbot personality and style
+    # You can customize this prompt heavily for the desired psychological support style
+    system_prompt = (
+        f"당신은 사용자에게 심리적 안정과 통찰을 제공하는 AI 심리 상담사입니다. "
+        f"사용자의 이야기를 경청하고 공감하며, 따뜻하고 비판단적인 태도로 대화해주세요. "
+        f"사용자가 스스로 해결책을 찾을 수 있도록 돕고, 필요한 경우 전문가 상담을 제안할 수도 있습니다. "
+        f"현재 대화 스타일은 '{chat_style}'입니다. "
+        f"사용자의 질문에 직접적인 조언보다는 질문과 공감을 통해 스스로 생각할 기회를 제공하세요. "
+        f"간결하고 명확하게 답변하며, 때로는 은유나 비유를 사용하여 깊이 있는 사고를 유도하세요."
+    )
+    openai_chat_history.append({"role": "system", "content": system_prompt})
+
+
+    if chat_history_docs:
+        for msg_doc in chat_history_docs:
+            role = "user" if msg_doc["sender"] == "user" else "assistant" # OpenAI uses 'assistant' for AI
+            openai_chat_history.append({"role": role, "content": msg_doc["message"]})
+    
+    openai_chat_history.append({"role": "user", "content": user_message})
+
+    # Prepare payload for OpenAI Chat Completions API
+    payload = {
+        "model": "gpt-4o", # Recommended model for psychological counseling
+        "messages": openai_chat_history,
+        "temperature": 0.7, # Adjust creativity (0.0 - 1.0)
+        "max_tokens": 500, # Limit response length
+        "top_p": 1,
+        "frequency_penalty": 0,
+        "presence_penalty": 0
+    }
+    
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {api_key}' # Authorization header for OpenAI
+    }
+    api_url = "https://api.openai.com/v1/chat/completions" # OpenAI Chat Completions API endpoint
+
+    ai_response_text = "죄송합니다. 현재 챗봇이 응답할 수 없습니다."
+    
+    # Store user message in MongoDB *before* calling OpenAI API
     try:
-        chat_history_for_gemini = []
-        for msg in conversation_history:
-            chat_history_for_gemini.append({"role": msg["role"], "parts": [{"text": msg["text"]}]})
-        chat_history_for_gemini.append({"role": "user", "parts": [{"text": user_message}]})
-
-        # 상담 스타일 무관하게 empathy 프롬프트만 사용
-        system_prompt = "당신은 사용자의 감정에 깊이 공감하고 위로를 제공하는 심리 상담 챗봇입니다. 따뜻하고 지지적인 언어를 사용해주세요."
-        if not any(part.get("role") == "system" for part in chat_history_for_gemini):
-            chat_history_for_gemini.insert(0, {"role": "system", "parts": [{"text": system_prompt}]})
-
-        payload = {
-            "contents": chat_history_for_gemini,
-            "generationConfig": {
-                "temperature": 0.7,
-                "maxOutputTokens": 500
-            }
-        }
-
-        headers = {"Content-Type": "application/json"}
-        params = {"key": GEMINI_API_KEY}
-
-        response = requests.post(GEMINI_API_URL, headers=headers, params=params, json=payload)
-        response.raise_for_status()
-
-        gemini_response_data = response.json()
-        ai_text = ""
-        if gemini_response_data and gemini_response_data.get('candidates'):
-            ai_text = gemini_response_data['candidates'][0]['content']['parts'][0]['text']
+        if chat_session_id is None:
+            inserted_user_message = ChatHistory.add_message(user_id, "user", user_message)
+            chat_session_id = inserted_user_message.get("chat_session_id")
         else:
-            ai_text = "죄송합니다. AI 응답을 생성하는 데 문제가 발생했습니다."
-            current_app.logger.error(f"Gemini API returned no candidates or unexpected structure: {gemini_response_data}")
-
-        updated_conversation_history = conversation_history + [
-            {"role": "user", "text": user_message},
-            {"role": "model", "text": ai_text}
-        ]
-
-        chat_session_id = data.get('chat_session_id')
-
-        if chat_session_id:
-            mongo.db.chat_logs.update_one(
-                {'_id': ObjectId(chat_session_id), 'user_id': user_id},
-                {
-                    '$push': {
-                        'conversation_history': {"role": "user", "text": user_message}
-                    }
-                }
-            )
-            mongo.db.chat_logs.update_one(
-                {'_id': ObjectId(chat_session_id), 'user_id': user_id},
-                {
-                    '$push': {
-                        'conversation_history': {"role": "model", "text": ai_text}
-                    },
-                    '$set': {'updated_at': datetime.datetime.utcnow()}
-                }
-            )
-            current_chat_log = mongo.db.chat_logs.find_one({'_id': ObjectId(chat_session_id)})
-            current_chat_log['_id'] = str(current_chat_log['_id'])
-        else:
-            new_chat_log_entry = {
-                'user_id': user_id,
-                'conversation_history': [
-                    {"role": "user", "text": user_message},
-                    {"role": "model", "text": ai_text}
-                ],
-                'chat_style': chat_style,
-                'created_at': datetime.datetime.utcnow(),
-                'updated_at': datetime.datetime.utcnow()
-            }
-            result = mongo.db.chat_logs.insert_one(new_chat_log_entry)
-            chat_session_id = str(result.inserted_id)
-            current_chat_log = new_chat_log_entry
-            current_chat_log['_id'] = chat_session_id
-
-        return jsonify({
-            'response': ai_text,
-            'chat_session_id': chat_session_id,
-            'history': updated_conversation_history
-        }), 200
-
-    except requests.exceptions.RequestException as e:
-        current_app.logger.error(f"Error communicating with Gemini API: {e}", exc_info=True)
-        return jsonify({'message': 'AI 챗봇 서비스와 통신 중 오류가 발생했습니다.'}), 500
+            ChatHistory.add_message(user_id, "user", user_message, chat_session_id)
+        current_app.logger.info(f"User message saved: User ID {user_id}, Session ID {chat_session_id}")
     except Exception as e:
-        current_app.logger.error(f"Error in send_message: {e}", exc_info=True)
-        return jsonify({'message': '메시지 처리 중 오류가 발생했습니다.'}), 500
+        current_app.logger.error(f"Failed to save user message to MongoDB: {e}")
+
+    retries = 0
+    max_retries = 3
+    while retries < max_retries:
+        try:
+            response = requests.post(api_url, headers=headers, data=json.dumps(payload))
+            response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+            result = response.json()
+
+            if result.get("choices") and result["choices"][0].get("message") and result["choices"][0]["message"].get("content"):
+                ai_response_text = result["choices"][0]["message"]["content"]
+                break # Exit loop on successful response
+            else:
+                current_app.logger.warning(f"OpenAI API response missing choices or content: {result}")
+                ai_response_text = "응답이 명확하지 않습니다. 다시 시도해 주세요."
+                break
+
+        except requests.exceptions.HTTPError as http_err:
+            current_app.logger.error(f"HTTP error occurred during OpenAI API call: {http_err} - Response: {response.text}")
+            if response.status_code == 429 and retries < max_retries -1: # Too many requests, retry
+                retries += 1
+                exponential_backoff(retries)
+                current_app.logger.info(f"Retrying OpenAI API call ({retries}/{max_retries})...")
+            else:
+                ai_response_text = f"API 오류: {response.status_code} - {response.text}"
+                break
+        except requests.exceptions.ConnectionError as conn_err:
+            current_app.logger.error(f"Connection error during OpenAI API call: {conn_err}")
+            ai_response_text = "네트워크 연결에 문제가 있습니다. 다시 시도해 주세요."
+            break
+        except requests.exceptions.Timeout as timeout_err:
+            current_app.logger.error(f"Timeout error during OpenAI API call: {timeout_err}")
+            ai_response_text = "API 응답 시간이 초과되었습니다. 다시 시도해 주세요."
+            break
+        except json.JSONDecodeError as json_err:
+            current_app.logger.error(f"JSON decode error from OpenAI API response: {json_err} - Response text: {response.text}")
+            ai_response_text = "API 응답 형식이 잘못되었습니다."
+            break
+        except Exception as e:
+            current_app.logger.error(f"An unexpected error occurred during OpenAI API call: {e}", exc_info=True)
+            ai_response_text = "알 수 없는 오류가 발생했습니다. 다시 시도해 주세요."
+            break
+
+    # Store AI response in MongoDB
+    try:
+        if chat_session_id:
+            ChatHistory.add_message(user_id, "ai", ai_response_text, chat_session_id)
+            current_app.logger.info(f"AI response saved: User ID {user_id}, Session ID {chat_session_id}")
+        else:
+            current_app.logger.error("Chat session ID is missing, cannot save AI response to MongoDB.")
+    except Exception as e:
+        current_app.logger.error(f"Failed to save AI response to MongoDB: {e}")
+
+    return jsonify({'response': ai_response_text, 'chat_session_id': chat_session_id})
+
 
 @chat_bp.route('/history', methods=['GET'])
 @token_required
 def get_chat_history():
     user_id = g.user_id
-    try:
-        chat_logs = list(mongo.db.chat_logs.find({'user_id': user_id}).sort('created_at', -1))
-        history_data = []
-        for log in chat_logs:
-            log['_id'] = str(log['_id'])
-            summary_text = log.get('summary') or (log['conversation_history'][0]['text'][:100] + '...' if log['conversation_history'] else '대화 없음')
-            history_data.append({
-                'id': log['_id'],
-                'chat_style': log['chat_style'],
-                'summary': summary_text,
-                'created_at': log['created_at'].isoformat(),
-                'conversation_history': log['conversation_history']
-            })
-        return jsonify({'history': history_data}), 200
-    except Exception as e:
-        current_app.logger.error(f"Error fetching chat history for user {user_id}: {e}", exc_info=True)
-        return jsonify({'message': '대화 기록을 불러오는 데 실패했습니다.'}), 500
+    chat_session_id = request.args.get('session_id')
 
-@chat_bp.route('/feedback', methods=['POST'])
+    if not chat_session_id:
+        return jsonify({'error': 'session_id is required'}), 400
+
+    try:
+        history = ChatHistory.get_history(user_id, chat_session_id)
+        # Convert ObjectId to string for JSON serialization
+        for item in history:
+            item['_id'] = str(item['_id'])
+            item['timestamp'] = item['timestamp'].isoformat() # Convert datetime to string
+        return jsonify({'history': history}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error fetching chat history for user {user_id}, session {chat_session_id}: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to retrieve chat history.'}), 500
+
+
+@chat_bp.route('/sessions', methods=['GET'])
 @token_required
-def submit_chatbot_feedback():
+def get_chat_sessions():
     user_id = g.user_id
-    data = request.get_json()
-    chat_session_id = data.get('chat_session_id')
-    rating = data.get('rating')
-    comment = data.get('comment')
-
-    if not all([chat_session_id, rating]):
-        return jsonify({'message': '세션 ID와 별점은 필수입니다.'}), 400
-
-    if not (1 <= rating <= 5):
-        return jsonify({'message': '별점은 1에서 5 사이여야 합니다.'}), 400
-
     try:
-        feedback_collection = mongo.db.chatbot_feedback
-        new_feedback = {
-            'user_id': user_id,
-            'chat_session_id': chat_session_id,
-            'rating': rating,
-            'comment': comment,
-            'timestamp': datetime.datetime.utcnow()
-        }
-        result = feedback_collection.insert_one(new_feedback)
-
-        mongo.db.chat_logs.update_one(
-            {'_id': ObjectId(chat_session_id)},
-            {'$set': {'feedback_id': str(result.inserted_id)}}
-        )
-
-        return jsonify({'message': '피드백이 성공적으로 제출되었습니다.'}), 201
+        sessions = ChatHistory.get_all_sessions(user_id)
+        return jsonify({'sessions': sessions}), 200
     except Exception as e:
-        current_app.logger.error(f"Error submitting chatbot feedback for user {user_id}: {e}", exc_info=True)
-        return jsonify({'message': '피드백 제출에 실패했습니다.'}), 500
+        current_app.logger.error(f"Error fetching chat sessions for user {user_id}: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to retrieve chat sessions.'}), 500
+
+@chat_bp.route('/session/<string:session_id>', methods=['DELETE'])
+@token_required
+def delete_chat_session(session_id):
+    user_id = g.user_id
+    try:
+        deleted_count = ChatHistory.delete_session(user_id, session_id)
+        if deleted_count > 0:
+            return jsonify({'message': f'Session {session_id} and {deleted_count} messages deleted successfully.'}), 200
+        else:
+            return jsonify({'message': f'Session {session_id} not found or no messages deleted.'}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error deleting chat session {session_id} for user {user_id}: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to delete chat session.'}), 500

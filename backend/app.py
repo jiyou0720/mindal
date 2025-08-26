@@ -48,6 +48,14 @@ def create_app():
     if not app.config['JWT_SECRET_KEY']:
         raise ValueError("No JWT_SECRET_KEY set for Flask application")
 
+    # --- OpenAI API 키 설정 ---
+    # NEW: OpenAI API key loaded from environment variables
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+    if not OPENAI_API_KEY:
+        app.logger.warning("OPENAI_API_KEY is not configured in environment variables!")
+    app.config['OPENAI_API_KEY'] = OPENAI_API_KEY
+
+
     # --- CORS 설정 ---
     CORS(app, resources={r"/api/*": {"origins": "*"}})
 
