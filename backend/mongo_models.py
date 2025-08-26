@@ -1,8 +1,127 @@
-# backend/mongo_models.py
 from bson.objectid import ObjectId
 import json
 import datetime
+from flask import current_app # current_app을 임포트하여 로깅에 사용
 
+# ChatHistory 모델은 이전에 제공된 대로 유지
+class ChatHistory:
+    # MongoDB collection name for chat history
+    COLLECTION_NAME = "chat_history"
+
+    @staticmethod
+    def add_message(user_id, sender, message, chat_session_id=None):
+        """
+        Add a message to the chat history.
+        Args:
+            user_id (int): The ID of the user.
+            sender (str): The sender of the message ('user' or 'ai').
+            message (str): The content of the message.
+            chat_session_id (str, optional): The ID of the chat session. If None, a new session ID will be generated.
+        Returns:
+            dict: The inserted document.
+        """
+        if chat_session_id is None:
+            # Generate a new chat session ID for the first message in a session
+            chat_session_id = ChatHistory._generate_session_id(user_id)
+
+        chat_data = {
+            "user_id": user_id,
+            "chat_session_id": chat_session_id,
+            "sender": sender,
+            "message": message,
+            "timestamp": datetime.datetime.utcnow() # Use datetime.datetime
+        }
+        try:
+            from backend.extensions import mongo # mongo 객체는 app 컨텍스트 외부에서 임포트될 수 없으므로 함수 내에서 임포트
+            result = mongo.db[ChatHistory.COLLECTION_NAME].insert_one(chat_data)
+            return {**chat_data, "_id": str(result.inserted_id)} # Return inserted document with string _id
+        except Exception as e:
+            # current_app 로거 사용 전 앱 컨텍스트 확인
+            if current_app:
+                current_app.logger.error(f"Error adding chat message to MongoDB: {e}")
+            else:
+                print(f"Error adding chat message to MongoDB (no app context): {e}")
+            raise
+
+    @staticmethod
+    def get_history(user_id, chat_session_id=None, limit=100):
+        """
+        Retrieve chat history for a user, optionally filtered by session.
+        Args:
+            user_id (int): The ID of the user.
+            chat_session_id (str, optional): The ID of the chat session to retrieve.
+            limit (int): The maximum number of messages to retrieve.
+        Returns:
+            list: A list of chat messages.
+        """
+        query = {"user_id": user_id}
+        if chat_session_id:
+            query["chat_session_id"] = chat_session_id
+        
+        try:
+            from backend.extensions import mongo
+            # Sort by timestamp in ascending order to get chronological history
+            cursor = mongo.db[ChatHistory.COLLECTION_NAME].find(query).sort("timestamp", 1).limit(limit)
+            return list(cursor)
+        except Exception as e:
+            if current_app:
+                current_app.logger.error(f"Error fetching chat history from MongoDB: {e}")
+            else:
+                print(f"Error fetching chat history from MongoDB (no app context): {e}")
+            raise
+
+    @staticmethod
+    def get_all_sessions(user_id):
+        """
+        Get all unique chat session IDs for a given user.
+        Args:
+            user_id (int): The ID of the user.
+        Returns:
+            list: A list of unique chat session IDs.
+        """
+        try:
+            from backend.extensions import mongo
+            return mongo.db[ChatHistory.COLLECTION_NAME].distinct("chat_session_id", {"user_id": user_id})
+        except Exception as e:
+            if current_app:
+                current_app.logger.error(f"Error fetching chat sessions from MongoDB: {e}")
+            else:
+                print(f"Error fetching chat sessions from MongoDB (no app context): {e}")
+            raise
+
+    @staticmethod
+    def _generate_session_id(user_id):
+        """
+        Generates a new chat session ID. This can be a UUID or a timestamp-based ID.
+        For simplicity, let's use a timestamp for now.
+        """
+        # A simple timestamp-based session ID. In a real app, you might use UUID.
+        return f"{user_id}_{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+
+    @staticmethod
+    def delete_session(user_id, chat_session_id):
+        """
+        Deletes a specific chat session for a user.
+        Args:
+            user_id (int): The ID of the user.
+            chat_session_id (str): The ID of the chat session to delete.
+        Returns:
+            int: The number of deleted documents.
+        """
+        try:
+            from backend.extensions import mongo
+            result = mongo.db[ChatHistory.COLLECTION_NAME].delete_many(
+                {"user_id": user_id, "chat_session_id": chat_session_id}
+            )
+            return result.deleted_count
+        except Exception as e:
+            if current_app:
+                current_app.logger.error(f"Error deleting chat session from MongoDB: {e}")
+            else:
+                print(f"Error deleting chat session from MongoDB (no app context): {e}")
+            raise
+
+# 기존의 다른 MongoDB 모델들은 그대로 유지됩니다.
 class MongoPostContent:
     def __init__(self, content, attachment_paths=None, _id=None):
         self._id = _id if _id else ObjectId()
@@ -139,51 +258,6 @@ class MoodEntry:
             date=date,
             mood_score=mood_score,
             timestamp=timestamp
-        )
-
-# NEW: ChatLog Model for AI Chatbot conversations
-class ChatLog:
-    def __init__(self, user_id, conversation_history, chat_style, created_at=None, _id=None, summary=None, test_result_id=None):
-        self._id = _id if _id else ObjectId()
-        self.user_id = user_id
-        self.conversation_history = conversation_history if conversation_history is not None else [] # [{"role": "user/model", "text": "..."}]
-        self.chat_style = chat_style # e.g., "empathy", "cbt", "solution"
-        self.created_at = created_at if created_at is not None else datetime.datetime.utcnow()
-        self.summary = summary # Optional summary of the conversation
-        self.test_result_id = test_result_id # Optional: Link to a psychological test result
-
-    def to_dict(self):
-        return {
-            "_id": self._id,
-            "user_id": self.user_id,
-            "conversation_history": self.conversation_history,
-            "chat_style": self.chat_style,
-            "created_at": self.created_at.isoformat(),
-            "summary": self.summary,
-            "test_result_id": self.test_result_id
-        }
-
-    @staticmethod
-    def from_mongo(data):
-        _id = data.get('_id')
-        user_id = data.get('user_id')
-        conversation_history = data.get('conversation_history', [])
-        chat_style = data.get('chat_style')
-        created_at = data.get('created_at')
-        summary = data.get('summary')
-        test_result_id = data.get('test_result_id')
-
-        if isinstance(created_at, str):
-            created_at = datetime.datetime.fromisoformat(created_at)
-
-        return ChatLog(
-            _id=_id,
-            user_id=user_id,
-            conversation_history=conversation_history,
-            chat_style=chat_style,
-            created_at=created_at,
-            summary=summary,
-            test_result_id=test_result_id
         )
 
 # NEW: Inquiry Model for user inquiries
@@ -368,3 +442,4 @@ class PsychTestResult:
             result_details=result_details,
             created_at=created_at
         )
+

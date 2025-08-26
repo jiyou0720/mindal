@@ -29,6 +29,7 @@ def token_required(f):
                 current_app.logger.error("token_required: JWT_SECRET_KEY is not configured!")
                 return jsonify({'message': 'Server configuration error: JWT secret key missing.'}), 500
 
+            # PyJWT 2.0+에서는 algorithms 인자가 필수입니다.
             data = jwt.decode(token, secret_key, algorithms=["HS256"])
             g.user_id = data['user_id']
             g.username = data['username']
@@ -154,17 +155,18 @@ def login_user():
     # 사용자 역할 정보 로드 (JWT에 포함하기 위해)
     user_roles_list = [user_role_obj.name for user_role_obj in user.roles]
 
-    token = jwt.encode({
-        'user_id': user.id,
-        'username': user.username,
-        'nickname': user.nickname,
-        'user_uid': user.user_uid,
-        'email': user.email, # 이메일도 토큰에 포함
-        'roles': user_roles_list, # 역할 목록을 토큰에 포함
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24) # 토큰 만료 시간 24시간
-    },
-    current_app.config['JWT_SECRET_KEY'],
-    algorithm='HS256'
+    token = jwt.encode(
+        {
+            'user_id': user.id,
+            'username': user.username,
+            'nickname': user.nickname,
+            'user_uid': user.user_uid,
+            'email': user.email, # 이메일도 토큰에 포함
+            'roles': user_roles_list, # 역할 목록을 토큰에 포함
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24) # 토큰 만료 시간 24시간
+        },
+        current_app.config['JWT_SECRET_KEY'],
+        algorithm='HS256' # PyJWT 2.0+에서는 algorithm 인자가 필수입니다.
     )
     
     response = jsonify({
