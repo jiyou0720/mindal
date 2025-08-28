@@ -3,25 +3,13 @@ import json
 import datetime
 from flask import current_app # current_app을 임포트하여 로깅에 사용
 
-# ChatHistory 모델은 이전에 제공된 대로 유지
+# ChatHistory 모델은 이전에 제공된 대로 유지 (개별 메시지 저장용)
 class ChatHistory:
-    # MongoDB collection name for chat history
     COLLECTION_NAME = "chat_history"
 
     @staticmethod
     def add_message(user_id, sender, message, chat_session_id=None):
-        """
-        Add a message to the chat history.
-        Args:
-            user_id (int): The ID of the user.
-            sender (str): The sender of the message ('user' or 'ai').
-            message (str): The content of the message.
-            chat_session_id (str, optional): The ID of the chat session. If None, a new session ID will be generated.
-        Returns:
-            dict: The inserted document.
-        """
         if chat_session_id is None:
-            # Generate a new chat session ID for the first message in a session
             chat_session_id = ChatHistory._generate_session_id(user_id)
 
         chat_data = {
@@ -29,14 +17,13 @@ class ChatHistory:
             "chat_session_id": chat_session_id,
             "sender": sender,
             "message": message,
-            "timestamp": datetime.datetime.utcnow() # Use datetime.datetime
+            "timestamp": datetime.datetime.utcnow()
         }
         try:
-            from backend.extensions import mongo # mongo 객체는 app 컨텍스트 외부에서 임포트될 수 없으므로 함수 내에서 임포트
+            from backend.extensions import mongo
             result = mongo.db[ChatHistory.COLLECTION_NAME].insert_one(chat_data)
-            return {**chat_data, "_id": str(result.inserted_id)} # Return inserted document with string _id
+            return {**chat_data, "_id": str(result.inserted_id)}
         except Exception as e:
-            # current_app 로거 사용 전 앱 컨텍스트 확인
             if current_app:
                 current_app.logger.error(f"Error adding chat message to MongoDB: {e}")
             else:
@@ -44,24 +31,16 @@ class ChatHistory:
             raise
 
     @staticmethod
-    def get_history(user_id, chat_session_id=None, limit=100):
-        """
-        Retrieve chat history for a user, optionally filtered by session.
-        Args:
-            user_id (int): The ID of the user.
-            chat_session_id (str, optional): The ID of the chat session to retrieve.
-            limit (int): The maximum number of messages to retrieve.
-        Returns:
-            list: A list of chat messages.
-        """
+    def get_history(user_id, chat_session_id=None, limit=None): # limit을 None으로 변경하여 전체 기록도 가져올 수 있게 함
         query = {"user_id": user_id}
         if chat_session_id:
             query["chat_session_id"] = chat_session_id
         
         try:
             from backend.extensions import mongo
-            # Sort by timestamp in ascending order to get chronological history
-            cursor = mongo.db[ChatHistory.COLLECTION_NAME].find(query).sort("timestamp", 1).limit(limit)
+            cursor = mongo.db[ChatHistory.COLLECTION_NAME].find(query).sort("timestamp", 1)
+            if limit:
+                cursor = cursor.limit(limit)
             return list(cursor)
         except Exception as e:
             if current_app:
@@ -72,16 +51,12 @@ class ChatHistory:
 
     @staticmethod
     def get_all_sessions(user_id):
-        """
-        Get all unique chat session IDs for a given user.
-        Args:
-            user_id (int): The ID of the user.
-        Returns:
-            list: A list of unique chat session IDs.
-        """
         try:
             from backend.extensions import mongo
-            return mongo.db[ChatHistory.COLLECTION_NAME].distinct("chat_session_id", {"user_id": user_id})
+            # 이제 ChatSession 모델에서 세션 정보를 가져오므로 이 함수는 사용하지 않거나,
+            # ChatSession에서 세션 ID만 가져오도록 변경해야 합니다.
+            # 여기서는 ChatSession.get_all_sessions_metadata를 사용하도록 유도합니다.
+            raise NotImplementedError("Use ChatSession.get_all_sessions_metadata instead.")
         except Exception as e:
             if current_app:
                 current_app.logger.error(f"Error fetching chat sessions from MongoDB: {e}")
@@ -91,23 +66,10 @@ class ChatHistory:
 
     @staticmethod
     def _generate_session_id(user_id):
-        """
-        Generates a new chat session ID. This can be a UUID or a timestamp-based ID.
-        For simplicity, let's use a timestamp for now.
-        """
-        # A simple timestamp-based session ID. In a real app, you might use UUID.
         return f"{user_id}_{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
 
     @staticmethod
     def delete_session(user_id, chat_session_id):
-        """
-        Deletes a specific chat session for a user.
-        Args:
-            user_id (int): The ID of the user.
-            chat_session_id (str): The ID of the chat session to delete.
-        Returns:
-            int: The number of deleted documents.
-        """
         try:
             from backend.extensions import mongo
             result = mongo.db[ChatHistory.COLLECTION_NAME].delete_many(
@@ -119,6 +81,132 @@ class ChatHistory:
                 current_app.logger.error(f"Error deleting chat session from MongoDB: {e}")
             else:
                 print(f"Error deleting chat session from MongoDB (no app context): {e}")
+            raise
+
+# NEW: ChatSession Model for storing entire chat sessions with summary
+class ChatSession:
+    COLLECTION_NAME = "chat_sessions"
+
+    def __init__(self, user_id, chat_session_id, chat_style, summary, created_at=None, updated_at=None, _id=None, feedback=None):
+        self._id = _id if _id else ObjectId()
+        self.user_id = user_id
+        self.chat_session_id = chat_session_id # Use the same session ID as ChatHistory
+        self.chat_style = chat_style # e.g., "empathy", "cbt", "solution"
+        self.summary = summary # AI generated summary of the conversation
+        self.created_at = created_at if created_at is not None else datetime.datetime.utcnow()
+        self.updated_at = updated_at if updated_at is not None else datetime.datetime.utcnow()
+        self.feedback = feedback # {"rating": 5, "comment": "..."}
+
+    def to_dict(self):
+        return {
+            "_id": str(self._id), # Convert ObjectId to string
+            "user_id": self.user_id,
+            "chat_session_id": self.chat_session_id,
+            "chat_style": self.chat_style,
+            "summary": self.summary,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "feedback": self.feedback
+        }
+
+    @staticmethod
+    def create_session(user_id, chat_session_id, chat_style="default", summary="No summary yet"):
+        from backend.extensions import mongo
+        session_data = ChatSession(
+            user_id=user_id,
+            chat_session_id=chat_session_id,
+            chat_style=chat_style,
+            summary=summary
+        )
+        try:
+            result = mongo.db[ChatSession.COLLECTION_NAME].insert_one(session_data.to_dict())
+            session_data._id = result.inserted_id # Update ObjectId after insert
+            return session_data
+        except Exception as e:
+            if current_app:
+                current_app.logger.error(f"Error creating chat session in MongoDB: {e}")
+            else:
+                print(f"Error creating chat session in MongoDB (no app context): {e}")
+            raise
+
+    @staticmethod
+    def update_session_summary(user_id, chat_session_id, summary):
+        from backend.extensions import mongo
+        try:
+            result = mongo.db[ChatSession.COLLECTION_NAME].update_one(
+                {"user_id": user_id, "chat_session_id": chat_session_id},
+                {"$set": {"summary": summary, "updated_at": datetime.datetime.utcnow()}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            if current_app:
+                current_app.logger.error(f"Error updating chat session summary in MongoDB: {e}")
+            else:
+                print(f"Error updating chat session summary in MongoDB (no app context): {e}")
+            raise
+
+    @staticmethod
+    def update_session_feedback(user_id, chat_session_id, rating, comment):
+        from backend.extensions import mongo
+        feedback_data = {
+            "rating": rating,
+            "comment": comment,
+            "submitted_at": datetime.datetime.utcnow().isoformat()
+        }
+        try:
+            result = mongo.db[ChatSession.COLLECTION_NAME].update_one(
+                {"user_id": user_id, "chat_session_id": chat_session_id},
+                {"$set": {"feedback": feedback_data, "updated_at": datetime.datetime.utcnow()}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            if current_app:
+                current_app.logger.error(f"Error updating chat session feedback in MongoDB: {e}")
+            else:
+                print(f"Error updating chat session feedback in MongoDB (no app context): {e}")
+            raise
+
+    @staticmethod
+    def get_session_metadata(user_id, chat_session_id):
+        from backend.extensions import mongo
+        try:
+            doc = mongo.db[ChatSession.COLLECTION_NAME].find_one(
+                {"user_id": user_id, "chat_session_id": chat_session_id}
+            )
+            return ChatSession.from_mongo(doc) if doc else None
+        except Exception as e:
+            if current_app:
+                current_app.logger.error(f"Error fetching chat session metadata from MongoDB: {e}")
+            else:
+                print(f"Error fetching chat session metadata from MongoDB (no app context): {e}")
+            raise
+
+    @staticmethod
+    def get_all_sessions_metadata(user_id):
+        from backend.extensions import mongo
+        try:
+            cursor = mongo.db[ChatSession.COLLECTION_NAME].find({"user_id": user_id}).sort("created_at", -1)
+            return [ChatSession.from_mongo(doc) for doc in cursor]
+        except Exception as e:
+            if current_app:
+                current_app.logger.error(f"Error fetching all chat sessions metadata from MongoDB: {e}")
+            else:
+                print(f"Error fetching all chat sessions metadata from MongoDB (no app context): {e}")
+            raise
+
+    @staticmethod
+    def delete_session_metadata(user_id, chat_session_id):
+        from backend.extensions import mongo
+        try:
+            result = mongo.db[ChatSession.COLLECTION_NAME].delete_one(
+                {"user_id": user_id, "chat_session_id": chat_session_id}
+            )
+            return result.deleted_count > 0
+        except Exception as e:
+            if current_app:
+                current_app.logger.error(f"Error deleting chat session metadata from MongoDB: {e}")
+            else:
+                print(f"Error deleting chat session metadata from MongoDB (no app context): {e}")
             raise
 
 # 기존의 다른 MongoDB 모델들은 그대로 유지됩니다.
