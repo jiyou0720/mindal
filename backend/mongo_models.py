@@ -110,6 +110,34 @@ class ChatSession:
         }
 
     @staticmethod
+    def from_mongo(data):
+        _id = data.get('_id')
+        user_id = data.get('user_id')
+        chat_session_id = data.get('chat_session_id')
+        chat_style = data.get('chat_style')
+        summary = data.get('summary')
+        created_at = data.get('created_at')
+        updated_at = data.get('updated_at')
+        feedback = data.get('feedback')
+
+        # Convert ISO format string to datetime object if necessary
+        if isinstance(created_at, str):
+            created_at = datetime.datetime.fromisoformat(created_at)
+        if isinstance(updated_at, str):
+            updated_at = datetime.datetime.fromisoformat(updated_at)
+        
+        return ChatSession(
+            _id=_id,
+            user_id=user_id,
+            chat_session_id=chat_session_id,
+            chat_style=chat_style,
+            summary=summary,
+            created_at=created_at,
+            updated_at=updated_at,
+            feedback=feedback
+        )
+
+    @staticmethod
     def create_session(user_id, chat_session_id, chat_style="default", summary="No summary yet"):
         from backend.extensions import mongo
         session_data = ChatSession(
@@ -530,4 +558,3 @@ class PsychTestResult:
             result_details=result_details,
             created_at=created_at
         )
-

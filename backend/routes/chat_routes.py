@@ -283,7 +283,8 @@ def delete_chat_session(session_id):
         current_app.logger.error(f"Error deleting chat session {session_id} for user {user_id}: {e}", exc_info=True)
         return jsonify({'error': 'Failed to delete chat session.'}), 500
 
-# NEW: 피드백 저장 API
+# 피드백 제출 API (기존 유지)
+# 사용자가 새로운 피드백을 제출하거나 기존 피드백을 업데이트할 때 사용됩니다.
 @chat_bp.route('/feedback', methods=['POST'])
 @token_required
 def submit_chat_feedback():
@@ -307,3 +308,23 @@ def submit_chat_feedback():
         current_app.logger.error(f"Error submitting feedback for session {chat_session_id}: {e}", exc_info=True)
         return jsonify({'error': '피드백 제출 중 오류가 발생했습니다.'}), 500
 
+# NEW: 특정 채팅 세션의 피드백 확인 API
+# 사용자가 이미 제출한 피드백을 조회할 때 사용됩니다.
+@chat_bp.route('/feedback/<string:chat_session_id>', methods=['GET'])
+@token_required
+def get_chat_feedback(chat_session_id):
+    user_id = g.user_id
+    try:
+        # ChatSession에서 해당 세션의 메타데이터를 가져옵니다.
+        session = ChatSession.get_session_metadata(user_id, chat_session_id)
+        if session:
+            # 세션에서 피드백 정보를 반환합니다.
+            if session.feedback:
+                return jsonify({'feedback': session.feedback}), 200
+            else:
+                return jsonify({'message': '해당 세션에 대한 피드백이 없습니다.'}), 404
+        else:
+            return jsonify({'message': '채팅 세션을 찾을 수 없습니다.'}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error fetching feedback for session {chat_session_id} by user {user_id}: {e}", exc_info=True)
+        return jsonify({'error': '피드백 조회 중 오류가 발생했습니다.'}), 500
