@@ -12,7 +12,8 @@
     <div class="chat-main-area">
         <div class="chat-controls">
             <button id="showHistoryButton" class="button secondary small">대화 기록</button>
-            <button id="submitFeedbackButton" class="button primary small">피드백 제출</button>
+            <!-- 변경: 피드백 제출 -> 피드백 확인 -->
+            <button id="checkFeedbackButton" class="button primary small">피드백 확인</button>
             <button id="endChatButton" class="button danger small">채팅 종료</button>
         </div>
 
@@ -40,11 +41,11 @@
         </div>
     </div>
 
-    <!-- 피드백 모달 -->
+    <!-- 피드백 제출 모달 (기존) -->
     <div id="feedbackModal" class="modal hidden">
         <div class="modal-content">
             <span class="close-button" id="closeFeedbackModalXButton">&times;</span>
-            <h3>챗봇 피드백</h3>
+            <h3>챗봇 피드백 제출</h3>
             <p>이번 상담에 대한 피드백을 남겨주세요.</p>
             <div class="rating-area">
                 <label>별점:</label>
@@ -62,6 +63,21 @@
             </div>
             <button class="button primary" id="sendFeedbackButton">피드백 제출</button>
             <button class="button secondary" id="cancelFeedbackButton" style="margin-left: 10px;">취소</button>
+        </div>
+    </div>
+
+    <!-- NEW: 나의 피드백 확인 모달 -->
+    <div id="myFeedbackModal" class="modal hidden">
+        <div class="modal-content large-modal">
+            <span class="close-button" id="closeMyFeedbackModalXButton">&times;</span>
+            <h3>내가 제출한 피드백</h3>
+            <div id="myFeedbackList" class="my-feedback-list">
+                <p class="loading-row">피드백을 불러오는 중...</p>
+            </div>
+            <div class="modal-actions">
+                <!-- "새 피드백 제출" 버튼 제거 -->
+                <button class="button primary" id="closeMyFeedbackModalButton">닫기</button>
+            </div>
         </div>
     </div>
 
@@ -98,7 +114,7 @@
         const chatInputField = document.getElementById('chatInputField');
         const chatSendButton = document.getElementById('chatSendButton');
         const showHistoryButton = document.getElementById('showHistoryButton');
-        const submitFeedbackButton = document.getElementById('submitFeedbackButton');
+        const checkFeedbackButton = document.getElementById('checkFeedbackButton');
         const endChatButton = document.getElementById('endChatButton');
 
         const historyModal = document.getElementById('historyModal');
@@ -113,12 +129,17 @@
         const cancelFeedbackButton = document.getElementById('cancelFeedbackButton');
         const closeFeedbackModalXButton = document.getElementById('closeFeedbackModalXButton');
 
+        const myFeedbackModal = document.getElementById('myFeedbackModal');
+        const myFeedbackList = document.getElementById('myFeedbackList');
+        // const submitNewFeedbackButton = document.getElementById('submitNewFeedbackButton'); // 버튼 제거로 인해 주석 처리 또는 제거
+        const closeMyFeedbackModalButton = document.getElementById('closeMyFeedbackModalButton');
+        const closeMyFeedbackModalXButton = document.getElementById('closeMyFeedbackModalXButton');
+
+
         const summaryModal = document.getElementById('summaryModal');
         const summaryContent = document.getElementById('summaryContent');
         const nextToFeedbackButton = document.getElementById('nextToFeedbackButton');
         const closeSummaryModalXButton = document.getElementById('closeSummaryModalXButton');
-        // FIX: closeSummaryModalButton은 HTML에 존재하지 않으므로 제거합니다.
-        // const closeSummaryModalButton = document.getElementById('closeSummaryModalButton'); 
 
         const customConfirmModal = document.getElementById('customConfirmModal');
         const customConfirmTitle = document.getElementById('customConfirmTitle');
@@ -326,6 +347,8 @@
 
         // 대화 기록 모달 열기
         showHistoryButton.addEventListener('click', async () => {
+            // 모달을 먼저 표시합니다.
+            historyModal.classList.remove('hidden'); 
             historyList.innerHTML = '<p class="loading-row">기록을 불러오는 중...</p>';
             try {
                 const response = await fetchWithAuth('/api/chat/sessions');
@@ -416,7 +439,7 @@
                 console.error('Error fetching chat sessions:', error);
                 historyList.innerHTML = '<p class="error-row">네트워크 오류로 세션 기록을 불러오지 못했습니다.</p>';
             }
-            historyModal.classList.remove('hidden');
+            // 이 위치에서 historyModal.classList.add('hidden');을 제거하여 모달이 즉시 닫히지 않도록 합니다.
         });
 
         // 대화 기록 모달 닫기
@@ -427,8 +450,84 @@
             historyModal.classList.add('hidden');
         });
 
-        // 피드백 모달 열기
-        submitFeedbackButton.addEventListener('click', () => {
+        // 변경: checkFeedbackButton 이벤트 리스너 (나의 피드백 확인 모달 열기)
+        checkFeedbackButton.addEventListener('click', async () => {
+            myFeedbackModal.classList.remove('hidden');
+            myFeedbackList.innerHTML = '<p class="loading-row">피드백을 불러오는 중...</p>';
+            try {
+                const response = await fetchWithAuth('/api/chat/my_feedback');
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    myFeedbackList.innerHTML = `<p class="error-row">${errorData.message || '내 피드백을 불러오는 데 실패했습니다.'}</p>`;
+                    return;
+                }
+                const data = await response.json();
+
+                myFeedbackList.innerHTML = '';
+                if (data.feedback && data.feedback.length > 0) {
+                    data.feedback.forEach(item => {
+                        const feedbackItem = document.createElement('div');
+                        feedbackItem.classList.add('feedback-item');
+                        const displayTimestamp = item.timestamp ? new Date(item.timestamp).toLocaleString() : '-';
+                        const ratingStars = '⭐'.repeat(item.rating || 0);
+                        feedbackItem.innerHTML = `
+                            <p class="feedback-date"><strong>제출일:</strong> ${displayTimestamp}</p>
+                            <p class="feedback-rating"><strong>별점:</strong> ${ratingStars} (${item.rating || 0}/5)</p>
+                            <p class="feedback-comment"><strong>내용:</strong> ${item.comment || '내용 없음'}</p>
+                            <button class="button small secondary view-full-conversation-button" data-session-id="${item.chat_session_id}">관련 대화 보기</button>
+                        `;
+                        myFeedbackList.appendChild(feedbackItem);
+                    });
+
+                    document.querySelectorAll('.view-full-conversation-button').forEach(button => {
+                        button.addEventListener('click', async (e) => {
+                            const sessionId = e.target.dataset.sessionId;
+                            try {
+                                const historyResponse = await fetchWithAuth(`/api/chat/history?session_id=${sessionId}`);
+                                if (!historyResponse || !historyResponse.ok) {
+                                    const errorData = historyResponse ? await historyResponse.json() : {};
+                                    showAlert(`관련 대화 기록 로드 실패: ${errorData.message || '알 수 없는 오류'}`);
+                                    return;
+                                }
+                                const historyData = await historyResponse.json();
+                                
+                                chatMessagesArea.innerHTML = '';
+                                historyData.history.forEach(msg => {
+                                    addMessage(msg.sender, msg.message);
+                                });
+                                currentChatSessionId = sessionId;
+                                myFeedbackModal.classList.add('hidden'); // 피드백 모달 닫기
+                                showAlert('선택하신 대화 기록을 불러왔습니다.');
+                                saveConversationState(); // 불러온 대화도 저장
+                            } catch (error) {
+                                console.error('Error loading full chat history from feedback:', error);
+                                showAlert('관련 대화 기록을 불러오는 중 네트워크 오류가 발생했습니다.');
+                            }
+                        });
+                    });
+
+                } else {
+                    myFeedbackList.innerHTML = '<p class="no-data-message">제출한 피드백이 없습니다.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching my feedback:', error);
+                myFeedbackList.innerHTML = '<p class="error-row">네트워크 오류로 내 피드백을 불러오지 못했습니다.</p>';
+            }
+        });
+
+        // NEW: 나의 피드백 모달 닫기 버튼
+        closeMyFeedbackModalButton.addEventListener('click', () => {
+            myFeedbackModal.classList.add('hidden');
+        });
+        closeMyFeedbackModalXButton.addEventListener('click', () => {
+            myFeedbackModal.classList.add('hidden');
+        });
+
+        // NEW: 새 피드백 제출 버튼 (나의 피드백 모달 내에서)
+        // 이 버튼은 제거되었으므로 관련 리스너도 제거합니다.
+        /*
+        submitNewFeedbackButton.addEventListener('click', () => {
+            myFeedbackModal.classList.add('hidden'); // 나의 피드백 모달 닫기
             if (!currentChatSessionId) {
                 showAlert('피드백을 제출하려면 먼저 챗봇과 대화를 시작하거나 기록된 대화를 선택해야 합니다.');
                 return;
@@ -436,8 +535,10 @@
             selectedRating = 0;
             renderStars(selectedRating);
             feedbackComment.value = '';
-            feedbackModal.classList.remove('hidden');
+            feedbackModal.classList.remove('hidden'); // 피드백 제출 모달 열기
         });
+        */
+
 
         // 별점 클릭 이벤트
         feedbackStars.addEventListener('click', (e) => {
@@ -487,7 +588,8 @@
 
                 await showAlert('피드백이 성공적으로 제출되었습니다. 감사합니다!');
                 feedbackModal.classList.add('hidden');
-                startNewChatSession();
+                // 피드백 제출 성공 후 새 대화 시작
+                startNewChatSession(); 
 
             } catch (error) {
                 console.error('Error submitting feedback:', error);
@@ -498,18 +600,17 @@
         // 피드백 모달 닫기 (취소 버튼)
         cancelFeedbackButton.addEventListener('click', () => {
             feedbackModal.classList.add('hidden');
-            startNewChatSession();
+            // 피드백 취소 후 새 대화 시작
+            startNewChatSession(); 
         });
         // 피드백 모달 닫기 (X 버튼)
         closeFeedbackModalXButton.addEventListener('click', () => {
             feedbackModal.classList.add('hidden');
-            startNewChatSession();
+            // 피드백 모달 X 버튼 클릭 후 새 대화 시작
+            startNewChatSession(); 
         });
 
         // 상담 요약 모달 닫기 (이전에는 이 버튼이 새 대화를 시작했음)
-        // closeSummaryModalButton.addEventListener('click', () => { // 이 버튼은 HTML에 존재하지 않습니다.
-        //     summaryModal.classList.add('hidden');
-        // });
         closeSummaryModalXButton.addEventListener('click', () => {
             summaryModal.classList.add('hidden');
         });

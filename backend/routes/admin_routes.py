@@ -1,17 +1,21 @@
 # backend/routes/admin_routes.py
 import os
+import logging
+import sys # sys 임포트 추가
 from flask import Blueprint, request, jsonify, g, current_app
 from backend.extensions import db, mongo
 from backend.maria_models import User, Post, Comment, Role, UserRole, Notice, PostLike
-from backend.mongo_models import DiaryEntry, MoodEntry, Inquiry # MongoDB 모델 임포트: Inquiry 추가
-from backend.routes.auth_routes import token_required, roles_required
+from backend.mongo_models import DiaryEntry, MoodEntry, Inquiry, PsychTest, PsychQuestion, PsychTestResult # MongoDB 모델 임포트: Inquiry, PsychTest 관련 모델 추가
+from backend.routes.auth_routes import token_required, roles_required, role_required # roles_required, role_required 임포트
 from bson.objectid import ObjectId # ObjectId 임포트 추가
 import datetime
-import uuid
-from werkzeug.utils import secure_filename
-from flask_pymongo import PyMongo
+from datetime import timedelta # timedelta 임포트
+# import uuid # 사용되지 않으므로 제거
+# from werkzeug.utils import secure_filename # 사용되지 않으므로 제거
+# from flask_pymongo import PyMongo # extensions에서 초기화하므로 여기서 직접 사용하지 않음
 from collections import Counter # 데이터 분석을 위해 Counter 임포트
-from sqlalchemy import and_ # NEW: 필터링을 위해 import 추가
+from sqlalchemy import and_ # 필터링을 위해 import 추가
+from sqlalchemy.orm import joinedload # joinedload 임포트
 
 admin_bp = Blueprint('admin_api', __name__)
 
@@ -36,7 +40,7 @@ def get_dashboard_stats():
     try:
         total_users = User.query.count()
         # MongoDB에서 AI 채팅 기록, 일기 수 등 가져오는 로직 (현재는 임시값)
-        ai_chat_count = 0 # TODO: 실제 AI 채팅 기록 수 (예: mongo.db.chat_logs.count_documents({}))
+        ai_chat_count = mongo.db.chat_history.count_documents({}) # 실제 AI 채팅 기록 수
         diary_entry_count = mongo.db.diary_entries.count_documents({}) # 모든 일기 수 (관리자용)
         community_post_count = Post.query.count() # 모든 게시글 수
 
@@ -81,7 +85,6 @@ def get_my_menu_items():
     for item in menu_items:
         item['_id'] = str(item['_id'])
         
-    # sys._getframe().f_lineno 사용 제거
     current_app.logger.info(f"DEBUG (get_my_menu_items): Found and returning {len(menu_items)} menu items.")
     return jsonify({'menu_items': menu_items}), 200
 
@@ -285,7 +288,7 @@ def update_role_menu_configs(role_id):
 @roles_required(['관리자'])
 def get_all_users():
     try:
-        users = User.query.options(db.joinedload(User.roles)).all() # 역할 정보 함께 로드
+        users = User.query.options(joinedload(User.roles)).all() # 역할 정보 함께 로드
         users_data = []
         for user in users:
             # SQLAlchemy 객체를 딕셔너리로 변환
@@ -435,7 +438,7 @@ def get_all_notices_admin():
         if notices_to_update:
             db.session.commit() # 변경사항 일괄 커밋
 
-        notices = Notice.query.options(db.joinedload(Notice.author)).order_by(Notice.created_at.desc()).all()
+        notices = Notice.query.options(joinedload(Notice.author)).order_by(Notice.created_at.desc()).all()
         notices_data = []
         for notice in notices:
             notices_data.append({
@@ -593,7 +596,7 @@ def get_public_notices():
                 Notice.start_date <= datetime.datetime.utcnow(), # 시작일이 현재 시간보다 같거나 빠름
                 (Notice.end_date == None) | (Notice.end_date > datetime.datetime.utcnow()) # 종료일이 없거나 현재 시간보다 늦음
             )
-        ).order_by(Notice.created_at.desc()).all()
+        ).options(joinedload(Notice.author)).order_by(Notice.created_at.desc()).all() # author 정보 함께 로드
 
         notices_data = []
         for notice in public_notices:
@@ -657,7 +660,6 @@ def get_db_records():
             })
 
         # AI 챗봇 상담 기록 (가상의 chat_logs 컬렉션)
-        chat_logs_collection = mongo.db.chat_logs # 가상의 컬렉션 이름
         # TODO: chat_logs 컬렉션이 실제로 존재하고 데이터가 있다면 이 부분 활성화
         # if chat_logs_collection: # 컬렉션 존재 여부 확인 (또는 그냥 find() 시도)
         #     chat_logs = chat_logs_collection.find({}).sort('timestamp', -1).limit(100)
@@ -702,6 +704,7 @@ def get_all_posts_admin():
         ).outerjoin(Comment, Post.id == Comment.post_id)\
          .outerjoin(PostLike, Post.id == PostLike.post_id)\
          .group_by(Post.id)\
+         .options(joinedload(Post.author))\
          .order_by(Post.created_at.desc()).all()
 
         posts_data = []
@@ -750,6 +753,7 @@ def get_post_detail_admin(post_id):
          .outerjoin(PostLike, Post.id == PostLike.post_id)\
          .filter(Post.id == post_id)\
          .group_by(Post.id)\
+         .options(joinedload(Post.author))\
          .first()
 
         if not post:
@@ -1111,64 +1115,9 @@ def get_analytics_top_keywords():
         return jsonify({'message': '상위 키워드 데이터를 불러오는 데 실패했습니다.'}), 500
 
 
-# NEW: 챗봇 피드백/별점 관리 APIs
-# 모든 챗봇 피드백 조회
-@admin_bp.route('/chatbot_feedback', methods=['GET'])
-@token_required
-@roles_required(['관리자', '개발자'])
-def get_all_chatbot_feedback():
-    try:
-        # 챗봇 피드백 데이터를 저장할 새로운 MongoDB 컬렉션 'chatbot_feedback' 사용
-        feedback_collection = mongo.db.chatbot_feedback
-        all_feedback = list(feedback_collection.find({}).sort('timestamp', -1)) # 최신순 정렬
-        
-        for item in all_feedback:
-            item['_id'] = str(item['_id'])
-            # user_id를 사용하여 사용자 정보 가져오기 (선택 사항)
-            user = db.session.get(User, item.get('user_id'))
-            item['user_username'] = user.username if user else 'Unknown'
-            item['user_nickname'] = user.nickname if user else 'Unknown'
-            
-        return jsonify({'feedback': all_feedback}), 200
-    except Exception as e:
-        current_app.logger.error(f"Error fetching all chatbot feedback: {e}", exc_info=True)
-        return jsonify({'message': '챗봇 피드백 목록을 불러오는 데 실패했습니다.'}), 500
+# NEW: 챗봇 피드백/별점 관리 APIs (admin_routes에서 제거됨)
+# 이 부분은 chat_routes.py로 이동했습니다.
 
-# 특정 챗봇 피드백 상세 조회
-@admin_bp.route('/chatbot_feedback/<string:feedback_id>', methods=['GET'])
-@token_required
-@roles_required(['관리자', '개발자'])
-def get_chatbot_feedback_detail(feedback_id):
-    try:
-        feedback_collection = mongo.db.chatbot_feedback
-        feedback_item = feedback_collection.find_one({'_id': ObjectId(feedback_id)})
-        if not feedback_item:
-            return jsonify({'message': '피드백을 찾을 수 없습니다.'}), 404
-        
-        feedback_item['_id'] = str(feedback_item['_id'])
-        user = db.session.get(User, feedback_item.get('user_id'))
-        feedback_item['user_username'] = user.username if user else 'Unknown'
-        feedback_item['user_nickname'] = user.nickname if user else 'Unknown'
-
-        return jsonify(feedback_item), 200
-    except Exception as e:
-        current_app.logger.error(f"Error fetching chatbot feedback {feedback_id}: {e}", exc_info=True)
-        return jsonify({'message': '피드백 상세 정보를 불러오는 데 실패했습니다.'}), 500
-
-# NEW: 챗봇 피드백 삭제 기능
-@admin_bp.route('/chatbot_feedback/<string:feedback_id>', methods=['DELETE'])
-@token_required
-@roles_required(['관리자', '개발자'])
-def delete_chatbot_feedback(feedback_id):
-    try:
-        feedback_collection = mongo.db.chatbot_feedback
-        result = feedback_collection.delete_one({'_id': ObjectId(feedback_id)})
-        if result.deleted_count == 0:
-            return jsonify({'message': '피드백을 찾을 수 없습니다.'}), 404
-        return jsonify({'message': '피드백이 성공적으로 삭제되었습니다.'}), 200
-    except Exception as e:
-        current_app.logger.error(f"Error deleting chatbot feedback {feedback_id}: {e}", exc_info=True)
-        return jsonify({'message': '피드백 삭제에 실패했습니다.'}), 500
 
 # NEW: 문의사항 관리 API
 @admin_bp.route('/inquiries', methods=['GET'])
@@ -1256,7 +1205,7 @@ def reply_to_inquiry(inquiry_id):
 
     if not reply_content:
         return jsonify({'message': '답변 내용을 입력해주세요.'}), 400
-
+    
     try:
         inquiries_collection = mongo.db.inquiries
         result = inquiries_collection.update_one(
@@ -1324,3 +1273,4 @@ def delete_inquiry(inquiry_id):
     except Exception as e:
         current_app.logger.error(f"Error deleting inquiry {inquiry_id}: {e}", exc_info=True)
         return jsonify({'message': '문의사항 삭제에 실패했습니다.'}), 500
+

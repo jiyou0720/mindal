@@ -2,6 +2,7 @@ from bson.objectid import ObjectId
 import json
 import datetime
 from flask import current_app # current_app을 임포트하여 로깅에 사용
+from backend.extensions import mongo # mongo 임포트
 
 # ChatHistory 모델은 이전에 제공된 대로 유지 (개별 메시지 저장용)
 class ChatHistory:
@@ -20,7 +21,6 @@ class ChatHistory:
             "timestamp": datetime.datetime.utcnow()
         }
         try:
-            from backend.extensions import mongo
             result = mongo.db[ChatHistory.COLLECTION_NAME].insert_one(chat_data)
             return {**chat_data, "_id": str(result.inserted_id)}
         except Exception as e:
@@ -37,7 +37,6 @@ class ChatHistory:
             query["chat_session_id"] = chat_session_id
         
         try:
-            from backend.extensions import mongo
             cursor = mongo.db[ChatHistory.COLLECTION_NAME].find(query).sort("timestamp", 1)
             if limit:
                 cursor = cursor.limit(limit)
@@ -52,7 +51,6 @@ class ChatHistory:
     @staticmethod
     def get_all_sessions(user_id):
         try:
-            from backend.extensions import mongo
             # 이제 ChatSession 모델에서 세션 정보를 가져오므로 이 함수는 사용하지 않거나,
             # ChatSession에서 세션 ID만 가져오도록 변경해야 합니다.
             # 여기서는 ChatSession.get_all_sessions_metadata를 사용하도록 유도합니다.
@@ -71,7 +69,6 @@ class ChatHistory:
     @staticmethod
     def delete_session(user_id, chat_session_id):
         try:
-            from backend.extensions import mongo
             result = mongo.db[ChatHistory.COLLECTION_NAME].delete_many(
                 {"user_id": user_id, "chat_session_id": chat_session_id}
             )
@@ -139,7 +136,6 @@ class ChatSession:
 
     @staticmethod
     def create_session(user_id, chat_session_id, chat_style="default", summary="No summary yet"):
-        from backend.extensions import mongo
         session_data = ChatSession(
             user_id=user_id,
             chat_session_id=chat_session_id,
@@ -159,7 +155,6 @@ class ChatSession:
 
     @staticmethod
     def update_session_summary(user_id, chat_session_id, summary):
-        from backend.extensions import mongo
         try:
             result = mongo.db[ChatSession.COLLECTION_NAME].update_one(
                 {"user_id": user_id, "chat_session_id": chat_session_id},
@@ -175,7 +170,6 @@ class ChatSession:
 
     @staticmethod
     def update_session_feedback(user_id, chat_session_id, rating, comment):
-        from backend.extensions import mongo
         feedback_data = {
             "rating": rating,
             "comment": comment,
@@ -196,7 +190,6 @@ class ChatSession:
 
     @staticmethod
     def get_session_metadata(user_id, chat_session_id):
-        from backend.extensions import mongo
         try:
             doc = mongo.db[ChatSession.COLLECTION_NAME].find_one(
                 {"user_id": user_id, "chat_session_id": chat_session_id}
@@ -211,7 +204,6 @@ class ChatSession:
 
     @staticmethod
     def get_all_sessions_metadata(user_id):
-        from backend.extensions import mongo
         try:
             cursor = mongo.db[ChatSession.COLLECTION_NAME].find({"user_id": user_id}).sort("created_at", -1)
             return [ChatSession.from_mongo(doc) for doc in cursor]
@@ -224,7 +216,6 @@ class ChatSession:
 
     @staticmethod
     def delete_session_metadata(user_id, chat_session_id):
-        from backend.extensions import mongo
         try:
             result = mongo.db[ChatSession.COLLECTION_NAME].delete_one(
                 {"user_id": user_id, "chat_session_id": chat_session_id}
@@ -558,3 +549,63 @@ class PsychTestResult:
             result_details=result_details,
             created_at=created_at
         )
+
+# NEW: ChatbotFeedback Model for storing user feedback on chatbot sessions
+class ChatbotFeedback:
+    COLLECTION_NAME = 'chatbot_feedback'
+
+    @staticmethod
+    def create(user_id, chat_session_id, rating, comment, timestamp=None):
+        if timestamp is None:
+            timestamp = datetime.datetime.utcnow()
+        feedback_data = {
+            'user_id': user_id,
+            'chat_session_id': chat_session_id,
+            'rating': rating,
+            'comment': comment,
+            'timestamp': timestamp,
+        }
+        # MongoDB에 피드백 저장
+        result = mongo.db[ChatbotFeedback.COLLECTION_NAME].insert_one(feedback_data)
+        return str(result.inserted_id)
+
+    @staticmethod
+    def get_by_id(feedback_id):
+        return mongo.db[ChatbotFeedback.COLLECTION_NAME].find_one({'_id': ObjectId(feedback_id)})
+
+    @staticmethod
+    def get_all():
+        # 모든 피드백을 최신순으로 정렬하여 반환
+        return list(mongo.db[ChatbotFeedback.COLLECTION_NAME].find().sort('timestamp', -1))
+
+    @staticmethod
+    def get_feedback_by_user(user_id):
+        # 특정 user_id에 해당하는 모든 피드백을 최신순으로 정렬하여 반환
+        return list(mongo.db[ChatbotFeedback.COLLECTION_NAME].find({'user_id': user_id}).sort('timestamp', -1))
+
+    @staticmethod
+    def update(feedback_id, new_rating=None, new_comment=None):
+        update_fields = {}
+        if new_rating is not None:
+            update_fields['rating'] = new_rating
+        if new_comment is not None:
+            update_fields['comment'] = new_comment
+
+        if update_fields:
+            result = mongo.db[ChatbotFeedback.COLLECTION_NAME].update_one(
+                {'_id': ObjectId(feedback_id)},
+                {'$set': update_fields}
+            )
+            return result.modified_count > 0
+        return False
+
+    @staticmethod
+    def delete(feedback_id):
+        result = mongo.db[ChatbotFeedback.COLLECTION_NAME].delete_one({'_id': ObjectId(feedback_id)})
+        return result.deleted_count > 0
+
+    @staticmethod
+    def delete_by_chat_session_id(chat_session_id):
+        # 특정 chat_session_id에 연결된 피드백 삭제
+        result = mongo.db[ChatbotFeedback.COLLECTION_NAME].delete_many({'chat_session_id': chat_session_id})
+        return result.deleted_count > 0

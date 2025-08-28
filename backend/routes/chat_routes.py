@@ -2,12 +2,14 @@ import os
 from flask import Blueprint, request, jsonify, g, current_app
 import requests
 import json
-from backend.routes.auth_routes import token_required
-from backend.mongo_models import ChatHistory, ChatSession # ChatSession 임포트
+from backend.routes.auth_routes import token_required, role_required # role_required 임포트
+from backend.mongo_models import ChatHistory, ChatSession, ChatbotFeedback # ChatSession, ChatbotFeedback 임포트
 from datetime import datetime
 import time
+import openai
+from bson.objectid import ObjectId # ObjectId 임포트
 
-chat_bp = Blueprint('chat_api', __name__)
+chat_bp = Blueprint('chat', __name__)
 
 # Exponential backoff function for API retries
 def exponential_backoff(retries, base_delay=1):
@@ -22,11 +24,6 @@ def chat_with_openai():
     user_message = data.get('message')
     chat_session_id = data.get('chat_session_id')
     
-    # chat_style은 이제 프론트엔드에서 제거되었으므로, 기본값으로 설정하거나
-    # 첫 메시지 전송 시에만 사용하도록 로직을 변경합니다.
-    # 여기서는 시스템 프롬프트에 직접 포함하는 방식으로 변경합니다.
-    # chat_style = data.get('chat_style', 'default') 
-
     if not user_message:
         return jsonify({'error': 'Message is required'}), 400
 
@@ -35,14 +32,10 @@ def chat_with_openai():
         current_app.logger.error("OpenAI API key is not configured!")
         return jsonify({'error': 'Server configuration error: OpenAI API key missing.'}), 500
 
-    # Retrieve recent chat history for context
     chat_history_docs = ChatHistory.get_history(user_id, chat_session_id, limit=10)
 
-    # Construct chat history for OpenAI API, including the new user message
     openai_chat_history = []
     
-    # System message for chatbot personality and style
-    # 이제 chat_style은 동적으로 받지 않고, 기본 심리 상담사 페르소나를 유지합니다.
     system_prompt = (
         f"당신은 사용자에게 심리적 안정과 통찰을 제공하는 AI 심리 상담사입니다. "
         f"사용자의 이야기를 경청하고 공감하며, 따뜻하고 비판단적인 태도로 대화해주세요. "
@@ -60,7 +53,6 @@ def chat_with_openai():
     
     openai_chat_history.append({"role": "user", "content": user_message})
 
-    # Prepare payload for OpenAI Chat Completions API
     payload = {
         "model": "gpt-4o",
         "messages": openai_chat_history,
@@ -79,12 +71,10 @@ def chat_with_openai():
 
     ai_response_text = "죄송합니다. 현재 챗봇이 응답할 수 없습니다."
     
-    # Store user message in MongoDB *before* calling OpenAI API
     try:
         if chat_session_id is None:
-            # New session: create ChatSession metadata first
             new_session_id = ChatHistory._generate_session_id(user_id)
-            ChatSession.create_session(user_id, new_session_id, chat_style="default") # 기본 스타일로 세션 생성
+            ChatSession.create_session(user_id, new_session_id, chat_style="default")
             chat_session_id = new_session_id
             current_app.logger.info(f"New ChatSession created: {chat_session_id}")
             
@@ -135,7 +125,6 @@ def chat_with_openai():
             ai_response_text = "알 수 없는 오류가 발생했습니다. 다시 시도해 주세요."
             break
 
-    # Store AI response in MongoDB
     try:
         if chat_session_id:
             ChatHistory.add_message(user_id, "ai", ai_response_text, chat_session_id)
@@ -147,7 +136,6 @@ def chat_with_openai():
 
     return jsonify({'response': ai_response_text, 'chat_session_id': chat_session_id})
 
-# NEW: 대화 종료 및 요약 API
 @chat_bp.route('/end_session', methods=['POST'])
 @token_required
 def end_chat_session():
@@ -159,15 +147,12 @@ def end_chat_session():
         return jsonify({'error': 'chat_session_id is required to end session'}), 400
 
     try:
-        # 1. 해당 세션의 전체 대화 기록을 가져옵니다.
         full_history = ChatHistory.get_history(user_id, chat_session_id)
         if not full_history:
             return jsonify({'message': 'No chat history found for this session.'}), 404
 
-        # 2. 대화 기록을 텍스트로 변환하여 요약 프롬프트에 사용합니다.
         conversation_text = "\n".join([f"{msg['sender']}: {msg['message']}" for msg in full_history])
 
-        # 3. OpenAI API를 사용하여 대화 요약을 생성합니다.
         api_key = current_app.config.get('OPENAI_API_KEY')
         if not api_key:
             current_app.logger.error("OpenAI API key is not configured for summarization!")
@@ -220,7 +205,6 @@ def end_chat_session():
                 current_app.logger.error(f"Error during summary API call: {e}", exc_info=True)
                 break
 
-        # 4. ChatSession에 요약 내용을 업데이트합니다.
         ChatSession.update_session_summary(user_id, chat_session_id, summary_text)
         current_app.logger.info(f"ChatSession {chat_session_id} summary updated.")
 
@@ -241,7 +225,6 @@ def get_chat_history():
         return jsonify({'error': 'session_id is required'}), 400
 
     try:
-        # ChatHistory에서 개별 메시지 기록을 가져옵니다.
         history = ChatHistory.get_history(user_id, chat_session_id)
         for item in history:
             item['_id'] = str(item['_id'])
@@ -254,12 +237,10 @@ def get_chat_history():
 
 @chat_bp.route('/sessions', methods=['GET'])
 @token_required
-def get_chat_sessions_metadata(): # 함수명 변경
+def get_chat_sessions_metadata():
     user_id = g.user_id
     try:
-        # ChatSession에서 모든 세션 메타데이터를 가져옵니다.
         sessions_metadata = ChatSession.get_all_sessions_metadata(user_id)
-        # to_dict() 메서드를 사용하여 직렬화 가능한 형태로 변환
         return jsonify({'sessions': [s.to_dict() for s in sessions_metadata]}), 200
     except Exception as e:
         current_app.logger.error(f"Error fetching chat sessions metadata for user {user_id}: {e}", exc_info=True)
@@ -270,21 +251,19 @@ def get_chat_sessions_metadata(): # 함수명 변경
 def delete_chat_session(session_id):
     user_id = g.user_id
     try:
-        # ChatHistory에서 개별 메시지 삭제
         deleted_messages_count = ChatHistory.delete_session(user_id, session_id)
-        # ChatSession에서 세션 메타데이터 삭제
         deleted_session_metadata = ChatSession.delete_session_metadata(user_id, session_id)
+        deleted_feedback_count = ChatbotFeedback.delete_by_chat_session_id(session_id)
 
-        if deleted_messages_count > 0 or deleted_session_metadata:
-            return jsonify({'message': f'Session {session_id} and its {deleted_messages_count} messages deleted successfully.'}), 200
+
+        if deleted_messages_count > 0 or deleted_session_metadata or deleted_feedback_count > 0:
+            return jsonify({'message': f'Session {session_id} and its {deleted_messages_count} messages and {deleted_feedback_count} feedbacks deleted successfully.'}), 200
         else:
-            return jsonify({'message': f'Session {session_id} not found or no messages deleted.'}), 404
+            return jsonify({'message': f'Session {session_id} not found or no messages/feedbacks deleted.'}), 404
     except Exception as e:
         current_app.logger.error(f"Error deleting chat session {session_id} for user {user_id}: {e}", exc_info=True)
         return jsonify({'error': 'Failed to delete chat session.'}), 500
 
-# 피드백 제출 API (기존 유지)
-# 사용자가 새로운 피드백을 제출하거나 기존 피드백을 업데이트할 때 사용됩니다.
 @chat_bp.route('/feedback', methods=['POST'])
 @token_required
 def submit_chat_feedback():
@@ -298,33 +277,100 @@ def submit_chat_feedback():
         return jsonify({'error': 'chat_session_id and rating are required for feedback.'}), 400
     
     try:
-        success = ChatSession.update_session_feedback(user_id, chat_session_id, rating, comment)
-        if success:
-            current_app.logger.info(f"Feedback submitted for session {chat_session_id} by user {user_id}.")
-            return jsonify({'message': '피드백이 성공적으로 제출되었습니다.'}), 200
-        else:
-            return jsonify({'message': '피드백 제출에 실패했습니다. 세션을 찾을 수 없습니다.'}), 404
+        feedback_id = ChatbotFeedback.create(
+            user_id=user_id,
+            chat_session_id=chat_session_id,
+            rating=rating,
+            comment=comment,
+            timestamp=datetime.now()
+        )
+        current_app.logger.info(f"Feedback submitted for session {chat_session_id} by user {user_id}. Feedback ID: {feedback_id}")
+        return jsonify({'message': '피드백이 성공적으로 제출되었습니다.', 'feedback_id': feedback_id}), 200
     except Exception as e:
         current_app.logger.error(f"Error submitting feedback for session {chat_session_id}: {e}", exc_info=True)
         return jsonify({'error': '피드백 제출 중 오류가 발생했습니다.'}), 500
 
-# NEW: 특정 채팅 세션의 피드백 확인 API
-# 사용자가 이미 제출한 피드백을 조회할 때 사용됩니다.
-@chat_bp.route('/feedback/<string:chat_session_id>', methods=['GET'])
+# NEW: 특정 피드백 상세 조회 (관리자용)
+@chat_bp.route('/feedback/<string:feedback_id>', methods=['GET'])
 @token_required
-def get_chat_feedback(chat_session_id):
+@role_required('관리자', '개발자') # 관리자 또는 개발자만 접근 가능
+def get_feedback_detail_for_admin(feedback_id):
+    try:
+        feedback_doc = ChatbotFeedback.get_by_id(feedback_id)
+        if not feedback_doc:
+            return jsonify({'message': '피드백을 찾을 수 없습니다.'}), 404
+        
+        # ObjectId를 문자열로 변환
+        feedback_doc['_id'] = str(feedback_doc['_id'])
+        # feedback_doc['id'] 필드가 없을 수 있으므로 제거
+        if 'timestamp' in feedback_doc and isinstance(feedback_doc['timestamp'], datetime):
+            feedback_doc['timestamp'] = feedback_doc['timestamp'].isoformat()
+
+        return jsonify(feedback_doc), 200
+    except Exception as e:
+        current_app.logger.error(f"Error fetching feedback detail {feedback_id}: {e}", exc_info=True)
+        return jsonify({'error': '피드백 상세 조회 중 오류가 발생했습니다.'}), 500
+
+# NEW: 특정 피드백 삭제 (관리자용)
+@chat_bp.route('/feedback_item/<string:feedback_id>', methods=['DELETE'])
+@token_required
+@role_required('관리자', '개발자') # 관리자 또는 개발자만 접근 가능
+def delete_feedback_item(feedback_id):
+    try:
+        if ChatbotFeedback.delete(feedback_id):
+            return jsonify({'message': '피드백이 성공적으로 삭제되었습니다.'}), 200
+        return jsonify({'message': '피드백을 찾을 수 없습니다.'}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error deleting feedback item {feedback_id}: {e}", exc_info=True)
+        return jsonify({'error': '피드백 삭제 중 오류가 발생했습니다.'}), 500
+
+# NEW: 모든 챗봇 피드백 조회 (관리자용)
+@chat_bp.route('/all_feedback', methods=['GET'])
+@token_required
+@role_required('관리자', '개발자') # 관리자 또는 개발자만 접근 가능
+def get_all_chatbot_feedback():
+    try:
+        feedback_list = ChatbotFeedback.get_all()
+        
+        formatted_feedback = []
+        for fb in feedback_list:
+            fb_dict = {
+                'id': str(fb['_id']), # ObjectId를 문자열로 변환
+                'user_id': fb['user_id'],
+                'chat_session_id': fb['chat_session_id'],
+                'rating': fb['rating'],
+                'comment': fb['comment'],
+                'timestamp': fb['timestamp'].isoformat() if isinstance(fb['timestamp'], datetime) else fb['timestamp'],
+            }
+            formatted_feedback.append(fb_dict)
+            
+        return jsonify({"feedback": formatted_feedback}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error fetching all chatbot feedback: {e}", exc_info=True)
+        return jsonify({"message": "모든 챗봇 피드백을 불러오는 중 오류가 발생했습니다."}), 500
+
+# NEW: 사용자의 모든 피드백을 조회하는 엔드포인트 (기존 유지)
+@chat_bp.route('/my_feedback', methods=['GET'])
+@token_required
+def get_my_feedback():
     user_id = g.user_id
     try:
-        # ChatSession에서 해당 세션의 메타데이터를 가져옵니다.
-        session = ChatSession.get_session_metadata(user_id, chat_session_id)
-        if session:
-            # 세션에서 피드백 정보를 반환합니다.
-            if session.feedback:
-                return jsonify({'feedback': session.feedback}), 200
-            else:
-                return jsonify({'message': '해당 세션에 대한 피드백이 없습니다.'}), 404
-        else:
-            return jsonify({'message': '채팅 세션을 찾을 수 없습니다.'}), 404
+        feedback_list = ChatbotFeedback.get_feedback_by_user(user_id)
+        
+        formatted_feedback = []
+        for fb in feedback_list:
+            fb_dict = {
+                'id': str(fb['_id']), # ObjectId를 문자열로 변환
+                'user_id': fb['user_id'],
+                'chat_session_id': fb['chat_session_id'],
+                'rating': fb['rating'],
+                'comment': fb['comment'],
+                'timestamp': fb['timestamp'].isoformat() if isinstance(fb['timestamp'], datetime) else fb['timestamp'],
+            }
+            formatted_feedback.append(fb_dict)
+            
+        return jsonify({"feedback": formatted_feedback}), 200
     except Exception as e:
-        current_app.logger.error(f"Error fetching feedback for session {chat_session_id} by user {user_id}: {e}", exc_info=True)
-        return jsonify({'error': '피드백 조회 중 오류가 발생했습니다.'}), 500
+        current_app.logger.error(f"Error fetching user feedback for user {user_id}: {e}", exc_info=True)
+        return jsonify({"message": "내 피드백을 불러오는 중 오류가 발생했습니다."}), 500
+
