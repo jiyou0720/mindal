@@ -17,11 +17,12 @@ if project_root not in sys.path:
 # .env 파일에서 환경 변수 로드
 load_dotenv()
 
-def create_app():
-    app = Flask(__name__,
-                template_folder='../frontend/templates',
-                static_folder='../frontend/static')
+# 전역 app 인스턴스를 먼저 선언
+app = Flask(__name__,
+            template_folder='../frontend/templates',
+            static_folder='../frontend/static')
 
+def configure_app(app):
     # --- 기본 설정 ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
 
@@ -49,54 +50,42 @@ def create_app():
         raise ValueError("No JWT_SECRET_KEY set for Flask application")
 
     # --- OpenAI API 키 설정 ---
-    # NEW: OpenAI API key loaded from environment variables
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
     if not OPENAI_API_KEY:
         app.logger.warning("OPENAI_API_KEY is not configured in environment variables!")
     app.config['OPENAI_API_KEY'] = OPENAI_API_KEY
 
-
     # --- CORS 설정 ---
     CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     # --- 로깅 설정 (터미널 출력 위주로 변경) ---
-    # 기존 핸들러 제거 (중복 로깅 방지 및 터미널 출력만 남기기 위함)
     for handler in app.logger.handlers[:]:
         app.logger.removeHandler(handler)
     for handler in logging.getLogger('werkzeug').handlers[:]:
         logging.getLogger('werkzeug').removeHandler(handler)
 
-    # 터미널 출력을 위한 StreamHandler 설정
     stream_handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
     stream_handler.setFormatter(formatter)
 
-    # 애플리케이션 로거에 StreamHandler 추가
     app.logger.addHandler(stream_handler)
-
-    # 개발 모드에서는 DEBUG 레벨까지 출력, 운영 모드에서는 INFO
     if app.debug:
         app.logger.setLevel(logging.DEBUG)
     else:
         app.logger.setLevel(logging.INFO)
+    app.logger.info('Flask app configured')
 
-    app.logger.info('Flask app created')
-
-    # Werkzeug 로거 (HTTP 요청 로깅)에도 StreamHandler 추가
     werkzeug_logger = logging.getLogger('werkzeug')
     werkzeug_logger.addHandler(stream_handler)
-    werkzeug_logger.setLevel(logging.INFO) # Werkzeug 로거는 INFO 레벨로 유지
-
+    werkzeug_logger.setLevel(logging.INFO)
 
     # --- 확장 초기화 ---
-    # backend.extensions 모듈은 이제 sys.path에 추가되었으므로 올바르게 임포트됩니다.
     from backend.extensions import db, migrate, mongo
     db.init_app(app)
     migrate.init_app(app, db)
     mongo.init_app(app)
 
     # --- 블루프린트 등록 ---
-    # API 블루프린트
     from backend.routes.auth_routes import auth_bp
     from backend.routes.admin_routes import admin_bp
     from backend.routes.community_routes import community_bp
@@ -106,10 +95,10 @@ def create_app():
     from backend.routes.dashboard_routes import dashboard_bp
     from backend.routes.chat_routes import chat_bp
     from backend.routes.inquiry_routes import inquiry_bp
-    from backend.routes.psych_test_routes import psych_test_bp # NEW: 심리 테스트 블루프린트 임포트
+    from backend.routes.psych_test_routes import psych_test_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin') # /api/admin 접두사로 등록
     app.register_blueprint(community_bp, url_prefix='/api/community')
     app.register_blueprint(diary_bp, url_prefix='/api/diary')
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
@@ -117,8 +106,7 @@ def create_app():
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
     app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
-    app.register_blueprint(psych_test_bp, url_prefix='/api/psych_test') # NEW: 심리 테스트 블루프린트 등록
-
+    app.register_blueprint(psych_test_bp, url_prefix='/api/psych_test')
 
     # --- 전역 컨텍스트 및 에러 핸들러 ---
     @app.errorhandler(404)
@@ -133,7 +121,6 @@ def create_app():
         app.logger.error(f"An unhandled exception occurred: {e}", exc_info=True)
         if request.path.startswith('/api/'):
             return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}), 500
-        # 500.html 대신 존재하는 404.html을 사용합니다.
         return render_template('404.html', error_message=str(e)), 500
 
     # ----------------------------------------------------------------
@@ -195,9 +182,6 @@ def create_app():
 
     @app.route('/community/edit/<int:post_id>')
     def community_edit(post_id):
-        # community_edit.html에서 url_for('community') 대신 url_for('community_list')를 사용해야 합니다.
-        # 이 부분은 HTML 템플릿 파일 자체에서 수정되어야 합니다.
-        # 여기서는 라우팅 정의에 대한 변경은 없지만, 템플릿에서 오류가 발생하고 있음을 인지합니다.
         return render_template('community_edit.html', post_id=post_id)
 
     @app.route('/inquiry')
@@ -254,11 +238,10 @@ def create_app():
     def data_analytics():
         return render_template('data_analytics.html')
 
+    # 챗봇 피드백 관리 페이지 라우트
     @app.route('/admin/chatbot_feedback')
     def chatbot_feedback():
-        # chatbot_feedback.html 템플릿 파일이 frontend/templates에 있는지 확인해주세요.
-        # 만약 없다면, 이 라우트에서 TemplateNotFound 오류가 발생할 수 있습니다.
-        return render_template('chatbot_feedback.html')
+        return render_template('charbot_feedback.html')
 
     @app.route('/admin/inquiry_management')
     def admin_inquiry_management():
@@ -271,8 +254,10 @@ def create_app():
 
     return app
 
-# uWSGI 또는 다른 WSGI 서버에서 실행할 때를 위한 app 인스턴스
-app = create_app()
+# 애플리케이션 인스턴스 생성 및 설정
+configure_app(app)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # use_reloader=False를 추가하여 OSError: [WinError 10038] 문제를 해결합니다.
+    # 이렇게 하면 코드를 변경할 때마다 서버를 수동으로 재시작해야 합니다.
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
