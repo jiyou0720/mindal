@@ -1,0 +1,171 @@
+/* frontend/static/css/community_list.css */
+
+.community-container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.community-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.community-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2C3E50;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-select, .search-input {
+    padding: 10px 15px;
+    border: 1px solid #dcdfe6;
+    border-radius: 8px;
+    font-size: 14px;
+    height: 40px;
+}
+
+.search-input {
+    width: 250px;
+}
+
+.button {
+    padding: 0 20px;
+    height: 40px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.button.primary {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+.button.primary:hover {
+    background-color: #2980b9;
+}
+
+.button.secondary {
+    background-color: #34495e;
+    color: #fff;
+}
+.button.secondary:hover {
+    background-color: #2c3e50;
+}
+
+.community-subtitle {
+    font-size: 16px;
+    color: #6C7A89;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.community-table-container {
+    overflow-x: auto;
+}
+
+.community-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+.community-table thead {
+    background-color: #f8f9fa;
+}
+
+.community-table th {
+    padding: 15px;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.community-table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.community-table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+.community-table td {
+    padding: 15px;
+    color: #495057;
+    vertical-align: middle;
+}
+
+.col-title {
+    text-align: left;
+    max-width: 400px;
+}
+
+.post-link {
+    color: #34495e;
+    font-weight: 500;
+    text-decoration: none;
+}
+.post-link:hover {
+    text-decoration: underline;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+    gap: 8px;
+    align-items: center;
+}
+
+.page-button {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    color: #333;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.page-button:hover {
+    background-color: #f0f0f0;
+}
+
+.page-button.active {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
+.page-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.ellipsis {
+    padding: 8px;
+    color: #888;
+}

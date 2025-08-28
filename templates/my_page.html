@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}마이페이지 - Mindbridge{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/my_page.css') }}">
+    
+{% endblock %}
+
+{% block content %}
+    <div class="my-page-container">
+        <h1>나의 정보</h1>
+        <p>회원님의 상세 정보를 확인하고 관리할 수 있습니다.</p>
+
+        <div class="profile-card">
+            <div class="profile-header">
+                <i class="fas fa-user-circle profile-icon"></i>
+                <h2 id="profileNickname">환영합니다, 사용자님!</h2>
+            </div>
+            <div class="profile-details">
+                <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-id-badge"></i> 사용자 이름:</span>
+                    <span id="profileUsername" class="detail-value"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-envelope"></i> 이메일:</span>
+                    <span id="profileEmail" class="detail-value"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-user"></i> 닉네임:</span>
+                    <span id="profileNicknameDetail" class="detail-value"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-venus-mars"></i> 성별:</span>
+                    <span id="profileGender" class="detail-value"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-birthday-cake"></i> 나이:</span>
+                    <span id="profileAge" class="detail-value"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-graduation-cap"></i> 전공:</span>
+                    <span id="profileMajor" class="detail-value"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-fingerprint"></i> 사용자 UID:</span>
+                    <span id="profileUserUid" class="detail-value"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label"><i class="fas fa-user-tag"></i> 역할:</span>
+                    <span id="profileRoles" class="detail-value"></span>
+                </div>
+            </div>
+            <div class="profile-actions">
+                <button id="editProfileButton" class="button primary"><i class="fas fa-edit"></i> 정보 수정</button>
+                <button id="changePasswordButton" class="button secondary"><i class="fas fa-key"></i> 비밀번호 변경</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const profileNickname = document.getElementById('profileNickname');
+            const profileUsername = document.getElementById('profileUsername');
+            const profileEmail = document.getElementById('profileEmail');
+            const profileNicknameDetail = document.getElementById('profileNicknameDetail');
+            const profileGender = document.getElementById('profileGender');
+            const profileAge = document.getElementById('profileAge');
+            const profileMajor = document.getElementById('profileMajor');
+            const profileUserUid = document.getElementById('profileUserUid');
+            const profileRoles = document.getElementById('profileRoles');
+            const editProfileButton = document.getElementById('editProfileButton');
+            const changePasswordButton = document.getElementById('changePasswordButton');
+
+            // 사용자 정보 불러오기
+            async function fetchUserProfile() {
+                console.log('fetchUserProfile: Attempting to fetch user profile...');
+                try {
+                    const response = await fetchWithAuth('/api/auth/me'); // fetchWithAuth는 base.html에 정의됨
+                    console.log('fetchUserProfile: Response status:', response.status);
+                    const result = await response.json();
+                    console.log('fetchUserProfile: Response body:', JSON.stringify(result, null, 2));
+
+                    if (response.ok) {
+                        const user = result.user;
+                        profileNickname.textContent = `환영합니다, ${user.nickname || user.username}님!`;
+                        profileUsername.textContent = user.username;
+                        profileEmail.textContent = user.email;
+                        profileNicknameDetail.textContent = user.nickname || '설정되지 않음';
+                        profileGender.textContent = user.gender || '설정되지 않음';
+                        profileAge.textContent = user.age !== null ? user.age : '설정되지 않음';
+                        profileMajor.textContent = user.major || '설정되지 않음';
+                        profileUserUid.textContent = user.user_uid;
+                        profileRoles.textContent = user.roles && user.roles.length > 0 ? user.roles.join(', ') : '역할 없음';
+                        console.log('fetchUserProfile: User profile loaded successfully.');
+                    } else {
+                        await showAlert(result.message || `사용자 정보를 불러오는 데 실패했습니다. 상태 코드: ${response.status}`);
+                        console.error('fetchUserProfile: Failed to load user profile. Status:', response.status, 'Message:', result.message);
+                    }
+                } catch (error) {
+                    console.error('fetchUserProfile: Network error or unexpected error:', error);
+                    await showAlert('네트워크 오류가 발생하여 사용자 정보를 불러올 수 없습니다. 콘솔을 확인해주세요.');
+                }
+            }
+
+            // '정보 수정' 버튼 클릭 이벤트
+            editProfileButton.addEventListener('click', () => {
+                window.location.href = "{{ url_for('edit_profile') }}"; // 새로운 수정 페이지로 이동
+            });
+
+            // '비밀번호 변경' 버튼 클릭 이벤트 (향후 모달 또는 새 페이지로 구현)
+            changePasswordButton.addEventListener('click', async () => {
+                await showAlert('비밀번호 변경 기능은 아직 준비 중입니다.');
+                console.log('비밀번호 변경 버튼 클릭됨');
+            });
+
+            fetchUserProfile(); // 페이지 로드 시 사용자 정보 불러오기
+        });
+    </script>
+{% endblock %}
