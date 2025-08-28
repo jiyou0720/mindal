@@ -10,31 +10,20 @@
 
 {% block content %}
     <div class="chat-main-area">
-        {# 상담 스타일 선택 및 피드백 섹션 #}
         <div class="chat-controls">
-            <div class="chat-style-selector">
-                <label for="chatStyle">상담 스타일:</label>
-                <select id="chatStyle" class="chat-style-select">
-                    <option value="empathy">일반 공감형</option>
-                    <option value="cbt">인지행동치료(CBT) 기반</option>
-                    <option value="solution">솔루션 중심 상담</option>
-                </select>
-            </div>
             <button id="showHistoryButton" class="button secondary small">대화 기록</button>
             <button id="submitFeedbackButton" class="button primary small">피드백 제출</button>
+            <button id="endChatButton" class="button danger small">채팅 종료</button>
         </div>
 
-        {# 채팅 메시지가 표시될 영역 #}
         <div class="chat-messages-area" id="chatMessagesArea">
             <p class="chat-welcome-message">AI와 대화를 시작해보세요!</p>
-            {# 여기에 실제 채팅 메시지들이 동적으로 추가될 예정 #}
         </div>
 
-        {# 입력 필드와 전송 버튼을 포함하는 컨테이너 #}
         <div class="chat-input-container">
             <input type="text" class="chat-input-field" id="chatInputField" placeholder="메시지를 입력하세요...">
             <button class="chat-send-button" id="chatSendButton">
-                <i class="fas fa-paper-plane"></i> {# Font Awesome 전송 아이콘 #}
+                <i class="fas fa-paper-plane"></i>
             </button>
         </div>
     </div>
@@ -54,7 +43,7 @@
     <!-- 피드백 모달 -->
     <div id="feedbackModal" class="modal hidden">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
+            <span class="close-button" id="closeFeedbackModalXButton">&times;</span>
             <h3>챗봇 피드백</h3>
             <p>이번 상담에 대한 피드백을 남겨주세요.</p>
             <div class="rating-area">
@@ -72,7 +61,32 @@
                 <textarea id="feedbackComment" rows="5" placeholder="개선 사항이나 좋았던 점을 알려주세요."></textarea>
             </div>
             <button class="button primary" id="sendFeedbackButton">피드백 제출</button>
-            <button class="button secondary" id="closeFeedbackModalButton" style="margin-left: 10px;">취소</button>
+            <button class="button secondary" id="cancelFeedbackButton" style="margin-left: 10px;">취소</button>
+        </div>
+    </div>
+
+    <!-- 상담 요약 모달 -->
+    <div id="summaryModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button" id="closeSummaryModalXButton">&times;</span>
+            <h3>상담 요약</h3>
+            <div id="summaryContent" class="summary-content">
+                <p>요약 내용을 불러오는 중...</p>
+            </div>
+            <button class="button primary" id="nextToFeedbackButton">다음</button>
+        </div>
+    </div>
+
+    <!-- 커스텀 확인 모달 -->
+    <div id="customConfirmModal" class="modal hidden">
+        <div class="modal-content small-modal">
+            <span class="close-button" id="closeCustomConfirmXButton">&times;</span>
+            <h3 id="customConfirmTitle">확인</h3>
+            <p id="customConfirmMessage">메시지</p>
+            <div class="modal-actions">
+                <button class="button primary" id="customConfirmOkButton">확인</button>
+                <button class="button secondary" id="customConfirmCancelButton">취소</button>
+            </div>
         </div>
     </div>
 
@@ -80,14 +94,12 @@
 
 {% block scripts %}
     <script>
-        // base.html에서 전역으로 선언된 fetchWithAuth, showAlert 사용 가능
-
         const chatMessagesArea = document.getElementById('chatMessagesArea');
         const chatInputField = document.getElementById('chatInputField');
         const chatSendButton = document.getElementById('chatSendButton');
-        const chatStyleSelect = document.getElementById('chatStyle');
         const showHistoryButton = document.getElementById('showHistoryButton');
         const submitFeedbackButton = document.getElementById('submitFeedbackButton');
+        const endChatButton = document.getElementById('endChatButton');
 
         const historyModal = document.getElementById('historyModal');
         const historyList = document.getElementById('historyList');
@@ -98,11 +110,84 @@
         const feedbackStars = document.getElementById('feedbackStars');
         const feedbackComment = document.getElementById('feedbackComment');
         const sendFeedbackButton = document.getElementById('sendFeedbackButton');
-        const closeFeedbackModalButton = document.getElementById('closeFeedbackModalButton');
-        const closeFeedbackModalXButton = feedbackModal.querySelector('.close-button');
+        const cancelFeedbackButton = document.getElementById('cancelFeedbackButton');
+        const closeFeedbackModalXButton = document.getElementById('closeFeedbackModalXButton');
 
-        let currentChatSessionId = null; // 현재 대화 세션 ID
-        let selectedRating = 0; // 피드백 별점
+        const summaryModal = document.getElementById('summaryModal');
+        const summaryContent = document.getElementById('summaryContent');
+        const nextToFeedbackButton = document.getElementById('nextToFeedbackButton');
+        const closeSummaryModalXButton = document.getElementById('closeSummaryModalXButton');
+        // FIX: closeSummaryModalButton은 HTML에 존재하지 않으므로 제거합니다.
+        // const closeSummaryModalButton = document.getElementById('closeSummaryModalButton'); 
+
+        const customConfirmModal = document.getElementById('customConfirmModal');
+        const customConfirmTitle = document.getElementById('customConfirmTitle');
+        const customConfirmMessage = document.getElementById('customConfirmMessage');
+        const customConfirmOkButton = document.getElementById('customConfirmOkButton');
+        const customConfirmCancelButton = document.getElementById('customConfirmCancelButton');
+        const closeCustomConfirmXButton = document.getElementById('closeCustomConfirmXButton');
+
+
+        let currentChatSessionId = null;
+        let selectedRating = 0;
+
+        // NEW: 대화 상태를 localStorage에 저장하는 함수
+        function saveConversationState() {
+            if (currentChatSessionId) { // 유효한 세션 ID가 있을 때만 저장
+                localStorage.setItem('currentChatSessionId', currentChatSessionId);
+                localStorage.setItem('chatMessagesAreaHTML', chatMessagesArea.innerHTML);
+                // console.log('Conversation state saved.');
+            } else {
+                // 세션 ID가 없으면 저장된 상태도 초기화 (혹시 모를 잔여 데이터 방지)
+                localStorage.removeItem('currentChatSessionId');
+                localStorage.removeItem('chatMessagesAreaHTML');
+            }
+        }
+
+        // NEW: 대화 상태를 localStorage에서 불러오는 함수
+        function loadConversationState() {
+            const savedSessionId = localStorage.getItem('currentChatSessionId');
+            const savedChatHTML = localStorage.getItem('chatMessagesAreaHTML');
+
+            // 저장된 세션 ID와 HTML 내용이 모두 있고, 환영 메시지가 아닌 경우에만 복원
+            if (savedSessionId && savedChatHTML && savedChatHTML !== '<p class="chat-welcome-message">AI와 대화를 시작해보세요!</p>') {
+                currentChatSessionId = savedSessionId;
+                chatMessagesArea.innerHTML = savedChatHTML;
+                chatMessagesArea.scrollTop = chatMessagesArea.scrollHeight; // 불러온 후 스크롤 하단으로
+                // console.log('Conversation state loaded.');
+            } else {
+                startNewChatSession(); // 저장된 대화가 없거나 유효하지 않으면 새 대화 시작
+            }
+        }
+
+        // 커스텀 확인 함수
+        function showCustomConfirm(message, title = '확인') {
+            return new Promise((resolve) => {
+                customConfirmTitle.textContent = title;
+                customConfirmMessage.textContent = message;
+                customConfirmModal.classList.remove('hidden');
+
+                const handleOk = () => {
+                    customConfirmModal.classList.add('hidden');
+                    customConfirmOkButton.removeEventListener('click', handleOk);
+                    customConfirmCancelButton.removeEventListener('click', handleCancel);
+                    closeCustomConfirmXButton.removeEventListener('click', handleCancel);
+                    resolve(true);
+                };
+
+                const handleCancel = () => {
+                    customConfirmModal.classList.add('hidden');
+                    customConfirmOkButton.removeEventListener('click', handleOk);
+                    customConfirmCancelButton.removeEventListener('click', handleCancel);
+                    closeCustomConfirmXButton.removeEventListener('click', handleCancel);
+                    resolve(false);
+                };
+
+                customConfirmOkButton.addEventListener('click', handleOk);
+                customConfirmCancelButton.addEventListener('click', handleCancel);
+                closeCustomConfirmXButton.addEventListener('click', handleCancel);
+            });
+        }
 
         // 메시지 추가 함수
         function addMessage(role, text) {
@@ -110,7 +195,21 @@
             messageElement.classList.add('chat-message', role === 'user' ? 'user-message' : 'ai-message');
             messageElement.innerHTML = `<p>${text}</p>`;
             chatMessagesArea.appendChild(messageElement);
-            chatMessagesArea.scrollTop = chatMessagesArea.scrollHeight; // 스크롤 하단으로 이동
+            chatMessagesArea.scrollTop = chatMessagesArea.scrollHeight;
+            // saveConversationState()는 이제 sendMessage()와 view-full-history-button에서만 호출
+        }
+
+        // 새 대화 시작 (세션 초기화)
+        function startNewChatSession() {
+            currentChatSessionId = null;
+            chatMessagesArea.innerHTML = '<p class="chat-welcome-message">AI와 대화를 시작해보세요!</p>';
+            chatSendButton.disabled = false;
+            chatInputField.disabled = false;
+            endChatButton.disabled = false;
+            chatInputField.focus();
+            localStorage.removeItem('currentChatSessionId'); // localStorage 초기화
+            localStorage.removeItem('chatMessagesAreaHTML'); // localStorage 초기화
+            // console.log('New chat session started and localStorage cleared.');
         }
 
         // 챗봇 메시지 전송
@@ -118,20 +217,19 @@
             const message = chatInputField.value.trim();
             if (message === '') return;
 
-            addMessage('user', message);
+            addMessage('user', message); // 사용자 메시지 추가 (HTML만 저장)
             chatInputField.value = '';
-            chatSendButton.disabled = true; // 전송 중 버튼 비활성화
-            chatInputField.disabled = true; // 전송 중 입력 필드 비활성화
+            chatSendButton.disabled = true;
+            chatInputField.disabled = true;
+            endChatButton.disabled = true;
 
             try {
-                // 백엔드의 OpenAI API 엔드포인트 호출
                 const response = await fetchWithAuth('/api/chat/openai', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         message: message,
-                        chat_style: chatStyleSelect.value,
-                        chat_session_id: currentChatSessionId // 세션 ID가 있다면 전송
+                        chat_session_id: currentChatSessionId
                     })
                 });
 
@@ -143,16 +241,18 @@
                 }
 
                 const data = await response.json();
-                addMessage('ai', data.response);
+                addMessage('ai', data.response); // AI 메시지 추가 (HTML만 저장)
                 currentChatSessionId = data.chat_session_id; // 서버에서 받은 세션 ID 업데이트
+                saveConversationState(); // AI 응답 후, 유효한 세션 ID로 상태 저장
 
             } catch (error) {
                 console.error('Network or AI Chat Error:', error);
                 addMessage('ai', '네트워크 오류가 발생했습니다. 다시 시도해주세요.');
             } finally {
-                chatSendButton.disabled = false; // 전송 완료 후 버튼 활성화
-                chatInputField.disabled = false; // 전송 완료 후 입력 필드 활성화
-                chatInputField.focus(); // 입력 필드에 포커스
+                chatSendButton.disabled = false;
+                chatInputField.disabled = false;
+                endChatButton.disabled = false;
+                chatInputField.focus();
             }
         }
 
@@ -163,11 +263,72 @@
             }
         });
 
+        // 채팅 종료 버튼 이벤트
+        endChatButton.addEventListener('click', async () => {
+            if (!currentChatSessionId) {
+                showAlert('종료할 대화 세션이 없습니다. 먼저 대화를 시작해주세요.');
+                return;
+            }
+
+            const confirmEnd = await showCustomConfirm('현재 대화를 종료하고 요약하시겠습니까?');
+            if (!confirmEnd) {
+                return;
+            }
+
+            endChatButton.disabled = true;
+            chatSendButton.disabled = true;
+            chatInputField.disabled = true;
+            summaryContent.innerHTML = '<p>상담 내용을 요약하는 중...</p>';
+            summaryModal.classList.remove('hidden');
+
+            try {
+                const response = await fetchWithAuth('/api/chat/end_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_session_id: currentChatSessionId })
+                });
+
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    summaryContent.innerHTML = `<p class="error-row">상담 요약 실패: ${errorData.message || '알 수 없는 오류'}</p>`;
+                    console.error('End Session Error:', errorData.message || 'Unknown error');
+                    nextToFeedbackButton.textContent = '피드백 건너뛰기';
+                    nextToFeedbackButton.classList.remove('primary');
+                    nextToFeedbackButton.classList.add('secondary');
+                    return;
+                }
+
+                const data = await response.json();
+                summaryContent.innerHTML = `<p>${data.summary}</p>`;
+                nextToFeedbackButton.textContent = '다음';
+                nextToFeedbackButton.classList.remove('secondary');
+                nextToFeedbackButton.classList.add('primary');
+
+            } catch (error) {
+                console.error('Network or End Session Error:', error);
+                summaryContent.innerHTML = '<p class="error-row">네트워크 오류로 상담 요약에 실패했습니다.</p>';
+                nextToFeedbackButton.textContent = '피드백 건너뛰기';
+                nextToFeedbackButton.classList.remove('primary');
+                nextToFeedbackButton.classList.add('secondary');
+            } finally {
+                // 요약 모달이 열린 상태이므로 버튼 비활성화는 유지
+            }
+        });
+
+        // 요약 모달의 "다음" 버튼 클릭 시 피드백 모달 열기
+        nextToFeedbackButton.addEventListener('click', () => {
+            summaryModal.classList.add('hidden');
+            selectedRating = 0;
+            renderStars(selectedRating);
+            feedbackComment.value = '';
+            feedbackModal.classList.remove('hidden');
+        });
+
         // 대화 기록 모달 열기
         showHistoryButton.addEventListener('click', async () => {
             historyList.innerHTML = '<p class="loading-row">기록을 불러오는 중...</p>';
             try {
-                const response = await fetchWithAuth('/api/chat/sessions'); // 모든 세션 목록 가져오기
+                const response = await fetchWithAuth('/api/chat/sessions');
                 if (!response || !response.ok) {
                     const errorData = response ? await response.json() : {};
                     historyList.innerHTML = `<p class="error-row">${errorData.message || '세션 기록을 불러오는 데 실패했습니다.'}</p>`;
@@ -177,19 +338,20 @@
                 
                 historyList.innerHTML = '';
                 if (data.sessions && data.sessions.length > 0) {
-                    // 각 세션에 대한 요약 정보를 가져오거나, 세션 ID만 표시
-                    data.sessions.forEach(sessionId => {
+                    data.sessions.forEach(session => {
                         const logItem = document.createElement('div');
                         logItem.classList.add('history-item');
                         logItem.innerHTML = `
-                            <p class="history-summary"><strong>세션 ID:</strong> ${sessionId}</p>
-                            <button class="button small secondary view-full-history-button" data-session-id="${sessionId}">전체 대화 보기</button>
-                            <button class="button small danger delete-session-button" data-session-id="${sessionId}">세션 삭제</button>
+                            <p class="history-summary"><strong>요약:</strong> ${session.summary || '요약 없음'}</p>
+                            <p class="history-date">${new Date(session.created_at).toLocaleString()}</p>
+                            <div class="history-actions">
+                                <button class="button small secondary view-full-history-button" data-session-id="${session.chat_session_id}">전체 대화 보기</button>
+                                <button class="button small danger delete-session-button" data-session-id="${session.chat_session_id}">세션 삭제</button>
+                            </div>
                         `;
                         historyList.appendChild(logItem);
                     });
 
-                    // 전체 대화 보기 버튼 이벤트
                     document.querySelectorAll('.view-full-history-button').forEach(button => {
                         button.addEventListener('click', async (e) => {
                             const sessionId = e.target.dataset.sessionId;
@@ -202,13 +364,14 @@
                                 }
                                 const historyData = await historyResponse.json();
                                 
-                                chatMessagesArea.innerHTML = ''; // 현재 채팅창 비우기
+                                chatMessagesArea.innerHTML = '';
                                 historyData.history.forEach(msg => {
                                     addMessage(msg.sender, msg.message);
                                 });
-                                currentChatSessionId = sessionId; // 세션 ID 업데이트
-                                historyModal.classList.add('hidden'); // 기록 모달 닫기
+                                currentChatSessionId = sessionId;
+                                historyModal.classList.add('hidden');
                                 showAlert('선택하신 대화 기록을 불러왔습니다.');
+                                saveConversationState(); // 불러온 대화도 저장
                             } catch (error) {
                                 console.error('Error loading full chat history:', error);
                                 showAlert('전체 대화 기록을 불러오는 중 네트워크 오류가 발생했습니다.');
@@ -216,12 +379,15 @@
                         });
                     });
 
-                    // 세션 삭제 버튼 이벤트
                     document.querySelectorAll('.delete-session-button').forEach(button => {
                         button.addEventListener('click', async (e) => {
                             const sessionIdToDelete = e.target.dataset.sessionId;
-                            if (confirm('정말로 이 대화 세션을 삭제하시겠습니까?')) { // 사용자 확인
-                                try {
+                            const confirmDelete = await showCustomConfirm('정말로 이 대화 세션을 삭제하시겠습니까? (개별 메시지와 요약 기록 모두 삭제됩니다.)');
+                            if (!confirmDelete) {
+                                return;
+                            }
+
+                            try {
                                     const deleteResponse = await fetchWithAuth(`/api/chat/session/${sessionIdToDelete}`, {
                                         method: 'DELETE'
                                     });
@@ -231,18 +397,14 @@
                                         return;
                                     }
                                     await showAlert('대화 세션이 성공적으로 삭제되었습니다.');
-                                    // 삭제 후 기록 목록 새로고침
                                     showHistoryButton.click();
-                                    // 만약 현재 세션이 삭제된 세션이라면 초기화
                                     if (currentChatSessionId === sessionIdToDelete) {
-                                        currentChatSessionId = null;
-                                        chatMessagesArea.innerHTML = '<p class="chat-welcome-message">새로운 대화를 시작해보세요!</p>';
+                                        startNewChatSession();
                                     }
                                 } catch (error) {
                                     console.error('Error deleting chat session:', error);
                                     showAlert('대화 세션 삭제 중 네트워크 오류가 발생했습니다.');
                                 }
-                            }
                         });
                     });
 
@@ -268,10 +430,10 @@
         // 피드백 모달 열기
         submitFeedbackButton.addEventListener('click', () => {
             if (!currentChatSessionId) {
-                showAlert('피드백을 제출하려면 먼저 챗봇과 대화를 시작해야 합니다.');
+                showAlert('피드백을 제출하려면 먼저 챗봇과 대화를 시작하거나 기록된 대화를 선택해야 합니다.');
                 return;
             }
-            selectedRating = 0; // 별점 초기화
+            selectedRating = 0;
             renderStars(selectedRating);
             feedbackComment.value = '';
             feedbackModal.classList.remove('hidden');
@@ -307,16 +469,25 @@
             }
 
             try {
-                // 피드백 API 엔드포인트는 아직 백엔드에 구현되지 않았습니다.
-                // 이 부분은 추후 백엔드에 `/api/chat/feedback` 엔드포인트를 구현해야 합니다.
-                // 현재는 콘솔 로그와 알림만 표시합니다.
-                console.log("Feedback submitted:", {
-                    chat_session_id: currentChatSessionId,
-                    rating: selectedRating,
-                    comment: feedbackComment.value.trim()
+                const response = await fetchWithAuth('/api/chat/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_session_id: currentChatSessionId,
+                        rating: selectedRating,
+                        comment: feedbackComment.value.trim()
+                    })
                 });
-                await showAlert('피드백이 성공적으로 제출되었습니다. (백엔드 저장 기능은 미구현)');
+
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    await showAlert(errorData.message || '피드백 제출에 실패했습니다.');
+                    return;
+                }
+
+                await showAlert('피드백이 성공적으로 제출되었습니다. 감사합니다!');
                 feedbackModal.classList.add('hidden');
+                startNewChatSession();
 
             } catch (error) {
                 console.error('Error submitting feedback:', error);
@@ -324,18 +495,28 @@
             }
         });
 
-        // 피드백 모달 닫기
-        closeFeedbackModalButton.addEventListener('click', () => {
+        // 피드백 모달 닫기 (취소 버튼)
+        cancelFeedbackButton.addEventListener('click', () => {
             feedbackModal.classList.add('hidden');
+            startNewChatSession();
         });
+        // 피드백 모달 닫기 (X 버튼)
         closeFeedbackModalXButton.addEventListener('click', () => {
             feedbackModal.classList.add('hidden');
+            startNewChatSession();
+        });
+
+        // 상담 요약 모달 닫기 (이전에는 이 버튼이 새 대화를 시작했음)
+        // closeSummaryModalButton.addEventListener('click', () => { // 이 버튼은 HTML에 존재하지 않습니다.
+        //     summaryModal.classList.add('hidden');
+        // });
+        closeSummaryModalXButton.addEventListener('click', () => {
+            summaryModal.classList.add('hidden');
         });
 
         // 초기 로드 시 환영 메시지
         document.addEventListener('DOMContentLoaded', () => {
-            // 환영 메시지는 이미 HTML에 있으므로 추가 로직 없음.
-            // 필요시 로그인 상태에 따라 초기 메시지 변경 가능.
+            loadConversationState(); // 페이지 로드 시 대화 상태 불러오기
         });
     </script>
 {% endblock %}
