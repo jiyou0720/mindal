@@ -18,7 +18,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 ENV PORT=8000
 EXPOSE 8000
 
-# Django(5000), Flask(5001) + Nginx 실행
+# Django(5000), Flask(5001) 실행 + Nginx 프록시
 CMD gunicorn backend.wsgi:application -b 0.0.0.0:5000 & \
     gunicorn backend.app:app -b 0.0.0.0:5001 & \
     nginx -g 'daemon off;'
