@@ -4,10 +4,8 @@ gunicorn
 python-dotenv
 Werkzeug
 Flask-SQLAlchemy
-Flask-PyMongo==3.0.1  # 버전을 3.0.1로 수정
 Flask-Migrate
 PyMySQL
 sqlalchemy
-bson==0.5.10  # bson 명시적 추가 및 최신 버전 지정
 PyJWT
-
+pymongo
