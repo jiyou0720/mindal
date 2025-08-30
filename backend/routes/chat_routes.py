@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, request, jsonify, g, current_app
 import requests
 import json
-from backend.routes.auth_routes import token_required, role_required # role_required 임포트
+from backend.routes.auth_routes import token_required, roles_required
 from backend.mongo_models import ChatHistory, ChatSession, ChatbotFeedback # ChatSession, ChatbotFeedback 임포트
 from datetime import datetime
 import time
@@ -293,7 +293,7 @@ def submit_chat_feedback():
 # NEW: 특정 피드백 상세 조회 (관리자용)
 @chat_bp.route('/feedback/<string:feedback_id>', methods=['GET'])
 @token_required
-@role_required('관리자', '개발자') # 관리자 또는 개발자만 접근 가능
+@roles_required(['관리자', '개발자']) # 관리자 또는 개발자만 접근 가능
 def get_feedback_detail_for_admin(feedback_id):
     try:
         feedback_doc = ChatbotFeedback.get_by_id(feedback_id)
@@ -314,7 +314,7 @@ def get_feedback_detail_for_admin(feedback_id):
 # NEW: 특정 피드백 삭제 (관리자용)
 @chat_bp.route('/feedback_item/<string:feedback_id>', methods=['DELETE'])
 @token_required
-@role_required('관리자', '개발자') # 관리자 또는 개발자만 접근 가능
+@roles_required(['관리자', '개발자']) # 관리자 또는 개발자만 접근 가능
 def delete_feedback_item(feedback_id):
     try:
         if ChatbotFeedback.delete(feedback_id):
@@ -327,7 +327,7 @@ def delete_feedback_item(feedback_id):
 # NEW: 모든 챗봇 피드백 조회 (관리자용)
 @chat_bp.route('/all_feedback', methods=['GET'])
 @token_required
-@role_required('관리자', '개발자') # 관리자 또는 개발자만 접근 가능
+@roles_required(['관리자', '개발자']) # 관리자 또는 개발자만 접근 가능
 def get_all_chatbot_feedback():
     try:
         feedback_list = ChatbotFeedback.get_all()

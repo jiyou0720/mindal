@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify, g, current_app
 from backend.extensions import db, mongo
 from backend.maria_models import User, Post, Comment, Role, UserRole, Notice, PostLike
 from backend.mongo_models import DiaryEntry, MoodEntry, Inquiry, PsychTest, PsychQuestion, PsychTestResult # MongoDB 모델 임포트: Inquiry, PsychTest 관련 모델 추가
-from backend.routes.auth_routes import token_required, roles_required, role_required # roles_required, role_required 임포트
+from backend.routes.auth_routes import token_required, roles_required
 from bson.objectid import ObjectId # ObjectId 임포트 추가
 import datetime
 from datetime import timedelta # timedelta 임포트
