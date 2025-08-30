@@ -83,6 +83,7 @@ def configure_app(app):
     from backend.extensions import db, migrate, mongo
     db.init_app(app)
     migrate.init_app(app, db)
+    mongo.init_app(app)
 
     # --- 블루프린트 등록 ---
     from backend.routes.auth_routes import auth_bp
@@ -254,9 +255,9 @@ def configure_app(app):
     return app
 
 # 애플리케이션 인스턴스 생성 및 설정
-configure_app(app) # 이 부분을 if __name__ == '__main__': 밖으로 옮겼습니다.
+configure_app(app) 
 
 if __name__ == '__main__':
-    # use_reloader=False를 추가하여 OSError: [WinError 10038] 문제를 해결합니다.
-    # 이렇게 하면 코드를 변경할 때마다 서버를 수동으로 재시작해야 합니다.
-    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+    # Railway에서 할당한 포트를 사용하거나, 없으면 기본값으로 5000을 사용
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host='0.0.0.0', port=port, use_reloader=False)
