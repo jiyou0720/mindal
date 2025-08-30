@@ -4,9 +4,9 @@ gunicorn
 python-dotenv
 Werkzeug
 Flask-SQLAlchemy
-Flask-PyMongo
+Flask-PyMongo==2.4.0  # 최신 버전으로 지정
 Flask-Migrate
 PyMySQL
 sqlalchemy
-bson
+bson==0.5.10  # bson 명시적 추가 및 최신 버전 지정
 PyJWT
