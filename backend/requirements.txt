@@ -6,5 +6,5 @@ Flask-Migrate
 PyMySQL
 Flask-CORS
 python-dotenv
-PyJWT
 Werkzeug
+PyJWT
