@@ -28,18 +28,20 @@ def configure_app(app):
 
     # --- 데이터베이스 설정 ---
     # MariaDB (SQLAlchemy)
-    MARIA_USER = os.environ.get("MARIA_USER")
-    MARIA_PASSWORD = os.environ.get("MARIA_PASSWORD")
-    MARIA_HOST = os.environ.get("MARIA_HOST")
-    MARIA_PORT = os.environ.get("MARIA_PORT")
-    MARIA_DB = os.environ.get("MARIA_DB")
+    # Railway의 기본 환경 변수 이름을 사용하도록 변경
+    MARIA_USER = os.environ.get("MYSQL_USER")
+    MARIA_PASSWORD = os.environ.get("MYSQL_PASSWORD")
+    MARIA_HOST = os.environ.get("MYSQL_HOST")
+    MARIA_PORT = os.environ.get("MYSQL_PORT")
+    MARIA_DB = os.environ.get("MYSQL_DATABASE")
 
     app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{MARIA_USER}:{MARIA_PASSWORD}@{MARIA_HOST}:{MARIA_PORT}/{MARIA_DB}?charset=utf8mb4'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ECHO'] = False # SQL 쿼리 로깅 비활성화
 
     # MongoDB (PyMongo)
-    MONGO_URI = os.environ.get("MONGO_URI")
+    # Railway의 기본 환경 변수 이름을 사용하도록 변경
+    MONGO_URI = os.environ.get("MONGO_URL")
     if not MONGO_URI:
         raise ValueError("No MONGO_URI set for Flask application")
     app.config["MONGO_URI"] = MONGO_URI
@@ -255,7 +257,7 @@ def configure_app(app):
     return app
 
 # 애플리케이션 인스턴스 생성 및 설정
-configure_app(app) 
+configure_app(app)
 
 if __name__ == '__main__':
     # Railway에서 할당한 포트를 사용하거나, 없으면 기본값으로 5000을 사용
