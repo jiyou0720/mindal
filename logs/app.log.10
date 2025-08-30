@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 2025-07-25 09:38:48,763 ERROR: An unhandled exception occurred: Could not build url for endpoint 'edit_my_page'. Did you mean 'my_page' instead? [in C:\mindai\backend\app.py:123]
 Traceback (most recent call last):
   File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
@@ -93,3 +94,100 @@ werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'edit_m
 2025-07-25 09:38:57,189 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:154]
 2025-07-25 09:38:57,194 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
 2025-07-25 09:38:57,199 INFO: Response: GET /api/admin/menu_items/my_menu 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+=======
+2025-07-25 09:38:48,763 ERROR: An unhandled exception occurred: Could not build url for endpoint 'edit_my_page'. Did you mean 'my_page' instead? [in C:\mindai\backend\app.py:123]
+Traceback (most recent call last):
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 808, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\mindai\backend\app.py", line 154, in my_page
+    return render_template('my_page.html')
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1304, in render
+    self.environment.handle_exception()
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 939, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\mindai\frontend\templates\my_page.html", line 2, in top-level template code
+    {% extends "base.html" %}
+  File "C:\mindai\frontend\templates\base.html", line 32, in top-level template code
+    {% block content %}{% endblock %}
+  File "C:\mindai\frontend\templates\my_page.html", line 108, in block 'content'
+    window.location.href = "{{ url_for('edit_my_page') }}"; // 货肺款 荐沥 其捞瘤肺 捞悼
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1027, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1016, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\werkzeug\routing\map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'edit_my_page'. Did you mean 'my_page' instead?
+2025-07-25 09:38:48,806 INFO: Response: GET /my_page 500 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:52,952 INFO: Request: GET /community_list [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:52,957 INFO: Response: GET /community_list 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:52,978 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:52,979 INFO: Response: GET /static/css/base.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:52,981 INFO: Request: GET /static/css/community_list.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:52,982 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:52,984 INFO: Response: GET /static/css/community_list.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:52,985 INFO: Response: GET /static/images/main_logo.png 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:53,003 INFO: Request: GET /api/auth/check_auth [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:53,004 INFO: Request: GET /api/community/posts [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:53,014 INFO: Response: GET /api/auth/check_auth 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:53,030 INFO: Response: GET /api/community/posts 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:53,043 INFO: Request: GET /api/admin/menu_items/my_menu [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:53,048 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:154]
+2025-07-25 09:38:53,051 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
+2025-07-25 09:38:53,052 INFO: Response: GET /api/admin/menu_items/my_menu 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:53,768 INFO: Request: GET / [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:53,770 INFO: Response: GET / 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:53,792 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:53,793 INFO: Response: GET /static/css/base.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:53,796 INFO: Request: GET /static/css/index.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:53,797 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:53,799 INFO: Response: GET /static/css/index.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:53,800 INFO: Response: GET /static/images/main_logo.png 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:53,832 INFO: Request: GET /api/dashboard/stats [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:53,833 INFO: Request: GET /api/auth/check_auth [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:53,841 INFO: Response: GET /api/auth/check_auth 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:53,844 INFO: Response: GET /api/dashboard/stats 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:53,851 INFO: Request: GET /api/admin/menu_items/my_menu [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:53,856 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:154]
+2025-07-25 09:38:53,858 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
+2025-07-25 09:38:53,859 INFO: Response: GET /api/admin/menu_items/my_menu 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:54,504 INFO: Request: GET /community_list [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:54,505 INFO: Response: GET /community_list 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:54,525 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:54,526 INFO: Response: GET /static/css/base.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:54,531 INFO: Request: GET /static/css/community_list.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:54,532 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:54,534 INFO: Response: GET /static/css/community_list.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:54,535 INFO: Response: GET /static/images/main_logo.png 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:54,548 INFO: Request: GET /api/auth/check_auth [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:54,549 INFO: Request: GET /api/community/posts [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:54,555 INFO: Response: GET /api/auth/check_auth 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:54,562 INFO: Response: GET /api/community/posts 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:54,569 INFO: Request: GET /api/admin/menu_items/my_menu [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:54,574 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:154]
+2025-07-25 09:38:54,576 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
+2025-07-25 09:38:54,577 INFO: Response: GET /api/admin/menu_items/my_menu 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:57,097 INFO: Request: GET /community/4 [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:57,101 INFO: Response: GET /community/4 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:57,102 INFO: Request: GET /community/4 [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:57,104 INFO: Response: GET /community/4 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:57,124 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:57,124 INFO: Request: GET /static/css/community_detail.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:57,127 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:57,128 INFO: Response: GET /static/css/base.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:57,130 INFO: Response: GET /static/css/community_detail.css 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:57,131 INFO: Response: GET /static/images/main_logo.png 304 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:57,165 INFO: Request: GET /api/community/posts/4 [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:57,166 INFO: Request: GET /api/auth/check_auth [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:57,175 INFO: Response: GET /api/auth/check_auth 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:38:57,184 INFO: Request: GET /api/admin/menu_items/my_menu [in C:\mindai\backend\app.py:95]
+2025-07-25 09:38:57,189 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:154]
+2025-07-25 09:38:57,194 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
+2025-07-25 09:38:57,199 INFO: Response: GET /api/admin/menu_items/my_menu 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 2025-07-25 09:51:28,746 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['관리자'] [in C:\mindai\backend\routes\admin_routes.py:154]
 2025-07-25 09:51:28,747 INFO: Response: GET /api/diary/entries/month_summary 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
 2025-07-25 09:51:28,763 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
@@ -90,3 +91,97 @@ bson.errors.InvalidId: 'by_date' is not a valid ObjectId, it must be a 12-byte i
 2025-07-25 09:54:26,120 INFO: Request: GET /diary [in C:\mindai\backend\app.py:95]
 2025-07-25 09:54:26,133 INFO: Response: GET /diary 200 [in C:\mindai\backend\app.py:106]
 2025-07-25 09:54:26,161 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+=======
+2025-07-25 09:51:28,746 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['관리자'] [in C:\mindai\backend\routes\admin_routes.py:154]
+2025-07-25 09:51:28,747 INFO: Response: GET /api/diary/entries/month_summary 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:51:28,763 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
+2025-07-25 09:51:28,765 INFO: Response: GET /api/admin/menu_items/my_menu 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:51:38,752 INFO: Request: GET /api/diary/entries/by_date [in C:\mindai\backend\app.py:95]
+2025-07-25 09:51:38,758 ERROR: 특정 일기 조회 중 MongoDB 오류: 'by_date' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:101]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 89, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'by_date' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:51:38,760 INFO: Response: GET /api/diary/entries/by_date 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:51:50,449 INFO: Request: GET /diary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:51:50,450 INFO: Response: GET /diary 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:51:50,473 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:51:50,475 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:51:50,476 INFO: Response: GET /static/css/base.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:51:50,477 INFO: Response: GET /static/images/main_logo.png 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:51:50,754 INFO: Request: GET /api/diary/entries/month_summary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:51:50,755 INFO: Request: GET /api/auth/check_auth [in C:\mindai\backend\app.py:95]
+2025-07-25 09:51:50,761 INFO: Response: GET /api/auth/check_auth 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:51:50,761 INFO: Response: GET /api/diary/entries/month_summary 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:51:50,769 INFO: Request: GET /api/admin/menu_items/my_menu [in C:\mindai\backend\app.py:95]
+2025-07-25 09:51:50,775 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['관리자'] [in C:\mindai\backend\routes\admin_routes.py:154]
+2025-07-25 09:51:50,777 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
+2025-07-25 09:51:50,778 INFO: Response: GET /api/admin/menu_items/my_menu 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:17,749 INFO: Flask app created [in C:\mindai\backend\app.py:63]
+2025-07-25 09:53:18,254 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:24]
+2025-07-25 09:53:23,886 INFO: Request: GET /diary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:23,898 INFO: Response: GET /diary 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:23,925 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:23,928 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:24,050 INFO: Response: GET /static/images/main_logo.png 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:24,050 INFO: Response: GET /static/css/base.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:24,390 INFO: Request: GET /api/diary/entries/month_summary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:24,390 INFO: Request: GET /api/auth/check_auth [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:24,426 INFO: Response: GET /api/auth/check_auth 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:24,433 INFO: Request: GET /api/admin/menu_items/my_menu [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:24,439 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['관리자'] [in C:\mindai\backend\routes\admin_routes.py:154]
+2025-07-25 09:53:24,441 INFO: Response: GET /api/diary/entries/month_summary 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:24,442 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
+2025-07-25 09:53:24,444 INFO: Response: GET /api/admin/menu_items/my_menu 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:48,465 INFO: Request: GET /diary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:48,466 INFO: Response: GET /diary 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:48,491 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:48,494 INFO: Request: GET /static/images/main_logo.png [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:48,494 INFO: Response: GET /static/css/base.css 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:48,495 INFO: Response: GET /static/images/main_logo.png 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:48,775 INFO: Request: GET /api/diary/entries/month_summary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:48,777 INFO: Request: GET /api/auth/check_auth [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:48,784 INFO: Response: GET /api/diary/entries/month_summary 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:48,785 INFO: Response: GET /api/auth/check_auth 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:48,795 INFO: Request: GET /api/admin/menu_items/my_menu [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:48,800 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['관리자'] [in C:\mindai\backend\routes\admin_routes.py:154]
+2025-07-25 09:53:48,801 WARNING: DEBUG (get_my_menu_items): Found role assignments, but no menu IDs were associated. Returning empty list. [in C:\mindai\backend\routes\admin_routes.py:173]
+2025-07-25 09:53:48,802 INFO: Response: GET /api/admin/menu_items/my_menu 200 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:49,411 INFO: Request: GET /api/diary/entries/by_date [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:49,414 ERROR: 특정 일기 조회 중 MongoDB 오류: 'by_date' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:101]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 89, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'by_date' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:53:49,415 INFO: Response: GET /api/diary/entries/by_date 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:53:53,322 INFO: Request: GET /api/diary/entries/by_date [in C:\mindai\backend\app.py:95]
+2025-07-25 09:53:53,326 ERROR: 특정 일기 조회 중 MongoDB 오류: 'by_date' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:101]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 89, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'by_date' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:53:53,327 INFO: Response: GET /api/diary/entries/by_date 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:54:24,554 INFO: Flask app created [in C:\mindai\backend\app.py:63]
+2025-07-25 09:54:25,025 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:24]
+2025-07-25 09:54:26,120 INFO: Request: GET /diary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:54:26,133 INFO: Response: GET /diary 200 [in C:\mindai\backend\app.py:106]
+2025-07-25 09:54:26,161 INFO: Request: GET /static/css/base.css [in C:\mindai\backend\app.py:95]
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af

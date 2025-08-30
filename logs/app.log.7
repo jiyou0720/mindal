@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 2025-07-25 09:44:59,340 ERROR: 특정 일기 조회 중 MongoDB 오류: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:94]
 Traceback (most recent call last):
   File "C:\mindai\backend\routes\diary_routes.py", line 82, in get_diary_entry_detail
@@ -102,3 +103,109 @@ Traceback (most recent call last):
 bson.errors.InvalidId: 'by_date' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
 2025-07-25 09:45:04,497 INFO: Response: GET /api/diary/entries/by_date 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
 2025-07-25 09:45:57,070 INFO: Flask app created [in C:\mindai\backend\app.py:63]
+=======
+2025-07-25 09:44:59,340 ERROR: 특정 일기 조회 중 MongoDB 오류: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:94]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 82, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:44:59,353 INFO: Response: GET /api/diary/entries/month_summary 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:45:00,392 INFO: Request: GET /api/diary/entries/month_summary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:45:00,396 ERROR: 특정 일기 조회 중 MongoDB 오류: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:94]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 82, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:45:00,397 INFO: Response: GET /api/diary/entries/month_summary 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:45:00,625 INFO: Request: GET /api/diary/entries/month_summary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:45:00,628 ERROR: 특정 일기 조회 중 MongoDB 오류: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:94]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 82, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:45:00,629 INFO: Response: GET /api/diary/entries/month_summary 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:45:01,663 INFO: Request: GET /api/diary/entries/month_summary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:45:01,667 ERROR: 특정 일기 조회 중 MongoDB 오류: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:94]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 82, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:45:01,668 INFO: Response: GET /api/diary/entries/month_summary 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:45:01,955 INFO: Request: GET /api/diary/entries/month_summary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:45:01,959 ERROR: 특정 일기 조회 중 MongoDB 오류: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:94]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 82, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:45:01,961 INFO: Response: GET /api/diary/entries/month_summary 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:45:02,150 INFO: Request: GET /api/diary/entries/month_summary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:45:02,153 ERROR: 특정 일기 조회 중 MongoDB 오류: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:94]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 82, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:45:02,154 INFO: Response: GET /api/diary/entries/month_summary 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:45:02,347 INFO: Request: GET /api/diary/entries/month_summary [in C:\mindai\backend\app.py:95]
+2025-07-25 09:45:02,350 ERROR: 특정 일기 조회 중 MongoDB 오류: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:94]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 82, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'month_summary' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:45:02,350 INFO: Response: GET /api/diary/entries/month_summary 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:45:04,493 INFO: Request: GET /api/diary/entries/by_date [in C:\mindai\backend\app.py:95]
+2025-07-25 09:45:04,496 ERROR: 특정 일기 조회 중 MongoDB 오류: 'by_date' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string [in C:\mindai\backend\routes\diary_routes.py:94]
+Traceback (most recent call last):
+  File "C:\mindai\backend\routes\diary_routes.py", line 82, in get_diary_entry_detail
+    entry = mongo.db.diary_entries.find_one({'_id': ObjectId(entry_id), 'user_id': user_id})
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 105, in __init__
+    self.__validate(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 193, in __validate
+    _raise_invalid_id(oid)
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\bson\objectid.py", line 38, in _raise_invalid_id
+    raise InvalidId(
+bson.errors.InvalidId: 'by_date' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string
+2025-07-25 09:45:04,497 INFO: Response: GET /api/diary/entries/by_date 500 user_id=1 username=admin [in C:\mindai\backend\app.py:106]
+2025-07-25 09:45:57,070 INFO: Flask app created [in C:\mindai\backend\app.py:63]
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af

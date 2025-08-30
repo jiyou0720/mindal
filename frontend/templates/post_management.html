@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!-- frontend/templates/post_management.html -->
 {% extends "base.html" %}
 
@@ -421,3 +422,428 @@
         });
     </script>
 {% endblock %}
+=======
+<!-- frontend/templates/post_management.html -->
+{% extends "base.html" %}
+
+{% block title %}게시글 관리 - Mindbridge{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/post_management.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-dashboard-container">
+        <h1>게시글 관리</h1>
+        <p>커뮤니티 게시글을 조회하고, 신고 내역을 확인하며, 필요한 조치를 취할 수 있습니다.</p>
+        <p>현재 로그인된 사용자 역할: <span id="currentUserRolesDisplay"></span></p>
+
+        <div class="admin-section">
+            <h2>게시글 목록</h2>
+            <div class="search-bar">
+                <input type="text" id="postSearchInput" placeholder="제목, 작성자, 내용으로 검색...">
+                <button id="searchPostButton" class="button primary">검색</button>
+            </div>
+            <div class="data-table-container">
+                <table class="data-list-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>제목</th>
+                            <th>작성자</th>
+                            <th>카테고리</th>
+                            <th>조회수</th>
+                            <th>좋아요</th>
+                            <th>댓글 수</th>
+                            <th>신고 수</th>
+                            <th>상태</th> {# NEW: 상태 컬럼 #}
+                            <th>정지 해제일</th> {# NEW: 정지 해제일 컬럼 #}
+                            <th>작성일</th>
+                            <th>액션</th>
+                        </tr>
+                    </thead>
+                    <tbody id="postTableBody">
+                        <tr><td colspan="12" class="loading-row">게시글을 불러오는 중...</td></tr> {# colspan 조정 #}
+                    </tbody>
+                </table>
+            </div>
+            <p id="noPostsMessage" class="no-data-message hidden">게시글이 없습니다.</p>
+        </div>
+    </div>
+
+    <!-- 게시글 상세/신고 처리 모달 -->
+    <div id="postDetailModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3 id="postModalTitle">게시글 상세 및 처리</h3>
+            <div class="detail-content">
+                <p><strong>제목:</strong> <span id="detailPostTitle"></span></p>
+                <p><strong>작성자:</strong> <span id="detailPostAuthor"></span></p>
+                <p><strong>카테고리:</strong> <span id="detailPostCategory"></span></p>
+                <p><strong>작성일:</strong> <span id="detailPostDate"></span></p>
+                <p><strong>상태:</strong> <span id="detailPostStatus"></span></p> {# NEW: 상태 표시 #}
+                <p><strong>정지 해제일:</strong> <span id="detailSuspendedUntil"></span></p> {# NEW: 정지 해제일 표시 #}
+                <p><strong>내용:</strong></p>
+                <div id="detailPostContent" class="post-content-area"></div>
+                
+                <h4 style="margin-top: 20px;">신고 내역</h4>
+                <div id="reportHistory" class="report-history-area">
+                    <p>신고 내역이 없습니다.</p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="button primary" id="toggleSuspensionButton">게시글 정지/복구</button> {# NEW #}
+                <button class="button danger" id="deletePostButton">게시글 삭제</button>
+                <button class="button secondary" id="closePostModalButton">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 게시글 정지 기간 선택 모달 -->
+    <div id="suspensionDurationModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>게시글 정지 기간 설정</h3>
+            <p>게시글을 정지할 기간(시간)을 입력하세요.</p>
+            <div class="form-group">
+                <label for="suspensionDurationInput">정지 기간 (시간):</label>
+                <input type="number" id="suspensionDurationInput" min="1" value="24" required>
+            </div>
+            <button class="button primary" id="confirmSuspendButton">정지</button>
+            <button class="button secondary" id="cancelSuspendButton" style="margin-left: 10px;">취소</button>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // base.html에서 전역으로 선언된 loginUrl, homeUrl, fetchWithAuth, showAlert, showConfirm 사용
+
+        const postTableBody = document.getElementById('postTableBody');
+        const postSearchInput = document.getElementById('postSearchInput');
+        const searchPostButton = document.getElementById('searchPostButton');
+        const noPostsMessage = document.getElementById('noPostsMessage');
+        const currentUserRolesDisplay = document.getElementById('currentUserRolesDisplay');
+
+        const postDetailModal = document.getElementById('postDetailModal');
+        const closePostModalButton = postDetailModal.querySelector('.close-button');
+        const detailPostTitle = document.getElementById('detailPostTitle');
+        const detailPostAuthor = document.getElementById('detailPostAuthor');
+        const detailPostCategory = document.getElementById('detailPostCategory');
+        const detailPostDate = document.getElementById('detailPostDate');
+        const detailPostStatus = document.getElementById('detailPostStatus'); // NEW
+        const detailSuspendedUntil = document.getElementById('detailSuspendedUntil'); // NEW
+        const detailPostContent = document.getElementById('detailPostContent');
+        const reportHistory = document.getElementById('reportHistory');
+        const deletePostButton = document.getElementById('deletePostButton');
+        const toggleSuspensionButton = document.getElementById('toggleSuspensionButton'); // NEW
+
+        const suspensionDurationModal = document.getElementById('suspensionDurationModal'); // NEW
+        const suspensionDurationInput = document.getElementById('suspensionDurationInput'); // NEW
+        const confirmSuspendButton = document.getElementById('confirmSuspendButton'); // NEW
+        const cancelSuspendButton = document.getElementById('cancelSuspendButton'); // NEW
+        const closeSuspensionModalButton = suspensionDurationModal.querySelector('.close-button'); // NEW
+
+        let allPosts = []; // 모든 게시글 데이터를 저장할 배열
+        let currentViewingPostId = null; // 현재 상세 모달에서 보고 있는 게시글 ID
+
+        // 접근 권한 확인 함수 (관리자, 운영자)
+        async function checkPostManagementAccess() {
+            console.log('checkPostManagementAccess (post_management): 함수 시작');
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                await showAlert('게시글 관리 페이지에 접근하려면 로그인이 필요합니다.');
+                window.location.href = loginUrl;
+                return false;
+            }
+
+            try {
+                const response = await fetchWithAuth('/api/auth/me', { method: 'GET' });
+                if (!response) { return false; }
+                if (!response.ok) {
+                    await showAlert('사용자 역할 정보를 불러오는 데 실패했습니다. 다시 로그인해주세요.');
+                    localStorage.removeItem('access_token');
+                    window.location.href = loginUrl;
+                    return false;
+                }
+
+                const data = await response.json();
+                const userRoles = data.user.roles || [];
+                console.log('checkPostManagementAccess (post_management): 사용자 역할:', userRoles);
+
+                if (!userRoles.includes('관리자') && !userRoles.includes('운영자')) {
+                    await showAlert('관리자 또는 운영자만 접근할 수 있는 페이지입니다.');
+                    window.location.href = homeUrl;
+                    return false;
+                }
+
+                currentUserRolesDisplay.textContent = userRoles.join(', ');
+                return true;
+            } catch (error) {
+                console.error('checkPostManagementAccess (post_management): 오류 발생:', error);
+                await showAlert('접근 권한 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+                window.location.href = homeUrl;
+                return false;
+            }
+        }
+
+        // 모든 게시글 불러오기 (신고 내역 포함)
+        async function fetchAllPosts() {
+            postTableBody.innerHTML = '<tr><td colspan="12" class="loading-row">게시글을 불러오는 중...</td></tr>';
+            noPostsMessage.classList.add('hidden');
+
+            try {
+                const response = await fetchWithAuth('/api/admin/posts');
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    await showAlert(errorData.message || '게시글 목록을 불러오는 데 실패했습니다.');
+                    postTableBody.innerHTML = '<tr><td colspan="12" class="error-row">게시글을 불러오지 못했습니다.</td></tr>';
+                    return;
+                }
+                const data = await response.json();
+                allPosts = data.posts || [];
+                renderPostTable(allPosts);
+            } catch (error) {
+                console.error('게시글 목록 로드 중 오류 발생:', error);
+                await showAlert('게시글 목록을 불러오는 중 네트워크 오류가 발생했습니다.');
+                postTableBody.innerHTML = '<tr><td colspan="12" class="error-row">네트워크 오류로 정보를 불러오지 못했습니다.</td></tr>';
+            }
+        }
+
+        // 게시글 테이블 렌더링
+        function renderPostTable(postsToRender) {
+            postTableBody.innerHTML = '';
+            if (postsToRender.length === 0) {
+                noPostsMessage.classList.remove('hidden');
+                return;
+            }
+            noPostsMessage.classList.add('hidden');
+
+            postsToRender.forEach(post => {
+                const row = postTableBody.insertRow();
+                const displayCreatedAt = post.created_at ? new Date(post.created_at).toLocaleDateString() : '-';
+                const authorDisplay = post.is_anonymous ? '익명' : (post.author_nickname || post.author_username || '-');
+                const reportCount = post.report_count !== undefined ? post.report_count : 0; 
+                
+                // NEW: 정지 상태 표시
+                let statusText = '정상';
+                let statusClass = 'status-normal';
+                let suspendedUntilText = '-';
+
+                if (post.is_suspended) {
+                    statusText = '정지됨';
+                    statusClass = 'status-suspended';
+                    if (post.suspended_until) {
+                        const suspendedDate = new Date(post.suspended_until);
+                        if (isNaN(suspendedDate.getTime())) {
+                            suspendedUntilText = '날짜 오류';
+                        } else if (suspendedDate > new Date()) {
+                            suspendedUntilText = suspendedDate.toLocaleString();
+                        } else {
+                            suspendedUntilText = '기간 만료';
+                            statusText = '정지 기간 만료'; // 기간 만료 시 상태 변경
+                            statusClass = 'status-expired';
+                        }
+                    } else {
+                        suspendedUntilText = '영구 정지';
+                    }
+                }
+
+                row.innerHTML = `
+                    <td>${post.id}</td>
+                    <td>${post.title}</td>
+                    <td>${authorDisplay}</td>
+                    <td>${post.category || '-'}</td>
+                    <td>${post.views || 0}</td>
+                    <td>${post.likes || 0}</td>
+                    <td>${post.comment_count || 0}</td>
+                    <td>${reportCount}</td>
+                    <td class="${statusClass}">${statusText}</td> {# NEW #}
+                    <td>${suspendedUntilText}</td> {# NEW #}
+                    <td>${displayCreatedAt}</td>
+                    <td class="action-cell">
+                        <button class="button small secondary view-post-button" data-post-id="${post.id}">상세/처리</button>
+                    </td>
+                `;
+            });
+
+            document.querySelectorAll('.view-post-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const postId = e.target.dataset.postId;
+                    openPostDetailModal(postId);
+                });
+            });
+        }
+
+        // 게시글 상세/신고 처리 모달 열기
+        async function openPostDetailModal(postId) {
+            currentViewingPostId = postId; // 현재 보고 있는 게시글 ID 저장
+            try {
+                const response = await fetchWithAuth(`/api/admin/posts/${postId}`);
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    await showAlert(errorData.message || '게시글 상세 정보를 불러오는 데 실패했습니다.');
+                    return;
+                }
+                const post = await response.json();
+
+                detailPostTitle.textContent = post.title;
+                detailPostAuthor.textContent = post.is_anonymous ? '익명' : (post.author_nickname || post.author_username || '-');
+                detailPostCategory.textContent = post.category || '-';
+                detailPostDate.textContent = post.created_at ? new Date(post.created_at).toLocaleDateString() : '-';
+                
+                // NEW: 상세 모달에 정지 상태 표시
+                let statusText = '정상';
+                let suspendedUntilText = '-';
+                if (post.is_suspended) {
+                    statusText = '정지됨';
+                    if (post.suspended_until) {
+                        const suspendedDate = new Date(post.suspended_until);
+                        if (!isNaN(suspendedDate.getTime())) {
+                            suspendedUntilText = suspendedDate.toLocaleString();
+                            if (suspendedDate <= new Date()) {
+                                statusText = '정지 기간 만료';
+                            }
+                        } else {
+                            suspendedUntilText = '날짜 오류';
+                        }
+                    } else {
+                        suspendedUntilText = '영구 정지';
+                    }
+                }
+                detailPostStatus.textContent = statusText;
+                detailSuspendedUntil.textContent = suspendedUntilText;
+
+                detailPostContent.innerHTML = post.content || '내용 없음'; 
+
+                reportHistory.innerHTML = '';
+                if (post.reports && post.reports.length > 0) {
+                    post.reports.forEach(report => {
+                        const reportItem = document.createElement('p');
+                        reportItem.textContent = `신고 유형: ${report.type}, 사유: ${report.reason}, 일시: ${new Date(report.timestamp).toLocaleString()}`;
+                        reportHistory.appendChild(reportItem);
+                    });
+                } else {
+                    reportHistory.innerHTML = '<p>신고 내역이 없습니다.</p>';
+                }
+
+                // 삭제 버튼에 이벤트 리스너 재할당 및 postId 설정
+                deletePostButton.onclick = () => deletePost(postId);
+                
+                // NEW: 정지/복구 버튼 텍스트 및 이벤트 리스너 설정
+                toggleSuspensionButton.textContent = post.is_suspended ? '정지 해제' : '게시글 정지';
+                toggleSuspensionButton.onclick = () => {
+                    if (post.is_suspended) {
+                        togglePostSuspension(postId, false); // 정지 해제
+                    } else {
+                        // 정지 기간 선택 모달 열기
+                        suspensionDurationModal.classList.add('visible');
+                    }
+                };
+
+                postDetailModal.classList.add('visible');
+            } catch (error) {
+                console.error('게시글 상세 정보 로드 중 오류 발생:', error);
+                await showAlert('게시글 상세 정보를 불러오는 중 네트워크 오류가 발생했습니다.');
+            }
+        }
+
+        // 게시글 삭제
+        async function deletePost(postId) {
+            const confirmed = await showConfirm('정말로 이 게시글을 삭제하시겠습니까?');
+            if (!confirmed) {
+                return;
+            }
+            try {
+                const response = await fetchWithAuth(`/api/admin/posts/${postId}/delete`, { 
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    await showAlert('게시글이 성공적으로 삭제되었습니다.');
+                    postDetailModal.classList.remove('visible'); // 모달 닫기
+                    fetchAllPosts(); // 목록 새로고침
+                } else {
+                    await showAlert('게시글 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('게시글 삭제 중 오류 발생:', error);
+                await showAlert('게시글 삭제 중 오류가 발생했습니다.');
+            }
+        }
+
+        // NEW: 게시글 정지/복구 기능
+        async function togglePostSuspension(postId, suspend, durationHours = null) {
+            let message = '';
+            if (suspend) {
+                message = `게시글을 ${durationHours}시간 동안 정지하시겠습니까?`;
+            } else {
+                message = '게시글 정지를 해제하시겠습니까?';
+            }
+
+            const confirmed = await showConfirm(message);
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth(`/api/admin/posts/${postId}/toggle_suspension`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ suspend: suspend, duration_hours: durationHours })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    await showAlert(result.message);
+                    suspensionDurationModal.classList.remove('visible'); // 정지 기간 모달 닫기
+                    postDetailModal.classList.remove('visible'); // 상세 모달 닫기
+                    fetchAllPosts(); // 목록 새로고침
+                } else {
+                    await showAlert(result.message || '게시글 정지/해제 처리에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('게시글 정지/해제 처리 중 오류 발생:', error);
+                await showAlert('게시글 정지/해제 처리 중 네트워크 오류가 발생했습니다.');
+            }
+        }
+
+        // 정지 기간 모달에서 '정지' 버튼 클릭 시
+        confirmSuspendButton.addEventListener('click', () => {
+            const duration = parseInt(suspensionDurationInput.value);
+            if (isNaN(duration) || duration <= 0) {
+                showAlert('유효한 정지 기간(시간)을 입력해주세요.');
+                return;
+            }
+            if (currentViewingPostId) {
+                togglePostSuspension(currentViewingPostId, true, duration);
+            }
+        });
+
+        // 정지 기간 모달 닫기 버튼
+        cancelSuspendButton.addEventListener('click', () => {
+            suspensionDurationModal.classList.remove('visible');
+        });
+        closeSuspensionModalButton.addEventListener('click', () => {
+            suspensionDurationModal.classList.remove('visible');
+        });
+
+
+        // 게시글 상세 모달 닫기
+        closePostModalButton.addEventListener('click', () => {
+            postDetailModal.classList.remove('visible');
+            currentViewingPostId = null; // 모달 닫을 때 ID 초기화
+        });
+
+        // 초기 로드 시 접근 권한 확인 후 데이터 로드
+        document.addEventListener('DOMContentLoaded', async () => {
+            const hasAccess = await checkPostManagementAccess();
+            if (hasAccess) {
+                fetchAllPosts();
+            }
+        });
+    </script>
+{% endblock %}
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af

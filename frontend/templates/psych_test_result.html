@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!-- frontend/templates/psych_test_result.html -->
 {% extends "base.html" %}
 
@@ -199,3 +200,206 @@
         });
     </script>
 {% endblock %}
+=======
+<!-- frontend/templates/psych_test_result.html -->
+{% extends "base.html" %}
+
+{% block title %}심리 테스트 결과 - Mindbridge{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/psych_test.css') }}"> {# 심리 테스트 전용 CSS #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> {# Chart.js 라이브러리 로드 #}
+{% endblock %}
+
+{% block content %}
+    <div class="psych-test-container">
+        <h1 id="resultTestTitle">심리 테스트 결과</h1>
+        <p class="page-description">당신의 테스트 결과입니다.</p>
+
+        <div class="result-section">
+            <h2 class="section-title">결과 요약</h2>
+            <p id="resultSummary" class="result-summary-text">결과를 불러오는 중...</p>
+            <p class="result-date">테스트 완료일: <span id="resultCompletionDate"></span></p>
+        </div>
+
+        <div class="result-section">
+            <h2 class="section-title">상세 분석</h2>
+            <div class="chart-container">
+                <canvas id="resultChart"></canvas>
+            </div>
+            <p id="chartDescription" class="chart-description">그래프 데이터를 불러오는 중...</p>
+        </div>
+
+        <div class="button-group">
+            <button class="button secondary" id="backToListButton">다른 테스트 보기</button>
+            <button class="button primary" id="goToMyPageButton">마이페이지로 이동</button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const resultId = "{{ result_id }}"; // Flask 템플릿에서 result_id를 받음
+        const resultTestTitleElement = document.getElementById('resultTestTitle');
+        const resultSummaryElement = document.getElementById('resultSummary');
+        const resultCompletionDateElement = document.getElementById('resultCompletionDate');
+        const resultChartCanvas = document.getElementById('resultChart');
+        const chartDescriptionElement = document.getElementById('chartDescription');
+        const backToListButton = document.getElementById('backToListButton');
+        const goToMyPageButton = document.getElementById('goToMyPageButton');
+
+        let myChart; // Chart.js 인스턴스를 저장할 변수
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                await showAlert('테스트 결과를 보려면 로그인이 필요합니다.');
+                window.location.href = loginUrl;
+                return;
+            }
+            if (resultId) {
+                fetchTestResult(resultId);
+            } else {
+                resultSummaryElement.textContent = '결과 ID가 없습니다.';
+                chartDescriptionElement.textContent = '';
+            }
+        });
+
+        async function fetchTestResult(id) {
+            resultSummaryElement.textContent = '결과를 불러오는 중...';
+            chartDescriptionElement.textContent = '그래프 데이터를 불러오는 중...';
+
+            try {
+                const response = await fetchWithAuth(`/api/psych_test/results/${id}`);
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    await showAlert(errorData.message || '테스트 결과를 불러오는 데 실패했습니다.');
+                    resultSummaryElement.textContent = '결과를 불러오지 못했습니다.';
+                    chartDescriptionElement.textContent = '';
+                    return;
+                }
+                const data = await response.json();
+                const result = data.result;
+
+                resultTestTitleElement.textContent = result.test_title || '심리 테스트 결과';
+                resultSummaryElement.textContent = result.result_summary;
+                resultCompletionDateElement.textContent = result.created_at ? new Date(result.created_at).toLocaleDateString() : '-';
+
+                // 차트 렌더링 (예시: 간단한 바 차트)
+                if (result.result_details && result.test_type === 'personality') {
+                    const scoresByOption = result.result_details.scores_by_option;
+                    if (scoresByOption) {
+                        const labels = Object.keys(scoresByOption);
+                        const dataValues = Object.values(scoresByOption);
+
+                        myChart = new Chart(resultChartCanvas, {
+                            type: 'bar', // 또는 'pie', 'radar' 등
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: '점수',
+                                    data: dataValues,
+                                    backgroundColor: [
+                                        'rgba(255, 99, 132, 0.6)',
+                                        'rgba(54, 162, 235, 0.6)',
+                                        'rgba(255, 206, 86, 0.6)',
+                                        'rgba(75, 192, 192, 0.6)',
+                                        'rgba(153, 102, 255, 0.6)',
+                                        'rgba(255, 159, 64, 0.6)'
+                                    ],
+                                    borderColor: [
+                                        'rgba(255, 99, 132, 1)',
+                                        'rgba(54, 162, 235, 1)',
+                                        'rgba(255, 206, 86, 1)',
+                                        'rgba(75, 192, 192, 1)',
+                                        'rgba(153, 102, 255, 1)',
+                                        'rgba(255, 159, 64, 1)'
+                                    ],
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                        chartDescriptionElement.textContent = '각 선택지 유형별 점수 분포입니다.';
+                    } else {
+                        chartDescriptionElement.textContent = '상세 분석을 위한 데이터가 없습니다.';
+                    }
+                } else if (result.result_details && result.test_type === 'emotion_diagnosis') {
+                    const totalScore = result.result_details.total_score;
+                    if (totalScore !== undefined) {
+                        myChart = new Chart(resultChartCanvas, {
+                            type: 'doughnut', // 도넛 차트 예시
+                            data: {
+                                labels: ['진단 점수', '남은 점수'],
+                                datasets: [{
+                                    data: [totalScore, 100 - totalScore], // 예시: 총점 100점 기준
+                                    backgroundColor: [
+                                        'rgba(255, 99, 132, 0.6)',
+                                        'rgba(200, 200, 200, 0.6)'
+                                    ],
+                                    borderColor: [
+                                        'rgba(255, 99, 132, 1)',
+                                        'rgba(200, 200, 200, 1)'
+                                    ],
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '70%', // 도넛 두께
+                                plugins: {
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                let label = context.label || '';
+                                                if (label) {
+                                                    label += ': ';
+                                                }
+                                                if (context.parsed !== null) {
+                                                    label += context.parsed + '%'; // 점수와 % 표시
+                                                }
+                                                return label;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                        chartDescriptionElement.textContent = `감정 진단 총점: ${totalScore}점.`;
+                    } else {
+                        chartDescriptionElement.textContent = '상세 분석을 위한 데이터가 없습니다.';
+                    }
+                }
+                else {
+                    chartDescriptionElement.textContent = '이 테스트 유형에 대한 상세 분석 그래프는 제공되지 않습니다.';
+                }
+
+            } catch (error) {
+                console.error('테스트 결과 로드 중 오류 발생:', error);
+                await showAlert('테스트 결과를 불러오는 중 네트워크 오류가 발생했습니다.');
+                resultSummaryElement.textContent = '결과를 불러오지 못했습니다.';
+                chartDescriptionElement.textContent = '';
+            }
+        }
+
+        backToListButton.addEventListener('click', () => {
+            window.location.href = '/psych_test'; // 테스트 목록 페이지로 이동
+        });
+
+        goToMyPageButton.addEventListener('click', () => {
+            window.location.href = '/my_page'; // 마이페이지로 이동
+        });
+    </script>
+{% endblock %}
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af

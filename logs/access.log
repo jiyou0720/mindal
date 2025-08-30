@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [33mPress CTRL+C to quit[0m
 127.0.0.1 - - [25/Jul/2025 10:19:52] "GET /diary HTTP/1.1" 200 -
 127.0.0.1 - - [25/Jul/2025 10:19:53] "GET /static/images/main_logo.png HTTP/1.1" 200 -
@@ -90,3 +91,97 @@
 127.0.0.1 - - [25/Jul/2025 10:35:49] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
 127.0.0.1 - - [25/Jul/2025 10:35:49] "GET /api/diary/entries/month_summary?year=2025&month=7 HTTP/1.1" 200 -
 127.0.0.1 - - [25/Jul/2025 10:38:06] "[33mGET /api/diary/entries?date=2025-07-01 HTTP/1.1[0m" 404 -
+=======
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [25/Jul/2025 10:19:52] "GET /diary HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:19:53] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:19:53] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:19:53] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:19:53] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [25/Jul/2025 10:24:15] "GET /diary HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:24:15] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:24:15] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:24:15] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:24:15] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:24:16] "[35m[1mGET /api/diary/entries/month_summary?year=2025&month=7 HTTP/1.1[0m" 500 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [25/Jul/2025 10:25:25] "GET /diary HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:25:25] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:25:25] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:25:25] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:25:25] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:25:26] "GET /api/diary/entries/month_summary?year=2025&month=7 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:25:32] "GET /api/diary/entries/month_summary?year=2025&month=8 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:25:34] "GET /api/diary/entries/month_summary?year=2025&month=9 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:26:16] "GET /api/diary/entries/month_summary?year=2025&month=8 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:26:16] "GET /api/diary/entries/month_summary?year=2025&month=7 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:26:16] "GET /api/diary/entries/month_summary?year=2025&month=6 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:26:17] "GET /api/diary/entries/month_summary?year=2025&month=5 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:26:44] "GET /diary HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:26:44] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:26:44] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:26:44] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:26:45] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:26:45] "GET /api/diary/entries/month_summary?year=2025&month=7 HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [25/Jul/2025 10:26:50] "[35m[1mGET /diary HTTP/1.1[0m" 500 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [25/Jul/2025 10:28:05] "[35m[1mGET /diary HTTP/1.1[0m" 500 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [25/Jul/2025 10:29:44] "GET /diary HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:29:44] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:29:44] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:29:45] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:29:45] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:29:45] "GET /api/diary/entries/month_summary?year=2025&month=7 HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [25/Jul/2025 10:31:58] "GET /diary HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:31:59] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:31:59] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:31:59] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:31:59] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:31:59] "GET /api/diary/entries/month_summary?year=2025&month=7 HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [25/Jul/2025 10:34:13] "GET /diary HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:13] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:13] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:13] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:13] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:13] "GET /api/diary/entries/month_summary?year=2025&month=7 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:19] "GET /api/diary/entries/month_summary?year=2025&month=8 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:20] "GET /api/diary/entries/month_summary?year=2025&month=9 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:20] "GET /api/diary/entries/month_summary?year=2025&month=10 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:20] "GET /api/diary/entries/month_summary?year=2025&month=11 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:21] "GET /api/diary/entries/month_summary?year=2025&month=12 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:21] "GET /api/diary/entries/month_summary?year=2026&month=1 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:21] "GET /api/diary/entries/month_summary?year=2026&month=2 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:34:21] "GET /api/diary/entries/month_summary?year=2026&month=3 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:35] "GET /diary HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:35] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:35] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:35] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:35] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:35] "GET /api/diary/entries/month_summary?year=2025&month=7 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:49] "GET /diary HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:49] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:49] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:49] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:49] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:35:49] "GET /api/diary/entries/month_summary?year=2025&month=7 HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jul/2025 10:38:06] "[33mGET /api/diary/entries?date=2025-07-01 HTTP/1.1[0m" 404 -
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af

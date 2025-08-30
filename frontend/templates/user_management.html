@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!--frontend/templates/user_management.html-->
 {% extends "base.html" %}
 
@@ -431,3 +432,438 @@
         });
     </script>
 {% endblock %}
+=======
+<!--frontend/templates/user_management.html-->
+{% extends "base.html" %}
+
+{% block title %}사용자 관리 - Mindbridge{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}"> {# 관리자 대시보드 CSS 재사용 #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user_management.css') }}"> {# 새로 분리된 사용자 관리 CSS #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /*
+         * 디버깅을 위해 추가했던 임시 스타일은 제거합니다.
+         * 대신, .modal 클래스에 display: none;과 transition을 명시적으로 정의하고
+         * .modal.visible 클래스를 통해 display: flex;와 opacity를 제어합니다.
+         * 이렇게 하면 JavaScript에서 클래스를 토글할 때 CSS 애니메이션이 적용됩니다.
+         */
+        .modal {
+            display: none; /* 기본적으로 숨김 */
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .modal.visible {
+            display: flex; /* JavaScript에서 이 클래스를 추가하여 모달을 보이게 함 */
+            opacity: 1;
+        }
+
+        .modal-content {
+            transform: scale(0.95); /* 모달 열릴 때 약간 확대되는 효과 */
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .modal.visible .modal-content {
+            transform: scale(1); /* 모달이 보일 때 원래 크기로 */
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="admin-dashboard-container">
+        <h1>사용자 관리</h1>
+        <p>회원 목록을 조회하고 사용자 역할을 변경하거나 계정을 삭제할 수 있습니다.</p>
+        <p>현재 로그인된 사용자 역할: <span id="currentUserRolesDisplay"></span></p>
+
+        <div class="admin-section">
+            <h2>사용자 목록</h2>
+            <div class="search-bar">
+                <input type="text" id="userSearchInput" placeholder="사용자 이름, 이메일 또는 UID 검색...">
+                <button id="searchUserButton" class="button primary">검색</button>
+            </div>
+            
+            <div class="user-list-table-container">
+                <table class="user-list-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>UID</th>
+                            <th>사용자 이름</th>
+                            <th>닉네임</th>
+                            <th>이메일</th>
+                            <th>성별</th>
+                            <th>나이</th>
+                            <th>전공</th>
+                            <th>역할</th>
+                            <th>가입일</th>
+                            <th>액션</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <!-- 사용자 데이터가 여기에 동적으로 로드됩니다 -->
+                        <tr>
+                            <td colspan="11" class="loading-row">사용자 정보를 불러오는 중...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="noUsersMessage" class="no-users-message hidden">검색 결과가 없습니다.</p>
+        </div>
+    </div>
+
+    <!-- 역할 관리 모달 -->
+    <div id="roleManagementModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>사용자 역할 관리</h2>
+            <p>사용자: <strong id="modalUsername"></strong> (<span id="modalUserEmail"></span>)</p>
+            <div id="rolesCheckboxes" class="roles-checkboxes">
+                <!-- 역할 체크박스가 여기에 동적으로 로드됩니다 -->
+            </div>
+            <button id="saveRolesButton" class="button primary">역할 저장</button>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // base.html에서 전역으로 선언된 loginUrl, homeUrl, fetchWithAuth, showAlert, showConfirm 사용
+
+        let allUsers = []; // 모든 사용자 데이터를 저장할 배열
+        let allRoles = []; // 모든 역할 데이터를 저장할 배열
+
+        // DOM 요소 가져오기
+        const userTableBody = document.getElementById('userTableBody');
+        const noUsersMessage = document.getElementById('noUsersMessage');
+        const userSearchInput = document.getElementById('userSearchInput');
+        const searchUserButton = document.getElementById('searchUserButton');
+        const currentUserRolesDisplay = document.getElementById('currentUserRolesDisplay');
+
+        const roleManagementModal = document.getElementById('roleManagementModal');
+        const closeModalButtonModal = roleManagementModal.querySelector('.close-button'); 
+        const modalUsername = document.getElementById('modalUsername');
+        const modalUserEmail = document.getElementById('modalUserEmail');
+        const rolesCheckboxesContainer = document.getElementById('rolesCheckboxes');
+        const saveRolesButton = document.getElementById('saveRolesButton');
+
+        let currentEditingUser = null; // 현재 편집 중인 사용자 객체
+
+        // 관리자 접근 권한 확인 함수
+        async function checkAdminAccess() {
+            console.log('checkAdminAccess (user_management): 함수 시작'); // 디버깅 로그
+            const token = localStorage.getItem('access_token');
+            console.log('checkAdminAccess (user_management): 로컬 스토리지 access_token:', token ? '존재함' : '없음'); // 토큰 존재 여부 로그
+
+            if (!token) {
+                console.log('checkAdminAccess (user_management): 토큰 없음, 로그인 페이지로 리다이렉트'); // 디버깅 로그
+                await showAlert('관리자 페이지에 접근하려면 로그인이 필요합니다.');
+                window.location.href = loginUrl; // 전역 loginUrl 사용
+                return false;
+            }
+
+            try {
+                console.log('checkAdminAccess (user_management): /api/auth/me 호출 시도'); // 디버깅 로그
+                const response = await fetchWithAuth('/api/auth/me', { method: 'GET' });
+                console.log('checkAdminAccess (user_management): /api/auth/me fetchWithAuth 호출 결과:', response); // response 객체 자체를 로그
+
+                if (!response) { // fetchWithAuth에서 401로 인해 undefined를 반환했을 경우
+                    console.log('checkAdminAccess (user_management): fetchWithAuth가 undefined 반환 (401 리다이렉트 발생 예상)');
+                    return false; 
+                }
+
+                if (!response.ok) { // 200 OK가 아닌 다른 실패 응답 (401 제외)
+                    console.log('checkAdminAccess (user_management): /api/auth/me 응답 실패 (response.ok = false), status:', response.status); // 디버깅 로그
+                    await showAlert('사용자 역할 정보를 불러오는 데 실패했습니다. 다시 로그인해주세요.');
+                    localStorage.removeItem('access_token');
+                    window.location.href = loginUrl;
+                    return false;
+                }
+
+                const data = await response.json();
+                const userRoles = data.user.roles || [];
+                console.log('checkAdminAccess (user_management): 사용자 역할:', userRoles); // 디버깅 로그
+
+                // '관리자' 역할이 없으면 접근 제한
+                if (!userRoles.includes('관리자')) {
+                    console.log('checkAdminAccess (user_management): 관리자 역할 없음, 홈으로 리다이렉트'); // 디버깅 로그
+                    await showAlert('관리자만 접근할 수 있는 페이지입니다.');
+                    window.location.href = homeUrl;
+                    return false;
+                }
+
+                currentUserRolesDisplay.textContent = userRoles.join(', ');
+                console.log('checkAdminAccess (user_management): 관리자 접근 권한 확인 완료'); // 디버깅 로그
+                return true;
+            } catch (error) {
+                console.error('checkAdminAccess (user_management): 오류 발생:', error); // 디버깅 로그
+                await showAlert('관리자 접근 권한 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+                window.location.href = homeUrl;
+                return false;
+            }
+        }
+
+        // 모든 사용자 및 역할 데이터 불러오기
+        async function fetchAllUsersAndRoles() {
+            userTableBody.innerHTML = '<tr><td colspan="11" class="loading-row">사용자 정보를 불러오는 중...</td></tr>';
+            noUsersMessage.classList.add('hidden'); 
+
+            try {
+                const rolesResponse = await fetchWithAuth('/api/admin/roles');
+                const rolesResult = await rolesResponse.json();
+                if (!rolesResponse || !rolesResponse.ok) { 
+                    console.error('Failed to load all roles for user management:', rolesResult ? rolesResult.message : '응답 없음 또는 오류');
+                    userTableBody.innerHTML = '<tr><td colspan="11" class="error-row">역할 정보를 불러오는 데 실패했습니다.</td></tr>';
+                    return;
+                }
+                allRoles = rolesResult.roles;
+                console.log("Fetched allRoles:", allRoles); // 디버깅 로그
+
+                const usersResponse = await fetchWithAuth('/api/admin/users');
+                const usersResult = await usersResponse.json();
+
+                if (!usersResponse || !usersResponse.ok) { 
+                    await showAlert('사용자 정보를 불러오는 데 실패했습니다.'); 
+                    console.error('Error fetching users:', usersResult ? usersResult.message : '응답 없음 또는 오류');
+                    userTableBody.innerHTML = '<tr><td colspan="11" class="error-row">사용자 정보를 불러오는 데 실패했습니다.</td></tr>';
+                    return;
+                }
+                allUsers = usersResult.users;
+                console.log("Fetched allUsers data:", allUsers); // 디버깅 로그
+                renderUserTable(allUsers);
+            } catch (error) {
+                console.error('Network error fetching users/roles:', error);
+                await showAlert('네트워크 오류가 발생했습니다. 관리자 정보를 불러올 수 없습니다.'); 
+                userTableBody.innerHTML = '<tr><td colspan="11" class="error-row">네트워크 오류가 발생했습니다.</td></tr>';
+            }
+        }
+
+        // 사용자 테이블 렌더링
+        function renderUserTable(usersToRender) {
+            userTableBody.innerHTML = ''; // 테이블 내용 초기화
+
+            if (usersToRender.length === 0) {
+                noUsersMessage.classList.remove('hidden'); // 사용자가 없으면 메시지 표시
+            } else {
+                noUsersMessage.classList.add('hidden'); // 사용자가 있으면 메시지 숨김
+            }
+
+            const currentLoggedInUserId = localStorage.getItem('user_id');
+
+            usersToRender.forEach(user => {
+                const row = userTableBody.insertRow();
+                const isCurrentUser = parseInt(user.id) === parseInt(currentLoggedInUserId);
+
+                // user.roles는 백엔드에서 ['관리자', '일반 사용자'] 형태로 올 수 있습니다.
+                const userRoleNames = user.roles && Array.isArray(user.roles) 
+                                    ? user.roles.join(', ') 
+                                    : (user.roles || '-'); 
+
+                // created_at 날짜 처리 개선
+                let displayCreatedAt = '-'; // 기본값 설정
+                if (user.created_at) {
+                    try {
+                        const dateObj = new Date(user.created_at);
+                        if (!isNaN(dateObj.getTime())) { // 유효한 날짜인지 확인
+                            displayCreatedAt = dateObj.toLocaleDateString(); // 현지화된 날짜 형식
+                        } else {
+                            console.warn('Invalid date string for user.created_at:', user.created_at);
+                            displayCreatedAt = '날짜 오류'; // 파싱 실패 시
+                        }
+                    } catch (e) {
+                        console.error('Error parsing date for user.created_at:', user.created_at, e);
+                        displayCreatedAt = '날짜 오류'; // 예외 발생 시
+                    }
+                }
+
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.user_uid}</td>
+                    <td>${user.username}</td>
+                    <td>${user.nickname || '-'}</td>
+                    <td>${user.email}</td>
+                    <td>${user.gender || '-'}</td>
+                    <td>${user.age !== null ? user.age : '-'}</td>
+                    <td>${user.major || '-'}</td>
+                    <td>${userRoleNames}</td>
+                    <td>${displayCreatedAt}</td> {# 개선된 날짜 표시 #}
+                    <td class="user-actions-cell">
+                        <button class="button small secondary manage-roles-button" data-user-id="${user.id}" ${isCurrentUser ? 'disabled' : ''}>역할 관리</button>
+                        <button class="button danger small delete-user-button" data-user-id="${user.id}" ${isCurrentUser ? 'disabled' : ''}>강제 삭제</button>
+                    </td>
+                `;
+
+                // 역할 관리 버튼에 이벤트 리스너 추가
+                // 동적으로 생성된 요소에 이벤트를 바인딩할 때는 요소를 찾은 후 추가해야 합니다.
+                row.querySelector('.manage-roles-button').addEventListener('click', (event) => {
+                    console.log('역할 관리 버튼 클릭됨:', event.target.dataset.userId); // 디버깅 로그
+                    const userId = parseInt(event.target.dataset.userId);
+                    openRoleManagementModal(userId);
+                });
+
+                // 강제 삭제 버튼에 이벤트 리스너 추가
+                row.querySelector('.delete-user-button').addEventListener('click', (event) => {
+                    console.log('강제 삭제 버튼 클릭됨:', event.target.dataset.userId); // 디버깅 로그
+                    const userId = parseInt(event.target.dataset.userId);
+                    forceDeleteUser(userId);
+                });
+            });
+        }
+
+        // 역할 관리 모달 열기
+        function openRoleManagementModal(userId) {
+            console.log('openRoleManagementModal 호출됨, userId:', userId); // 디버깅 로그
+            currentEditingUser = allUsers.find(user => user.id === userId);
+            if (!currentEditingUser) {
+                showAlert('사용자 정보를 찾을 수 없습니다.'); 
+                console.error('openRoleManagementModal: currentEditingUser를 찾을 수 없음'); // 디버깅 로그
+                return;
+            }
+
+            modalUsername.textContent = currentEditingUser.username;
+            modalUserEmail.textContent = currentEditingUser.email; // 이메일 필드 추가
+            rolesCheckboxesContainer.innerHTML = ''; // 기존 체크박스 초기화
+
+            console.log('allRoles for checkboxes:', allRoles); // 디버깅 로그
+            console.log('currentEditingUser.roles (현재 할당된 역할):', currentEditingUser.roles); // 디버깅 로그
+
+            allRoles.forEach(role => {
+                // 현재 사용자가 가진 역할인지 확인
+                // allRoles의 role.name과 currentEditingUser.roles (문자열 배열)을 비교
+                const isChecked = currentEditingUser.roles.includes(role.name); 
+                const checkboxDiv = document.createElement('div');
+                checkboxDiv.className = 'role-checkbox-item';
+                checkboxDiv.innerHTML = `
+                    <input type="checkbox" id="role-${role.id}" value="${role.name}" ${isChecked ? 'checked' : ''}>
+                    <label for="role-${role.id}">${role.name}</label>
+                `;
+                rolesCheckboxesContainer.appendChild(checkboxDiv);
+            });
+
+            // 모달에 'visible' 클래스를 추가하여 표시
+            roleManagementModal.classList.add('visible'); 
+            console.log('역할 관리 모달 표시됨'); // 디버깅 로그
+        }
+
+        // 역할 관리 모달 닫기
+        closeModalButtonModal.addEventListener('click', () => { 
+            roleManagementModal.classList.remove('visible'); // 'visible' 클래스 제거하여 모달 숨김
+            currentEditingUser = null; // 현재 편집 중인 사용자 초기화
+            console.log('역할 관리 모달 닫힘'); // 디버깅 로그
+        });
+
+        // 역할 저장 버튼 클릭 이벤트
+        saveRolesButton.addEventListener('click', async () => {
+            console.log('역할 저장 버튼 클릭됨'); // 디버깅 로그
+            if (!currentEditingUser) {
+                console.error('saveRolesButton: currentEditingUser가 없음'); // 디버깅 로그
+                return;
+            }
+
+            const selectedRoles = [];
+            rolesCheckboxesContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                selectedRoles.push(checkbox.value);
+            });
+            console.log('선택된 역할:', selectedRoles); // 디버깅 로그
+
+            try {
+                const response = await fetchWithAuth(`/api/admin/users/${currentEditingUser.id}/roles`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ roles: selectedRoles }) // 'role_ids' 대신 'roles'로 변경 (백엔드와 일치하도록)
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    await showAlert(result.message || '역할이 성공적으로 업데이트되었습니다.'); 
+                    roleManagementModal.classList.remove('visible'); // 모달 닫기
+                    fetchAllUsersAndRoles(); // 사용자 목록 새로고침
+                    console.log('역할 업데이트 성공'); // 디버깅 로그
+                } else {
+                    await showAlert(result.message || '역할 업데이트에 실패했습니다.'); 
+                    console.error('역할 업데이트 실패:', result.message); // 디버깅 로그
+                }
+            } catch (error) {
+                console.error('Error updating user roles:', error);
+                await showAlert('역할 업데이트 중 오류가 발생했습니다.'); 
+            }
+        });
+
+        // 사용자 강제 삭제
+        async function forceDeleteUser(userId) {
+            console.log('forceDeleteUser 호출됨, userId:', userId); // 디버깅 로그
+            const currentLoggedInUserId = localStorage.getItem('user_id');
+            if (parseInt(userId) === parseInt(currentLoggedInUserId)) {
+                await showAlert('자기 자신을 삭제할 수 없습니다.'); 
+                return;
+            }
+
+            const confirmed = await showConfirm('정말로 이 사용자를 강제 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'); 
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth(`/api/admin/users/${userId}/force_delete`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    await showAlert(result.message || '사용자가 성공적으로 삭제되었습니다.'); 
+                    fetchAllUsersAndRoles(); // 사용자 목록 새로고침
+                    console.log('사용자 삭제 성공'); // 디버깅 로그
+                } else {
+                    await showAlert(result.message || '사용자 삭제에 실패했습니다.'); 
+                    console.error('사용자 삭제 실패:', result.message); // 디버깅 로그
+                }
+            } catch (error) {
+                console.error('Error force deleting user:', error);
+                await showAlert('사용자 삭제 중 오류가 발생했습니다.'); 
+            }
+        }
+
+        // 사용자 검색 기능
+        searchUserButton.addEventListener('click', () => {
+            console.log('검색 버튼 클릭됨'); // 디버깅 로그
+            const searchTerm = userSearchInput.value.toLowerCase().trim(); 
+            console.log("Search Term:", searchTerm); 
+
+            const filteredUsers = allUsers.filter(user => {
+                const uidToSearch = user.user_uid ? user.user_uid.toLowerCase() : '';
+
+                const usernameMatch = user.username.toLowerCase().includes(searchTerm);
+                const emailMatch = user.email.toLowerCase().includes(searchTerm);
+                const nicknameMatch = (user.nickname && user.nickname.toLowerCase().includes(searchTerm));
+                const uidMatch = uidToSearch.includes(searchTerm); 
+
+                console.log(`User: ${user.username}, UID: ${user.user_uid}, Search matches: username=${usernameMatch}, email=${emailMatch}, nickname=${nicknameMatch}, uid=${uidMatch}`);
+
+                return usernameMatch || emailMatch || nicknameMatch || uidMatch;
+            });
+            renderUserTable(filteredUsers);
+        });
+
+        userSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchUserButton.click(); 
+            }
+        });
+
+
+        // 초기 로드 시 관리자 접근 권한 확인 후 데이터 로드
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('DOMContentLoaded: user_management.html 로드 완료'); 
+            const hasAccess = await checkAdminAccess();
+            if (hasAccess) {
+                console.log('DOMContentLoaded: 관리자 접근 권한 확인됨, 사용자 목록 로드 시작'); 
+                fetchAllUsersAndRoles();
+            } else {
+                console.log('DOMContentLoaded: 관리자 접근 권한 없음'); 
+            }
+        });
+    </script>
+{% endblock %}
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af

@@ -12,8 +12,12 @@
     <div class="chat-main-area">
         <div class="chat-controls">
             <button id="showHistoryButton" class="button secondary small">대화 기록</button>
+<<<<<<< HEAD
+            <!-- "피드백 확인" 버튼 제거 -->
+=======
             <!-- 변경: 피드백 제출 -> 피드백 확인 -->
             <button id="checkFeedbackButton" class="button primary small">피드백 확인</button>
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
             <button id="endChatButton" class="button danger small">채팅 종료</button>
         </div>
 
@@ -66,7 +70,11 @@
         </div>
     </div>
 
+<<<<<<< HEAD
+    <!-- NEW: 나의 피드백 확인 모달 (관리자용) -->
+=======
     <!-- NEW: 나의 피드백 확인 모달 -->
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
     <div id="myFeedbackModal" class="modal hidden">
         <div class="modal-content large-modal">
             <span class="close-button" id="closeMyFeedbackModalXButton">&times;</span>
@@ -75,7 +83,10 @@
                 <p class="loading-row">피드백을 불러오는 중...</p>
             </div>
             <div class="modal-actions">
+<<<<<<< HEAD
+=======
                 <!-- "새 피드백 제출" 버튼 제거 -->
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
                 <button class="button primary" id="closeMyFeedbackModalButton">닫기</button>
             </div>
         </div>
@@ -114,7 +125,11 @@
         const chatInputField = document.getElementById('chatInputField');
         const chatSendButton = document.getElementById('chatSendButton');
         const showHistoryButton = document.getElementById('showHistoryButton');
+<<<<<<< HEAD
+        // const checkFeedbackButton = document.getElementById('checkFeedbackButton'); // 버튼 제거로 인해 주석 처리
+=======
         const checkFeedbackButton = document.getElementById('checkFeedbackButton');
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
         const endChatButton = document.getElementById('endChatButton');
 
         const historyModal = document.getElementById('historyModal');
@@ -131,7 +146,10 @@
 
         const myFeedbackModal = document.getElementById('myFeedbackModal');
         const myFeedbackList = document.getElementById('myFeedbackList');
+<<<<<<< HEAD
+=======
         // const submitNewFeedbackButton = document.getElementById('submitNewFeedbackButton'); // 버튼 제거로 인해 주석 처리 또는 제거
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
         const closeMyFeedbackModalButton = document.getElementById('closeMyFeedbackModalButton');
         const closeMyFeedbackModalXButton = document.getElementById('closeMyFeedbackModalXButton');
 
@@ -450,7 +468,12 @@
             historyModal.classList.add('hidden');
         });
 
+<<<<<<< HEAD
+        // "피드백 확인" 버튼 제거로 인해 관련 이벤트 리스너도 제거합니다.
+        /*
+=======
         // 변경: checkFeedbackButton 이벤트 리스너 (나의 피드백 확인 모달 열기)
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
         checkFeedbackButton.addEventListener('click', async () => {
             myFeedbackModal.classList.remove('hidden');
             myFeedbackList.innerHTML = '<p class="loading-row">피드백을 불러오는 중...</p>';
@@ -464,11 +487,19 @@
                 const data = await response.json();
 
                 myFeedbackList.innerHTML = '';
+<<<<<<< HEAD
+                if (data.my_feedback && data.my_feedback.length > 0) { // 'feedback' 대신 'my_feedback' 사용
+                    data.my_feedback.forEach(item => {
+                        const feedbackItem = document.createElement('div');
+                        feedbackItem.classList.add('feedback-item');
+                        const displayTimestamp = item.submitted_at ? new Date(item.submitted_at).toLocaleString() : '-'; // submitted_at 사용
+=======
                 if (data.feedback && data.feedback.length > 0) {
                     data.feedback.forEach(item => {
                         const feedbackItem = document.createElement('div');
                         feedbackItem.classList.add('feedback-item');
                         const displayTimestamp = item.timestamp ? new Date(item.timestamp).toLocaleString() : '-';
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
                         const ratingStars = '⭐'.repeat(item.rating || 0);
                         feedbackItem.innerHTML = `
                             <p class="feedback-date"><strong>제출일:</strong> ${displayTimestamp}</p>
@@ -514,6 +545,11 @@
                 myFeedbackList.innerHTML = '<p class="error-row">네트워크 오류로 내 피드백을 불러오지 못했습니다.</p>';
             }
         });
+<<<<<<< HEAD
+        */
+
+=======
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
 
         // NEW: 나의 피드백 모달 닫기 버튼
         closeMyFeedbackModalButton.addEventListener('click', () => {
@@ -523,6 +559,8 @@
             myFeedbackModal.classList.add('hidden');
         });
 
+<<<<<<< HEAD
+=======
         // NEW: 새 피드백 제출 버튼 (나의 피드백 모달 내에서)
         // 이 버튼은 제거되었으므로 관련 리스너도 제거합니다.
         /*
@@ -540,6 +578,7 @@
         */
 
 
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
         // 별점 클릭 이벤트
         feedbackStars.addEventListener('click', (e) => {
             const star = e.target.closest('.fa-star');
