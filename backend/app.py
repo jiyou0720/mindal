@@ -255,7 +255,7 @@ def configure_app(app):
     return app
 
 # 애플리케이션 인스턴스 생성 및 설정
-configure_app(app)
+configure_app(app) # 이 부분을 if __name__ == '__main__': 밖으로 옮겼습니다.
 
 if __name__ == '__main__':
     # use_reloader=False를 추가하여 OSError: [WinError 10038] 문제를 해결합니다.
