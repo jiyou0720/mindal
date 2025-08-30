@@ -8,3 +8,5 @@ Flask-CORS
 python-dotenv
 Werkzeug
 PyJWT
+jwt
+
