@@ -10,3 +10,4 @@ sqlalchemy
 PyJWT
 pymongo
 requests  
+openai
