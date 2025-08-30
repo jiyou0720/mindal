@@ -3,8 +3,6 @@ Flask-CORS
 gunicorn
 python-dotenv
 Werkzeug
-sys
-logging
 Flask-SQLAlchemy
 Flask-PyMongo
 Flask-Migrate
@@ -12,11 +10,3 @@ PyMySQL
 sqlalchemy
 bson
 PyJWT
-random
-string
-functools
-werkzeug.security
-datetime
-collections.Counter
-
-
