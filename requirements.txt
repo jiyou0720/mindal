@@ -8,6 +8,6 @@ Flask-Migrate
 PyMySQL
 sqlalchemy
 PyJWT
-pymongo
-requests  
+requests
 openai
+Flask-PyMongo
