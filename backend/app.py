@@ -83,7 +83,6 @@ def configure_app(app):
     from backend.extensions import db, migrate, mongo
     db.init_app(app)
     migrate.init_app(app, db)
-    mongo.init_app(app)
 
     # --- 블루프린트 등록 ---
     from backend.routes.auth_routes import auth_bp
