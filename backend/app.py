@@ -28,7 +28,6 @@ def configure_app(app):
 
     # --- 데이터베이스 설정 ---
     # MariaDB (SQLAlchemy)
-    # Railway의 기본 환경 변수 이름을 사용하도록 변경
     MARIA_USER = os.environ.get("MYSQL_USER")
     MARIA_PASSWORD = os.environ.get("MYSQL_PASSWORD")
     MARIA_HOST = os.environ.get("MYSQL_HOST")
@@ -40,11 +39,10 @@ def configure_app(app):
     app.config['SQLALCHEMY_ECHO'] = False # SQL 쿼리 로깅 비활성화
 
     # MongoDB (PyMongo)
-    # Railway의 기본 환경 변수 이름을 사용하도록 변경
-    MONGO_URI = os.environ.get("MONGO_URL")
-    if not MONGO_URI:
-        raise ValueError("No MONGO_URI set for Flask application")
-    app.config["MONGO_URI"] = MONGO_URI
+    MONGO_URL = os.environ.get("MONGO_URL") # MONGO_URI 대신 MONGO_URL 사용
+    if not MONGO_URL:
+        app.logger.error("No MONGO_URL environment variable set!") # ValueError 대신 로그로 남김
+    app.config["MONGO_URI"] = MONGO_URL
 
     # --- JWT 설정 ---
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
