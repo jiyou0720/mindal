@@ -6,3 +6,4 @@ Flask-Migrate
 PyMySQL
 Flask-CORS
 python-dotenv
+Werkzeug
