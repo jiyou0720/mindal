@@ -18,4 +18,8 @@
     "eslint-config-next": "15.3.5",
     "@eslint/eslintrc": "^3"
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af

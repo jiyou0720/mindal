@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on http://127.0.0.1:5000
 [33mPress CTRL+C to quit[0m
@@ -118,3 +119,125 @@
 127.0.0.1 - - [24/Jul/2025 16:06:21] "GET /static/css/community_list.css HTTP/1.1" 200 -
 127.0.0.1 - - [24/Jul/2025 16:06:21] "GET /static/images/main_logo.png HTTP/1.1" 200 -
 127.0.0.1 - - [24/Jul/2025 16:06:21] "GET /api/community/posts?page=1&per_page=25&category_filter=&search_query= HTTP/1.1" 200 -
+=======
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [24/Jul/2025 16:01:46] "GET /my_changes HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:46] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:46] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:46] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:46] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:50] "GET /community_list HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:50] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:50] "GET /static/css/community_list.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:50] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:51] "GET /api/community/posts?page=1&per_page=25&category_filter=&search_query= HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:51] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:51] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:01:53] "[35m[1mGET /community/create HTTP/1.1[0m" 500 -
+127.0.0.1 - - [24/Jul/2025 16:01:58] "[35m[1mGET /community/create HTTP/1.1[0m" 500 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [24/Jul/2025 16:03:45] "GET /community/create HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:45] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:45] "GET /static/css/community_create.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:45] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:45] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:45] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:55] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:55] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:55] "GET /static/css/index.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:55] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:56] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:56] "GET /api/dashboard/stats HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:56] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:59] "GET /diary HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:59] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:03:59] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:00] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:00] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:01] "GET /community_list HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:01] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:01] "GET /static/css/community_list.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:01] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:01] "GET /api/community/posts?page=1&per_page=25&category_filter=&search_query= HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:01] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:01] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:02] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:02] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:02] "GET /static/css/index.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:02] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:02] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:02] "GET /api/dashboard/stats HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:02] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:03] "GET /community_list HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:03] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:03] "GET /static/css/community_list.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:03] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:03] "GET /api/community/posts?page=1&per_page=25&category_filter=&search_query= HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:03] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:03] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:04] "GET /community/create HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:04] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:04] "GET /static/css/community_create.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:04] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:05] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:05] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:07] "GET /community_list HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:07] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:07] "GET /static/css/community_list.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:07] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:07] "GET /api/community/posts?page=1&per_page=25&category_filter=&search_query= HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:07] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:07] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:14] "GET /community/create HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:14] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:14] "GET /static/css/community_create.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:14] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:14] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:14] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:23] "[35m[1mPOST /api/community/posts HTTP/1.1[0m" 201 -
+127.0.0.1 - - [24/Jul/2025 16:04:23] "GET /community_list HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:23] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:23] "GET /static/css/community_list.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:23] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:23] "GET /api/community/posts?page=1&per_page=25&category_filter=&search_query= HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:23] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:24] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:26] "GET /community/create HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:26] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:26] "GET /static/css/community_create.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:26] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:26] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:26] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:30] "[35m[1mPOST /api/community/posts HTTP/1.1[0m" 201 -
+127.0.0.1 - - [24/Jul/2025 16:04:30] "GET /community_list HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:30] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:30] "GET /static/css/community_list.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:30] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:30] "GET /api/community/posts?page=1&per_page=25&category_filter=&search_query= HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:30] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:30] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:32] "GET /community/2 HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:32] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:32] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:32] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:32] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:55] "[36mGET /static/css/base.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [24/Jul/2025 16:04:55] "[36mGET /static/css/community_list.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [24/Jul/2025 16:04:57] "GET /community/1 HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:57] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:57] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:57] "GET /api/auth/check_auth HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:04:57] "GET /api/admin/menu_items/my_menu HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [24/Jul/2025 16:06:21] "GET /community_list HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:06:21] "GET /static/css/base.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:06:21] "GET /static/css/community_list.css HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:06:21] "GET /static/images/main_logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jul/2025 16:06:21] "GET /api/community/posts?page=1&per_page=25&category_filter=&search_query= HTTP/1.1" 200 -
+>>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
