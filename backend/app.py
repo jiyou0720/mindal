@@ -28,10 +28,11 @@ def configure_app(app):
 
     # --- 데이터베이스 설정 ---
     # MariaDB (SQLAlchemy)
+    # 환경 변수가 없을 경우를 대비해 기본값 설정
     MARIA_USER = os.environ.get("MYSQL_USER")
     MARIA_PASSWORD = os.environ.get("MYSQL_PASSWORD")
     MARIA_HOST = os.environ.get("MYSQL_HOST")
-    MARIA_PORT = os.environ.get("MYSQL_PORT")
+    MARIA_PORT = os.environ.get("MYSQL_PORT", 3306) # 기본값으로 3306 설정
     MARIA_DB = os.environ.get("MYSQL_DATABASE")
 
     app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{MARIA_USER}:{MARIA_PASSWORD}@{MARIA_HOST}:{MARIA_PORT}/{MARIA_DB}?charset=utf8mb4'
