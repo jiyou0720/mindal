@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-import pymongo
+from flask_pymongo import PyMongo # PyMongo 다시 import
 
 db = SQLAlchemy()
 migrate = Migrate()
-mongo = pymongo.MongoClient()
+mongo = PyMongo()
