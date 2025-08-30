@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 import sys
 from dotenv import load_dotenv
@@ -49,7 +48,6 @@ with app.app_context():
     db.session.commit()
     print("역할 초기화 완료.")
 
-=======
 import os
 import sys
 from dotenv import load_dotenv
@@ -99,5 +97,3 @@ with app.app_context():
     
     db.session.commit()
     print("역할 초기화 완료.")
-
->>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
