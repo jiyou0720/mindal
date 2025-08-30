@@ -1,0 +1,632 @@
+<!-- frontend/templates/inquiry.html -->
+{% extends "base.html" %}
+
+{% block title %}문의사항 - Mindbridge{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* 문의사항 페이지 전용 스타일 */
+        .inquiry-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #FFFFFF;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            text-align: center; /* 제목과 설명 중앙 정렬 */
+        }
+
+        .inquiry-container h1 {
+            font-size: 2.5em;
+            color: #2C3E50;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .inquiry-container p {
+            font-size: 1.1em;
+            color: #6C7A89;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 20px;
+        }
+
+        .inquiry-form-section, .inquiry-list-section {
+            text-align: left; /* 폼 요소는 왼쪽 정렬 */
+            padding: 20px;
+            background-color: #F8FAFC;
+            border: 1px solid #E9EEF4;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px; /* 섹션 간 간격 */
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #34495E;
+            margin-bottom: 20px;
+            font-weight: 600;
+            border-bottom: 1px solid #E0E6ED;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 1em;
+            font-weight: 600;
+            color: #34495E;
+            margin-bottom: 8px;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #DCE4EC;
+            border-radius: 8px;
+            font-size: 1em;
+            color: #4D4D4D;
+            background-color: #FFFFFF;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group input[type="email"]:focus,
+        .form-group textarea:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .button-group {
+            text-align: right; /* 버튼을 오른쪽으로 정렬 */
+            margin-top: 30px;
+        }
+
+        .button.primary {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 2px 5px rgba(0, 123, 255, 0.2);
+        }
+
+        .button.primary:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        /* 문의 목록 테이블 스타일 */
+        .data-table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            border: 1px solid #E9EEF4;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+
+        .data-list-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 600px; /* 테이블 최소 너비 */
+        }
+
+        .data-list-table th, .data-list-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #E9EEF4;
+        }
+
+        .data-list-table th {
+            background-color: #EBF2F8;
+            color: #34495E;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        .data-list-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-list-table tbody tr:hover {
+            background-color: #F0F4F8;
+        }
+
+        .data-list-table td {
+            background-color: #FFFFFF;
+            color: #4D4D4D;
+            font-size: 0.85em;
+        }
+
+        .loading-row, .error-row, .no-data-message {
+            text-align: center;
+            padding: 30px;
+            color: #6C7A89;
+            font-size: 1.1em;
+        }
+
+        .action-cell {
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .button.small {
+            padding: 6px 12px;
+            font-size: 0.8em;
+            border-radius: 5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .button.secondary {
+            background-color: #F0F4F8;
+            color: #5A6B7F;
+            border: 1px solid #DCE4EC;
+        }
+
+        .button.secondary:hover {
+            background-color: #E0E6ED;
+            color: #2C3E50;
+        }
+
+        /* 상태 표시 스타일 (admin_inquiry_management.css와 동일하게 유지) */
+        .status-pending { color: #FFA500; font-weight: 600; } /* Orange */
+        .status-replied { color: #28a745; font-weight: 600; } /* Green */
+        .status-closed { color: #6c7a89; font-weight: 600; } /* Gray */
+
+        /* 모달 스타일 (base.html 또는 admin_dashboard.css에서 가져옴) */
+        .modal {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+
+        .modal.visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #FFFFFF;
+            margin: auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px; /* 상세 내용이 길 수 있으므로 더 넓게 */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            animation: fadeInScale 0.3s ease-out;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .close-button {
+            color: #AAB7C4;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #34495E;
+        }
+
+        .modal-content h3 {
+            font-size: 1.8em;
+            color: #2C3E50;
+            margin-bottom: 20px;
+            font-weight: 700;
+            border-bottom: 1px solid #E0E6ED;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+
+        .detail-content p {
+            font-size: 1em;
+            color: #4D4D4D;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .detail-content strong {
+            color: #34495E;
+        }
+
+        .content-area, .reply-content-area { /* reply-area를 reply-content-area로 변경 */
+            background-color: #F8FAFC;
+            border: 1px solid #E9EEF4;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+            font-size: 0.95em;
+            line-height: 1.6;
+            color: #5A6B7F;
+        }
+
+        .reply-info {
+            font-size: 0.85em;
+            color: #7F8C8D;
+            text-align: right;
+            margin-top: 10px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .inquiry-container {
+                margin: 20px auto;
+                padding: 25px;
+            }
+            .inquiry-container h1 {
+                font-size: 2em;
+            }
+            .inquiry-container p {
+                font-size: 1em;
+                margin-bottom: 30px;
+            }
+            .inquiry-form-section, .inquiry-list-section {
+                padding: 15px;
+            }
+            .form-group input, .form-group textarea {
+                padding: 10px 12px;
+                font-size: 0.95em;
+            }
+            .button.primary {
+                width: 100%;
+                padding: 10px 20px;
+                font-size: 0.95em;
+            }
+            .data-list-table th, .data-list-table td {
+                padding: 10px 12px;
+                font-size: 0.8em;
+            }
+            .data-list-table {
+                min-width: 500px; /* 모바일에서 스크롤 가능하도록 최소 너비 유지 */
+            }
+            .modal-content {
+                padding: 20px;
+                max-width: 95%;
+            }
+            .modal-content h3 {
+                font-size: 1.5em;
+            }
+            .detail-content p, .content-area, .reply-content-area {
+                font-size: 0.9em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .inquiry-container {
+                margin: 15px auto;
+                padding: 20px;
+            }
+            .inquiry-container h1 {
+                font-size: 1.8em;
+            }
+            .inquiry-container p {
+                font-size: 0.9em;
+                margin-bottom: 25px;
+            }
+            .form-group label {
+                font-size: 0.9em;
+            }
+            .form-group input, .form-group textarea {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="inquiry-container">
+        <h1>문의사항</h1>
+        <p>궁금한 점이나 건의사항이 있으시면 언제든지 문의해주세요. 최대한 빠르게 답변드리겠습니다.</p>
+
+        <div class="inquiry-form-section">
+            <h2 class="section-title">새 문의 제출</h2>
+            <form id="inquiryForm">
+                <div class="form-group">
+                    <label for="inquiryTitle">제목</label>
+                    <input type="text" id="inquiryTitle" required placeholder="문의 제목을 입력해주세요">
+                </div>
+                <div class="form-group">
+                    <label for="inquiryContent">내용</label>
+                    <textarea id="inquiryContent" rows="8" required placeholder="자세한 내용을 입력해주세요."></textarea>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="button primary">문의 제출</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="inquiry-list-section">
+            <h2 class="section-title">나의 문의 내역</h2>
+            <div class="data-table-container">
+                <table class="data-list-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>제목</th>
+                            <th>상태</th>
+                            <th>작성일</th>
+                            <th>답변일</th>
+                            <th>액션</th>
+                        </tr>
+                    </thead>
+                    <tbody id="myInquiryTableBody">
+                        <tr><td colspan="6" class="loading-row">문의 내역을 불러오는 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="noMyInquiriesMessage" class="no-data-message hidden">문의 내역이 없습니다.</p>
+        </div>
+    </div>
+
+    <!-- 문의 상세 및 답변 보기 모달 -->
+    <div id="myInquiryDetailModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button" id="closeMyInquiryModalXButton">&times;</span>
+            <h3 id="myInquiryModalTitle">문의 상세 정보</h3>
+            <div class="detail-content">
+                <p><strong>문의 ID:</strong> <span id="myDetailInquiryId"></span></p>
+                <p><strong>제목:</strong> <span id="myDetailInquiryTitle"></span></p>
+                <p><strong>상태:</strong> <span id="myDetailInquiryStatus"></span></p>
+                <p><strong>작성일:</strong> <span id="myDetailInquiryCreatedAt"></span></p>
+                <p><strong>내용:</strong></p>
+                <div id="myDetailInquiryContent" class="content-area"></div>
+                
+                <h4 style="margin-top: 20px;">답변 내용</h4>
+                <div id="myReplyContentArea" class="reply-content-area">
+                    <p id="myReplyText">답변이 아직 없습니다.</p>
+                    <p class="reply-info">답변자: <span id="myRepliedBy"></span> (답변일: <span id="myRepliedAt"></span>)</p>
+                </div>
+            </div>
+            <button class="button primary" id="closeMyInquiryDetailButton">닫기</button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // base.html에서 전역으로 선언된 loginUrl, homeUrl, fetchWithAuth, showAlert 사용
+
+        const inquiryForm = document.getElementById('inquiryForm');
+        const inquiryTitleInput = document.getElementById('inquiryTitle');
+        const inquiryContentInput = document.getElementById('inquiryContent');
+        const myInquiryTableBody = document.getElementById('myInquiryTableBody');
+        const noMyInquiriesMessage = document.getElementById('noMyInquiriesMessage');
+
+        const myInquiryDetailModal = document.getElementById('myInquiryDetailModal');
+        const closeMyInquiryModalXButton = document.getElementById('closeMyInquiryModalXButton');
+        const closeMyInquiryDetailButton = document.getElementById('closeMyInquiryDetailButton');
+        const myDetailInquiryId = document.getElementById('myDetailInquiryId');
+        const myDetailInquiryTitle = document.getElementById('myDetailInquiryTitle');
+        const myDetailInquiryStatus = document.getElementById('myDetailInquiryStatus');
+        const myDetailInquiryCreatedAt = document.getElementById('myDetailInquiryCreatedAt');
+        const myDetailInquiryContent = document.getElementById('myDetailInquiryContent');
+        const myReplyContentArea = document.getElementById('myReplyContentArea');
+        const myReplyText = document.getElementById('myReplyText');
+        const myRepliedBy = document.getElementById('myRepliedBy');
+        const myRepliedAt = document.getElementById('myRepliedAt');
+
+        let myInquiries = []; // 사용자의 문의 목록 데이터를 저장할 배열
+
+        // 페이지 로드 시 로그인 여부 확인 및 문의 목록 불러오기
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                await showAlert('문의사항을 작성하고 내역을 확인하려면 로그인이 필요합니다.');
+                window.location.href = loginUrl;
+                return;
+            }
+            // 로그인되어 있다면, 사용자 정보(이름, 이메일)는 백엔드에서 g.user_id를 통해 가져올 것이므로 프론트엔드에서 별도로 표시할 필요는 없습니다.
+            fetchMyInquiries(); // 문의 목록 불러오기
+        });
+
+        // 새 문의 제출
+        inquiryForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // 폼 기본 제출 동작 방지
+
+            const title = inquiryTitleInput.value.trim();
+            const content = inquiryContentInput.value.trim();
+
+            if (!title || !content) {
+                await showAlert('제목과 내용을 모두 입력해주세요.');
+                return;
+            }
+
+            const inquiryData = {
+                title: title,
+                content: content
+            };
+
+            try {
+                const response = await fetchWithAuth('/api/inquiry/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(inquiryData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    await showAlert(result.message || '문의사항이 성공적으로 제출되었습니다.');
+                    inquiryForm.reset(); // 폼 초기화
+                    fetchMyInquiries(); // 문의 제출 후 목록 새로고침
+                } else {
+                    await showAlert(result.message || '문의사항 제출에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('문의사항 제출 중 오류 발생:', error);
+                await showAlert('문의사항 제출 중 네트워크 오류가 발생했습니다.');
+            }
+        });
+
+        // 나의 문의 목록 불러오기
+        async function fetchMyInquiries() {
+            myInquiryTableBody.innerHTML = '<tr><td colspan="6" class="loading-row">문의 내역을 불러오는 중...</td></tr>';
+            noMyInquiriesMessage.classList.add('hidden');
+
+            try {
+                const response = await fetchWithAuth('/api/inquiry/my_inquiries');
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    await showAlert(errorData.message || '문의 내역을 불러오는 데 실패했습니다.');
+                    myInquiryTableBody.innerHTML = '<tr><td colspan="6" class="error-row">문의 내역을 불러오지 못했습니다.</td></tr>';
+                    return;
+                }
+                const data = await response.json();
+                myInquiries = data.inquiries || [];
+                renderMyInquiryTable(myInquiries);
+            } catch (error) {
+                console.error('나의 문의 목록 로드 중 오류 발생:', error);
+                await showAlert('나의 문의 목록을 불러오는 중 네트워크 오류가 발생했습니다.');
+                myInquiryTableBody.innerHTML = '<tr><td colspan="6" class="error-row">네트워크 오류로 정보를 불러오지 못했습니다.</td></tr>';
+            }
+        }
+
+        // 나의 문의 목록 테이블 렌더링
+        function renderMyInquiryTable(inquiriesToRender) {
+            myInquiryTableBody.innerHTML = '';
+            if (inquiriesToRender.length === 0) {
+                noMyInquiriesMessage.classList.remove('hidden');
+                return;
+            }
+            noMyInquiriesMessage.classList.add('hidden');
+
+            inquiriesToRender.forEach(inquiry => {
+                const row = myInquiryTableBody.insertRow();
+                const displayCreatedAt = inquiry.created_at ? new Date(inquiry.created_at).toLocaleDateString() : '-';
+                const displayRepliedAt = inquiry.replied_at ? new Date(inquiry.replied_at).toLocaleDateString() : '-';
+                
+                let statusText = '';
+                let statusClass = '';
+                switch(inquiry.status) {
+                    case 'pending':
+                        statusText = '대기 중';
+                        statusClass = 'status-pending';
+                        break;
+                    case 'replied':
+                        statusText = '답변 완료';
+                        statusClass = 'status-replied';
+                        break;
+                    case 'closed':
+                        statusText = '종료됨';
+                        statusClass = 'status-closed';
+                        break;
+                    default:
+                        statusText = '알 수 없음';
+                        statusClass = '';
+                }
+
+                row.innerHTML = `
+                    <td>${String(inquiry._id).substring(0, 8)}...</td>
+                    <td>${inquiry.title}</td>
+                    <td class="${statusClass}">${statusText}</td>
+                    <td>${displayCreatedAt}</td>
+                    <td>${displayRepliedAt}</td>
+                    <td class="action-cell">
+                        <button class="button small secondary view-my-inquiry-button" data-inquiry-id="${String(inquiry._id)}">상세 보기</button>
+                    </td>
+                `;
+            });
+
+            document.querySelectorAll('.view-my-inquiry-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const inquiryId = e.target.dataset.inquiryId;
+                    openMyInquiryDetailModal(inquiryId);
+                });
+            });
+        }
+
+        // 나의 문의 상세 모달 열기
+        async function openMyInquiryDetailModal(inquiryId) {
+            try {
+                const response = await fetchWithAuth(`/api/inquiry/my_inquiries/${inquiryId}`);
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    await showAlert(errorData.message || '문의 상세 정보를 불러오는 데 실패했습니다.');
+                    return;
+                }
+                const inquiry = await response.json();
+
+                myDetailInquiryId.textContent = inquiry._id;
+                myDetailInquiryTitle.textContent = inquiry.title;
+                myDetailInquiryStatus.textContent = inquiry.status === 'pending' ? '대기 중' : (inquiry.status === 'replied' ? '답변 완료' : '종료됨');
+                myDetailInquiryCreatedAt.textContent = inquiry.created_at ? new Date(inquiry.created_at).toLocaleString() : '-';
+                myDetailInquiryContent.innerHTML = inquiry.content;
+
+                if (inquiry.reply_content) {
+                    myReplyText.textContent = inquiry.reply_content;
+                    myRepliedBy.textContent = inquiry.replied_by_nickname || inquiry.replied_by_username || '관리자'; // 답변자 정보 표시
+                    myRepliedAt.textContent = inquiry.replied_at ? new Date(inquiry.replied_at).toLocaleString() : '-';
+                    myReplyContentArea.style.display = 'block'; // 답변 내용 영역 표시
+                } else {
+                    myReplyText.textContent = '아직 답변이 없습니다.';
+                    myRepliedBy.textContent = '없음';
+                    myRepliedAt.textContent = '없음';
+                    // myReplyContentArea.style.display = 'none'; // 답변이 없으면 숨김
+                }
+                
+                myInquiryDetailModal.classList.add('visible');
+            } catch (error) {
+                console.error('나의 문의 상세 정보 로드 중 오류 발생:', error);
+                await showAlert('나의 문의 상세 정보를 불러오는 중 네트워크 오류가 발생했습니다.');
+            }
+        }
+
+        // 나의 문의 상세 모달 닫기
+        closeMyInquiryModalXButton.addEventListener('click', () => {
+            myInquiryDetailModal.classList.remove('visible');
+        });
+        closeMyInquiryDetailButton.addEventListener('click', () => {
+            myInquiryDetailModal.classList.remove('visible');
+        });
+    </script>
+{% endblock %}

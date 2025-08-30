@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}새 게시글 작성 - Mind AI{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/community_create.css') }}">
+{% endblock %}
+
+{% block page_title %}
+    새 게시글 작성
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form id="create-post-form">
+        <div id="error-message" class="error-message" style="display: none;"></div>
+
+        <div class="form-group">
+            <label for="category">카테고리</label>
+            <select id="category" name="category" required>
+                <option value="자유 게시판">자유 게시판</option>
+                <option value="질문 게시판">질문 게시판</option>
+                <option value="정보 공유">정보 공유</option>
+                <option value="건의 사항">건의 사항</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="title">제목</label>
+            <input type="text" id="title" name="title" placeholder="제목을 입력하세요" required>
+        </div>
+
+        <div class="form-group">
+            <label for="content">내용</label>
+            <textarea id="content" name="content" rows="15" placeholder="내용을 입력하세요" required></textarea>
+        </div>
+        
+        <div class="form-options">
+            <div class="checkbox-group">
+                <input type="checkbox" id="is_anonymous" name="is_anonymous">
+                <label for="is_anonymous">익명으로 작성</label>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <!-- FIX: 'community' -> 'community_list' -->
+            <button type="button" class="cancel-button" onclick="window.location.href='{{ url_for('community_list') }}'">취소</button>
+            <button type="submit" class="submit-button">작성 완료</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('create-post-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const data = {
+        title: formData.get('title'),
+        content: formData.get('content'),
+        category: formData.get('category'),
+        is_anonymous: formData.get('is_anonymous') === 'on'
+    };
+    const errorMessageDiv = document.getElementById('error-message');
+
+    try {
+        const response = await fetchWithAuth('/api/community/posts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            window.location.href = "{{ url_for('community_list') }}";
+        } else {
+            errorMessageDiv.textContent = result.message || '게시글 작성에 실패했습니다.';
+            errorMessageDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Post creation error:', error);
+        errorMessageDiv.textContent = '오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        errorMessageDiv.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

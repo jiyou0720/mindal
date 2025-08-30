@@ -1,0 +1,361 @@
+/* frontend/static/css/psych_test.css */
+
+/* psych_test_list.html, psych_test_take.html, psych_test_result.html 공통 스타일 */
+
+.psych-test-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.psych-test-container h1 {
+    font-size: 2.5em;
+    color: #2C3E50;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.psych-test-container .page-description {
+    font-size: 1.1em;
+    color: #6C7A89;
+    margin-bottom: 40px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 20px;
+}
+
+.section-title {
+    font-size: 1.8em;
+    color: #34495E;
+    margin-bottom: 25px;
+    font-weight: 600;
+    border-bottom: 1px solid #E0E6ED;
+    padding-bottom: 15px;
+    text-align: left;
+}
+
+/* 테스트 목록 그리드 (psych_test_list.html) */
+.test-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.test-card {
+    background-color: #F8FAFC;
+    border: 1px solid #E9EEF4;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* 내용과 버튼 간격 조절 */
+    align-items: center;
+}
+
+.test-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.test-card h3 {
+    font-size: 1.5em;
+    color: #2C3E50;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.test-card p {
+    font-size: 0.95em;
+    color: #5A6B7F;
+    line-height: 1.5;
+    flex-grow: 1; /* 설명이 공간을 차지하도록 */
+    margin-bottom: 20px;
+}
+
+.take-test-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 5px rgba(0, 123, 255, 0.2);
+    width: 100%; /* 버튼 너비 100% */
+}
+
+.take-test-button:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.loading-message, .error-message, .no-data-message {
+    text-align: center;
+    padding: 30px;
+    color: #6C7A89;
+    font-size: 1.1em;
+    grid-column: 1 / -1; /* 그리드 전체 너비 차지 */
+}
+
+/* 테스트 진행 섹션 (psych_test_take.html) */
+.test-questions-section {
+    padding: 20px;
+    background-color: #F8FAFC;
+    border: 1px solid #E9EEF4;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    text-align: left;
+}
+
+.question-item {
+    background-color: #FFFFFF;
+    border: 1px solid #DCE4EC;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.question-text {
+    font-size: 1.1em;
+    color: #2C3E50;
+    font-weight: 600;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.options-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option-label {
+    display: flex;
+    align-items: center;
+    background-color: #F0F4F8;
+    padding: 12px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    border: 1px solid #E9EEF4;
+}
+
+.option-label:hover {
+    background-color: #E0E6ED;
+    border-color: #C0C8D0;
+}
+
+.option-label input[type="radio"] {
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    accent-color: #007bff; /* 라디오 버튼 색상 */
+}
+
+.option-label span {
+    font-size: 1em;
+    color: #4D4D4D;
+    flex-grow: 1;
+}
+
+.button-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.button-group .button.primary {
+    background-color: #28a745; /* 완료 버튼 녹색 */
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    font-size: 1em;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 5px rgba(40, 167, 69, 0.2);
+}
+
+.button-group .button.primary:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.button-group .button.secondary {
+    background-color: #E9EEF4;
+    color: #5A6B7F;
+    border: 1px solid #DCE4EC;
+    padding: 12px 25px;
+    font-size: 1em;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.button-group .button.secondary:hover {
+    background-color: #DDE4EB;
+    color: #2C3E50;
+    transform: translateY(-1px);
+}
+
+.button-group .button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #cccccc;
+    border-color: #cccccc;
+    box-shadow: none;
+    transform: none;
+}
+
+/* 테스트 결과 섹션 (psych_test_result.html) */
+.result-section {
+    padding: 20px;
+    background-color: #F8FAFC;
+    border: 1px solid #E9EEF4;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.result-summary-text {
+    font-size: 1.1em;
+    color: #2C3E50;
+    font-weight: 500;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.result-date {
+    font-size: 0.9em;
+    color: #7F8C8D;
+    text-align: right;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px; /* 차트 최대 너비 */
+    height: 300px; /* 차트 높이 */
+    margin: 20px auto; /* 중앙 정렬 */
+    background-color: #FFFFFF;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 15px;
+}
+
+.chart-description {
+    text-align: center;
+    font-size: 0.95em;
+    color: #6C7A89;
+    margin-top: 15px;
+    line-height: 1.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .psych-test-container {
+        margin: 20px auto;
+        padding: 25px;
+    }
+    .psych-test-container h1 {
+        font-size: 2em;
+    }
+    .psych-test-container .page-description {
+        font-size: 1em;
+        margin-bottom: 30px;
+    }
+    .test-list-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    .test-card {
+        padding: 20px;
+    }
+    .test-card h3 {
+        font-size: 1.3em;
+    }
+    .test-card p {
+        font-size: 0.9em;
+    }
+    .take-test-button {
+        padding: 8px 15px;
+        font-size: 0.85em;
+    }
+
+    .test-questions-section, .result-section {
+        padding: 15px;
+    }
+    .question-text {
+        font-size: 1em;
+    }
+    .option-label {
+        padding: 10px 12px;
+        font-size: 0.95em;
+    }
+    .button-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .button-group .button {
+        width: 100%;
+        margin-left: 0;
+    }
+    .chart-container {
+        height: 250px;
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .psych-test-container {
+        margin: 15px auto;
+        padding: 20px;
+    }
+    .psych-test-container h1 {
+        font-size: 1.8em;
+    }
+    .psych-test-container .page-description {
+        font-size: 0.9em;
+        margin-bottom: 25px;
+    }
+    .section-title {
+        font-size: 1.5em;
+    }
+    .test-card h3 {
+        font-size: 1.2em;
+    }
+    .test-card p {
+        font-size: 0.85em;
+    }
+    .question-text {
+        font-size: 0.95em;
+    }
+    .option-label span {
+        font-size: 0.9em;
+    }
+    .result-summary-text {
+        font-size: 1em;
+    }
+    .result-date {
+        font-size: 0.8em;
+    }
+    .chart-container {
+        height: 200px;
+    }
+}

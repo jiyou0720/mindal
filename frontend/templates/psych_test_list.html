@@ -1,0 +1,91 @@
+<!-- frontend/templates/psych_test_list.html -->
+{% extends "base.html" %}
+
+{% block title %}심리 테스트 목록 - Mindbridge{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/psych_test.css') }}"> {# 심리 테스트 전용 CSS #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+    <div class="psych-test-container">
+        <h1>심리 테스트</h1>
+        <p class="page-description">다양한 심리 테스트를 통해 당신의 성격과 감정 상태를 탐색해보세요.</p>
+
+        <div class="test-list-section">
+            <h2 class="section-title">테스트 목록</h2>
+            <div id="testListGrid" class="test-list-grid">
+                <!-- 테스트 카드가 여기에 동적으로 로드됩니다 -->
+                <p class="loading-message">테스트 목록을 불러오는 중...</p>
+            </div>
+            <p id="noTestsMessage" class="no-data-message hidden">현재 이용 가능한 테스트가 없습니다.</p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const testListGrid = document.getElementById('testListGrid');
+        const noTestsMessage = document.getElementById('noTestsMessage');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                await showAlert('심리 테스트를 이용하려면 로그인이 필요합니다.');
+                window.location.href = loginUrl;
+                return;
+            }
+            fetchPsychTests();
+        });
+
+        async function fetchPsychTests() {
+            testListGrid.innerHTML = '<p class="loading-message">테스트 목록을 불러오는 중...</p>';
+            noTestsMessage.classList.add('hidden');
+
+            try {
+                const response = await fetchWithAuth('/api/psych_test/tests');
+                if (!response || !response.ok) {
+                    const errorData = response ? await response.json() : {};
+                    await showAlert(errorData.message || '테스트 목록을 불러오는 데 실패했습니다.');
+                    testListGrid.innerHTML = '<p class="error-message">테스트 목록을 불러오지 못했습니다.</p>';
+                    return;
+                }
+                const data = await response.json();
+                renderTestList(data.tests);
+            } catch (error) {
+                console.error('심리 테스트 목록 로드 중 오류 발생:', error);
+                await showAlert('심리 테스트 목록을 불러오는 중 네트워크 오류가 발생했습니다.');
+                testListGrid.innerHTML = '<p class="error-message">네트워크 오류로 테스트를 불러오지 못했습니다.</p>';
+            }
+        }
+
+        function renderTestList(tests) {
+            testListGrid.innerHTML = '';
+            if (tests.length === 0) {
+                noTestsMessage.classList.remove('hidden');
+                return;
+            }
+            noTestsMessage.classList.add('hidden');
+
+            tests.forEach(test => {
+                const testCard = document.createElement('div');
+                testCard.className = 'test-card';
+                testCard.innerHTML = `
+                    <h3>${test.title}</h3>
+                    <p>${test.description}</p>
+                    <button class="button primary take-test-button" data-test-id="${test._id}">테스트 시작</button>
+                `;
+                testListGrid.appendChild(testCard);
+            });
+
+            document.querySelectorAll('.take-test-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const testId = e.target.dataset.testId;
+                    window.location.href = `/psych_test/${testId}`;
+                });
+            });
+        }
+    </script>
+{% endblock %}
