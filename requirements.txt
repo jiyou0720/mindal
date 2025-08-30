@@ -3,7 +3,6 @@ Flask-CORS
 gunicorn
 python-dotenv
 Werkzeug
-os
 sys
 logging
 Flask-SQLAlchemy
@@ -19,4 +18,5 @@ functools
 werkzeug.security
 datetime
 collections.Counter
+
 
