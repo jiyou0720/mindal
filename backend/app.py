@@ -223,7 +223,7 @@ def configure_app(app):
     @app.route('/admin/post_management')
     def post_management():
         return render_template('post_management.html')
- 
+
     @app.route('/admin/cms_management')
     def cms_management():
         return render_template('cms_management.html')
