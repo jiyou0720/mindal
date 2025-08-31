@@ -10,4 +10,4 @@ sqlalchemy
 PyJWT
 requests
 openai
-Flask-PyMongo
+Flask-PyMongo==3.0.1
