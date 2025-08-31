@@ -1,0 +1,13 @@
+Flask
+Flask-CORS
+gunicorn
+python-dotenv
+Werkzeug
+Flask-SQLAlchemy
+Flask-Migrate
+PyMySQL
+sqlalchemy
+PyJWT
+requests
+openai
+Flask-PyMongo

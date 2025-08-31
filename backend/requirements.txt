@@ -1,9 +1,0 @@
-Flask
-gunicorn
-Flask-PyMongo
-Flask-SQLAlchemy
-Flask-Migrate
-PyMySQL
-Flask-CORS
-python-dotenv
-Werkzeug
