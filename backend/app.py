@@ -27,27 +27,36 @@ def configure_app(app):
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
 
     # --- 데이터베이스 설정 ---
-    # MariaDB (SQLAlchemy)
+    # MySQL (SQLAlchemy) - Railway 환경변수 사용
     MYSQL_USER = os.environ.get("MYSQL_USER")
     MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")
     MYSQL_HOST = os.environ.get("MYSQL_HOST")
     MYSQL_PORT = os.environ.get("MYSQL_PORT")
     MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE")
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ECHO'] = False # SQL 쿼리 로깅 비활성화
+    if all([MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE]):
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4'
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        app.config['SQLALCHEMY_ECHO'] = False
+        app.logger.info('MySQL database configured')
+    else:
+        app.logger.warning('MySQL environment variables not found - database features will be limited')
+        # 임시로 SQLite 사용하거나 None으로 설정
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///temp.db'
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # MongoDB (PyMongo)
+    # MongoDB (PyMongo) - 선택적 설정
     MONGO_URI = os.environ.get("MONGO_URL")
-    if not MONGO_URI:
-        raise ValueError("No MONGO_URI set for Flask application")
-    app.config["MONGO_URI"] = MONGO_URI
+    if MONGO_URI:
+        app.config["MONGO_URI"] = MONGO_URI
+        app.logger.info('MongoDB configured')
+    else:
+        app.logger.warning('MONGO_URL not set - MongoDB features will be disabled')
 
     # --- JWT 설정 ---
-    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-    if not app.config['JWT_SECRET_KEY']:
-        raise ValueError("No JWT_SECRET_KEY set for Flask application")
+    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'default-jwt-secret-for-development')
+    if not os.environ.get('JWT_SECRET_KEY'):
+        app.logger.warning('JWT_SECRET_KEY not set - using default (not secure for production)')
 
     # --- OpenAI API 키 설정 ---
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
@@ -83,7 +92,14 @@ def configure_app(app):
     from backend.extensions import db, migrate, mongo
     db.init_app(app)
     migrate.init_app(app, db)
-    mongo.init_app(app)
+    
+    # MongoDB가 설정된 경우에만 초기화
+    if app.config.get("MONGO_URI"):
+        mongo.init_app(app)
+        app.logger.info('MongoDB extension initialized')
+    else:
+        app.logger.info('MongoDB extension skipped - MONGO_URI not configured')
+
 
     # --- 블루프린트 등록 ---
     from backend.routes.auth_routes import auth_bp
