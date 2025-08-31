@@ -28,13 +28,13 @@ def configure_app(app):
 
     # --- 데이터베이스 설정 ---
     # MariaDB (SQLAlchemy)
-    MARIA_USER = os.environ.get("MARIA_USER")
-    MARIA_PASSWORD = os.environ.get("MARIA_PASSWORD")
-    MARIA_HOST = os.environ.get("MARIA_HOST")
-    MARIA_PORT = os.environ.get("MARIA_PORT")
-    MARIA_DB = os.environ.get("MARIA_DB")
+    MYSQL_USER = os.environ.get("MYSQL_USER")
+    MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")
+    MYSQL_HOST = os.environ.get("MYSQL_HOST")
+    MYSQL_PORT = os.environ.get("MYSQL_PORT")
+    MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE")
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{MARIA_USER}:{MARIA_PASSWORD}@{MARIA_HOST}:{MARIA_PORT}/{MARIA_DB}?charset=utf8mb4'
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ECHO'] = False # SQL 쿼리 로깅 비활성화
 
