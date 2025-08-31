@@ -39,7 +39,7 @@ def configure_app(app):
     app.config['SQLALCHEMY_ECHO'] = False # SQL 쿼리 로깅 비활성화
 
     # MongoDB (PyMongo)
-    MONGO_URI = os.environ.get("MONGO_URI")
+    MONGO_URI = os.environ.get("MONGO_URL")
     if not MONGO_URI:
         raise ValueError("No MONGO_URI set for Flask application")
     app.config["MONGO_URI"] = MONGO_URI
