@@ -6,48 +6,59 @@ from flask import Flask, render_template, g, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 
-# 프로젝트 루트 디렉토리를 Python 경로에 명시적으로 추가
-# 이 스크립트가 backend/app.py에 있다고 가정하고,
-# 프로젝트 루트는 backend의 부모 디렉토리입니다.
-script_dir = os.path.dirname(__file__)
-project_root = os.path.abspath(os.path.join(script_dir, '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+def create_app(test_config=None):
+    # 프로젝트 루트 디렉토리를 Python 경로에 명시적으로 추가
+    # 이 스크립트가 backend/app.py에 있다고 가정하고,
+    # 프로젝트 루트는 backend의 부모 디렉토리입니다.
+    script_dir = os.path.dirname(__file__)
+    project_root = os.path.abspath(os.path.join(script_dir, '..'))
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
 
-# .env 파일에서 환경 변수 로드
-load_dotenv()
+    # .env 파일에서 환경 변수 로드
+    load_dotenv()
 
-# 전역 app 인스턴스를 먼저 선언
-app = Flask(__name__,
-            template_folder='../frontend/templates',
-            static_folder='../frontend/static')
+    # 전역 app 인스턴스를 먼저 선언
+    app = Flask(__name__,
+                template_folder='../frontend/templates',
+                static_folder='../frontend/static')
 
-def configure_app(app):
     # --- 기본 설정 ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
+    if test_config:
+        app.config.from_mapping(test_config)
 
     # --- 데이터베이스 설정 ---
-    # MariaDB (SQLAlchemy)
-    MARIA_USER = os.environ.get("MARIA_USER")
-    MARIA_PASSWORD = os.environ.get("MARIA_PASSWORD")
-    MARIA_HOST = os.environ.get("MARIA_HOST")
-    MARIA_PORT = os.environ.get("MARIA_PORT")
-    MARIA_DB = os.environ.get("MARIA_DB")
+    # MySQL (SQLAlchemy) - Railway 환경변수 사용
+    MYSQL_USER = os.environ.get("MYSQL_USER")
+    MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")
+    MYSQL_HOST = os.environ.get("MYSQL_HOST")
+    MYSQL_PORT = os.environ.get("MYSQL_PORT")
+    MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE")
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{MARIA_USER}:{MARIA_PASSWORD}@{MARIA_HOST}:{MARIA_PORT}/{MARIA_DB}?charset=utf8mb4'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ECHO'] = False # SQL 쿼리 로깅 비활성화
+    if all([MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE]):
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4'
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        app.config['SQLALCHEMY_ECHO'] = False
+        app.logger.info('MySQL database configured')
+    else:
+        app.logger.warning('MySQL environment variables not found - database features will be limited')
+        # 임시로 SQLite 사용하거나 None으로 설정
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///temp.db'
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # MongoDB (PyMongo)
+    # MongoDB (PyMongo) - 선택적 설정
     MONGO_URI = os.environ.get("MONGO_URI")
-    if not MONGO_URI:
-        raise ValueError("No MONGO_URI set for Flask application")
-    app.config["MONGO_URI"] = MONGO_URI
+    if MONGO_URI:
+        app.config["MONGO_URI"] = MONGO_URI
+        app.logger.info('MongoDB configured')
+    else:
+        app.logger.warning('MONGO_URL not set - MongoDB features will be disabled')
 
     # --- JWT 설정 ---
-    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-    if not app.config['JWT_SECRET_KEY']:
-        raise ValueError("No JWT_SECRET_KEY set for Flask application")
+    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'default-jwt-secret-for-development')
+    if not os.environ.get('JWT_SECRET_KEY'):
+        app.logger.warning('JWT_SECRET_KEY not set - using default (not secure for production)')
 
     # --- OpenAI API 키 설정 ---
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
@@ -83,7 +94,14 @@ def configure_app(app):
     from backend.extensions import db, migrate, mongo
     db.init_app(app)
     migrate.init_app(app, db)
-    mongo.init_app(app)
+
+    # MongoDB가 설정된 경우에만 초기화
+    if app.config.get("MONGO_URI"):
+        mongo.init_app(app)
+        app.logger.info('MongoDB extension initialized')
+    else:
+        app.logger.info('MongoDB extension skipped - MONGO_URI not configured')
+
 
     # --- 블루프린트 등록 ---
     from backend.routes.auth_routes import auth_bp
@@ -254,10 +272,9 @@ def configure_app(app):
 
     return app
 
-# 애플리케이션 인스턴스 생성 및 설정
-configure_app(app) 
-
 if __name__ == '__main__':
+    # 애플리케이션 인스턴스 생성 및 설정
+    app = create_app()
     # Railway에서 할당한 포트를 사용하거나, 없으면 기본값으로 5000을 사용
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host='0.0.0.0', port=port, use_reloader=False)

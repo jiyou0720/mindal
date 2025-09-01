@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-2025-07-28 09:58:58,306 ERROR: Exception on /community/edit/3 [GET] [in C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py:781]
+2025-07-28 09:58:58,315 ERROR: An unhandled exception occurred: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in C:\mindai\backend\app.py:122]
 Traceback (most recent call last):
   File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
     rv = self.dispatch_request()
@@ -57,8 +57,41 @@ Traceback (most recent call last):
   File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
     raise TemplateNotFound(template)
 jinja2.exceptions.TemplateNotFound: 500.html
+2025-07-28 09:59:05,735 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:05,738 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:06,713 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:06,716 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:07,492 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:07,496 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:09,262 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:09,268 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:17,352 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:17,358 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:20,744 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:20,748 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:24,121 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:24,128 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:33,977 ERROR: An unhandled exception occurred: toggle_post_suspension() got an unexpected keyword argument 'post_id' [in C:\mindai\backend\app.py:122]
+Traceback (most recent call last):
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 808, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\mindai\backend\routes\auth_routes.py", line 55, in decorated
+    return f(*args, **kwargs)
+  File "C:\mindai\backend\routes\auth_routes.py", line 66, in decorated_function
+    return f(*args, **kwargs)
+TypeError: toggle_post_suspension() got an unexpected keyword argument 'post_id'
+2025-07-28 09:59:39,706 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:39,711 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:42,499 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:42,501 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:51,378 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:51,381 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:52,609 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:52,613 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
 =======
-2025-07-28 09:58:58,306 ERROR: Exception on /community/edit/3 [GET] [in C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py:781]
+2025-07-28 09:58:58,315 ERROR: An unhandled exception occurred: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in C:\mindai\backend\app.py:122]
 Traceback (most recent call last):
   File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
     rv = self.dispatch_request()
@@ -116,4 +149,37 @@ Traceback (most recent call last):
   File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
     raise TemplateNotFound(template)
 jinja2.exceptions.TemplateNotFound: 500.html
+2025-07-28 09:59:05,735 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:05,738 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:06,713 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:06,716 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:07,492 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:07,496 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:09,262 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:09,268 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:17,352 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:17,358 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:20,744 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:20,748 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:24,121 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:24,128 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:33,977 ERROR: An unhandled exception occurred: toggle_post_suspension() got an unexpected keyword argument 'post_id' [in C:\mindai\backend\app.py:122]
+Traceback (most recent call last):
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 808, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\mindai\backend\routes\auth_routes.py", line 55, in decorated
+    return f(*args, **kwargs)
+  File "C:\mindai\backend\routes\auth_routes.py", line 66, in decorated_function
+    return f(*args, **kwargs)
+TypeError: toggle_post_suspension() got an unexpected keyword argument 'post_id'
+2025-07-28 09:59:39,706 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:39,711 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:42,499 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:42,501 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:51,378 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:51,381 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
+2025-07-28 09:59:52,609 INFO: DEBUG (get_my_menu_items): API called. Attempting to find menus for roles: ['包府磊'] [in C:\mindai\backend\routes\admin_routes.py:57]
+2025-07-28 09:59:52,613 INFO: DEBUG (get_my_menu_items): Found and returning 6 menu items. [in C:\mindai\backend\routes\admin_routes.py:83]
 >>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af
