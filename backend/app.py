@@ -37,13 +37,12 @@ def create_app(test_config=None):
     # 2. 'DATABASE_URL'이 없을 경우 (로컬 환경), .env 파일의 개별 변수를 조합하여 연결 문자열을 만듭니다.
     if not db_url:
         MYSQL_USER = os.environ.get("MYSQL_USER")
-        # 비밀번호가 없을 경우를 대비해 기본값으로 빈 문자열('')을 사용합니다.
         MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "") 
         MYSQL_HOST = os.environ.get("MYSQL_HOST")
         MYSQL_PORT = os.environ.get("MYSQL_PORT")
         MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE")
         
-        # [수정된 부분] 비밀번호는 선택 사항이므로, 필수 값들만 있는지 확인합니다.
+        # 비밀번호는 선택 사항이므로, 필수 값들만 있는지 확인합니다.
         if all([MYSQL_USER, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE]):
             db_url = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 
@@ -213,9 +212,12 @@ def create_app(test_config=None):
 
     return app
 
+# Gunicorn과 같은 WSGI 서버가 'app' 인스턴스를 찾을 수 있도록 
+# create_app()을 호출하여 app 변수를 모듈의 최상단 레벨에 생성합니다.
+app = create_app()
+
 # 이 스크립트가 직접 실행될 때 (예: python backend/app.py)
 if __name__ == '__main__':
-    app = create_app()
     # Railway는 PORT 환경 변수를 통해 사용할 포트를 동적으로 지정합니다.
     port = int(os.environ.get('PORT', 5000))
     # Gunicorn과 같은 전문 WSGI 서버를 배포 환경에서 사용하므로, debug=True는 로컬 개발 시에만 유용합니다.
