@@ -1,152 +1,99 @@
 import os
-import logging
 import sys
-from logging.handlers import RotatingFileHandler
-from flask import Flask, render_template, g, request, jsonify
-from flask_cors import CORS
+from flask import Flask, render_template
 from dotenv import load_dotenv
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-# 프로젝트 루트 디렉토리를 Python 경로에 명시적으로 추가
-# 이 스크립트가 backend/app.py에 있다고 가정하고,
-# 프로젝트 루트는 backend의 부모 디렉토리입니다.
-script_dir = os.path.dirname(__file__)
-project_root = os.path.abspath(os.path.join(script_dir, '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-# .env 파일에서 환경 변수 로드
+# 로컬 개발을 위해 .env 파일에서 환경 변수를 로드합니다.
+# Railway와 같은 배포 환경에서는 이 파일을 사용하지 않고, 플랫폼에 설정된 환경 변수를 직접 사용합니다.
 load_dotenv()
 
-# 전역 app 인스턴스를 먼저 선언
-app = Flask(__name__,
-            template_folder='../frontend/templates',
-            static_folder='../frontend/static')
+def create_app(test_config=None):
+    """
+    Flask 애플리케이션 인스턴스를 생성하고 설정하는 '애플리케이션 팩토리' 함수입니다.
+    """
+    # 'backend'와 같은 내부 모듈을 올바르게 임포트하기 위해 프로젝트 루트 경로를 추가합니다.
+    script_dir = os.path.dirname(__file__)
+    project_root = os.path.abspath(os.path.join(script_dir, '..'))
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
 
-def configure_app(app):
+    app = Flask(__name__,
+                template_folder='../frontend/templates',
+                static_folder='../frontend/static')
+
     # --- 기본 설정 ---
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
-
-    # --- 데이터베이스 설정 ---
-    # MySQL (SQLAlchemy) - Railway 환경변수 사용
-    MYSQL_USER = os.environ.get("MYSQL_USER")
-    MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")
-    MYSQL_HOST = os.environ.get("MYSQL_HOST")
-    MYSQL_PORT = os.environ.get("MYSQL_PORT")
-    MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE")
-
-    if all([MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE]):
-        app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4'
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-        app.config['SQLALCHEMY_ECHO'] = False
-        app.logger.info('MySQL database configured')
-    else:
-        app.logger.warning('MySQL environment variables not found - database features will be limited')
-        # 임시로 SQLite 사용하거나 None으로 설정
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///temp.db'
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # MongoDB (PyMongo) - 선택적 설정
-    MONGO_URI = os.environ.get("MONGO_URL")
-    if MONGO_URI:
-        app.config["MONGO_URI"] = MONGO_URI
-        app.logger.info('MongoDB configured')
-    else:
-        app.logger.warning('MONGO_URL not set - MongoDB features will be disabled')
-
-    # --- JWT 설정 ---
-    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'default-jwt-secret-for-development')
-    if not os.environ.get('JWT_SECRET_KEY'):
-        app.logger.warning('JWT_SECRET_KEY not set - using default (not secure for production)')
-
-    # --- OpenAI API 키 설정 ---
-    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-    if not OPENAI_API_KEY:
-        app.logger.warning("OPENAI_API_KEY is not configured in environment variables!")
-    app.config['OPENAI_API_KEY'] = OPENAI_API_KEY
-
-    # --- CORS 설정 ---
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
-
-    # --- 로깅 설정 (터미널 출력 위주로 변경) ---
-    for handler in app.logger.handlers[:]:
-        app.logger.removeHandler(handler)
-    for handler in logging.getLogger('werkzeug').handlers[:]:
-        logging.getLogger('werkzeug').removeHandler(handler)
-
-    stream_handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
-    stream_handler.setFormatter(formatter)
-
-    app.logger.addHandler(stream_handler)
-    if app.debug:
-        app.logger.setLevel(logging.DEBUG)
-    else:
-        app.logger.setLevel(logging.INFO)
-    app.logger.info('Flask app configured')
-
-    werkzeug_logger = logging.getLogger('werkzeug')
-    werkzeug_logger.addHandler(stream_handler)
-    werkzeug_logger.setLevel(logging.INFO)
-
-    # --- 확장 초기화 ---
-    from backend.extensions import db, migrate, mongo
-    db.init_app(app)
-    migrate.init_app(app, db)
+    # 세션 관리, CSRF 보호 등에 사용되는 보안 키를 설정합니다.
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_very_secret_default_key_for_dev')
+    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
     
-    # MongoDB가 설정된 경우에만 초기화
-    if app.config.get("MONGO_URI"):
-        mongo.init_app(app)
-        app.logger.info('MongoDB extension initialized')
-    else:
-        app.logger.info('MongoDB extension skipped - MONGO_URI not configured')
+    if test_config:
+        app.config.from_mapping(test_config)
 
+    # --- 데이터베이스 설정 (Railway 호환) ---
+    # 1. Railway에서 주입하는 'DATABASE_URL' 환경 변수를 최우선으로 확인합니다.
+    db_url = os.environ.get('DATABASE_URL')
+    
+    # 2. 'DATABASE_URL'이 없을 경우 (로컬 환경), .env 파일의 개별 변수를 조합하여 연결 문자열을 만듭니다.
+    if not db_url:
+        MYSQL_USER = os.environ.get("MYSQL_USER")
+        # 비밀번호가 없을 경우를 대비해 기본값으로 빈 문자열('')을 사용합니다.
+        MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "") 
+        MYSQL_HOST = os.environ.get("MYSQL_HOST")
+        MYSQL_PORT = os.environ.get("MYSQL_PORT")
+        MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE")
+        
+        # [수정된 부분] 비밀번호는 선택 사항이므로, 필수 값들만 있는지 확인합니다.
+        if all([MYSQL_USER, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE]):
+            db_url = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 
-    # --- 블루프린트 등록 ---
-    from backend.routes.auth_routes import auth_bp
-    from backend.routes.admin_routes import admin_bp
-    from backend.routes.community_routes import community_bp
-    from backend.routes.diary_routes import diary_bp
-    from backend.routes.graph_routes import graph_bp
-    from backend.routes.mood_routes import mood_bp
-    from backend.routes.dashboard_routes import dashboard_bp
-    from backend.routes.chat_routes import chat_bp
-    from backend.routes.inquiry_routes import inquiry_bp
-    from backend.routes.psych_test_routes import psych_test_bp
+    # 3. Railway의 DB URL 형식('mysql://')을 SQLAlchemy 드라이버 형식('mysql+pymysql://')으로 변환합니다.
+    if db_url and db_url.startswith('mysql://'):
+        db_url = db_url.replace('mysql://', 'mysql+pymysql://', 1)
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin') # /api/admin 접두사로 등록
-    app.register_blueprint(community_bp, url_prefix='/api/community')
-    app.register_blueprint(diary_bp, url_prefix='/api/diary')
-    app.register_blueprint(graph_bp, url_prefix='/api/graph')
-    app.register_blueprint(mood_bp, url_prefix='/api/mood')
-    app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
-    app.register_blueprint(chat_bp, url_prefix='/api/chat')
-    app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
-    app.register_blueprint(psych_test_bp, url_prefix='/api/psych_test')
+    # --- MongoDB 설정 (Railway 호환) ---
+    # Railway의 'MONGO_URL' 또는 로컬의 'MONGO_URI'를 사용합니다.
+    mongo_url = os.environ.get('MONGO_URL') or os.environ.get('MONGO_URI')
+    app.config['MONGO_URI'] = mongo_url
 
-    # --- 전역 컨텍스트 및 에러 핸들러 ---
-    @app.errorhandler(404)
-    def not_found_error(error):
-        app.logger.warning(f"404 Not Found: {request.path}")
-        if request.path.startswith('/api/'):
-            return jsonify({"error": "Not Found", "message": "API endpoint not found"}), 404
-        return render_template('404.html'), 404
+    # --- 확장(Extensions) 초기화 ---
+    # 순환 참조(Circular Import) 문제를 방지하기 위해 함수 내에서 임포트하고 초기화합니다.
+    from backend.extensions import db, mongo, migrate, jwt
+    db.init_app(app)
+    mongo.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
 
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        app.logger.error(f"An unhandled exception occurred: {e}", exc_info=True)
-        if request.path.startswith('/api/'):
-            return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}), 500
-        return render_template('404.html', error_message=str(e)), 500
+    # 프록시 서버(예: Nginx, Gunicorn) 뒤에서 실행될 때 올바른 클라이언트 정보를 얻기 위해 미들웨어를 설정합니다.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
-    # ----------------------------------------------------------------
-    # Frontend Routes (HTML Rendering)
-    # ----------------------------------------------------------------
+    # --- 블루프린트(Blueprint) 등록 ---
+    # 각 기능별로 분리된 라우트들을 애플리케이션에 연결합니다.
+    from backend.routes import (
+        auth_routes, admin_routes, community_routes, dashboard_routes,
+        diary_routes, graph_routes, inquiry_routes, mood_routes,
+        psych_test_routes, chat_routes
+    )
+    app.register_blueprint(auth_routes.auth_bp)
+    app.register_blueprint(admin_routes.admin_bp)
+    app.register_blueprint(community_routes.community_bp)
+    app.register_blueprint(dashboard_routes.dashboard_bp)
+    app.register_blueprint(diary_routes.diary_bp)
+    app.register_blueprint(graph_routes.graph_bp)
+    app.register_blueprint(inquiry_routes.inquiry_bp)
+    app.register_blueprint(mood_routes.mood_bp)
+    app.register_blueprint(psych_test_routes.psych_test_bp)
+    app.register_blueprint(chat_routes.chat_bp)
 
+    # --- 프론트엔드 템플릿 렌더링 라우트 ---
+    # 이 라우트들은 Flask가 직접 HTML 페이지를 렌더링하는 역할을 합니다.
     @app.route('/')
     def index():
         return render_template('index.html')
-
+        
     @app.route('/login')
     def login():
         return render_template('login.html')
@@ -178,46 +125,43 @@ def configure_app(app):
     @app.route('/keyword')
     def keyword():
         return render_template('keyword.html')
-
-    @app.route('/ai_chat')
-    def ai_chat():
-        return render_template('ai_chat.html')
-
-    # --- Community Routes ---
+    
+    @app.route('/psych_test_list')
+    def psych_test_list():
+        return render_template('psych_test_list.html')
+    
+    @app.route('/psych_test_take')
+    def psych_test_take():
+        return render_template('psych_test_take.html')
+    
+    @app.route('/psych_test_result')
+    def psych_test_result():
+        return render_template('psych_test_result.html')
+    
     @app.route('/community_list')
     def community_list():
         return render_template('community_list.html')
 
-    @app.route('/community/create')
+    @app.route('/community_create')
     def community_create():
         return render_template('community_create.html')
 
-    @app.route('/community/<int:post_id>')
-    def community_detail(post_id):
-        return render_template('community_detail.html', post_id=post_id)
-
-    @app.route('/community/edit/<int:post_id>')
-    def community_edit(post_id):
-        return render_template('community_edit.html', post_id=post_id)
+    @app.route('/community_detail')
+    def community_detail():
+        return render_template('community_detail.html')
+    
+    @app.route('/community_edit')
+    def community_edit():
+        return render_template('community_edit.html')
 
     @app.route('/inquiry')
     def inquiry():
         return render_template('inquiry.html')
+    
+    @app.route('/ai_chat')
+    def ai_chat():
+        return render_template('ai_chat.html')
 
-    # --- NEW: Psych Test Routes ---
-    @app.route('/psych_test')
-    def psych_test_list():
-        return render_template('psych_test_list.html')
-
-    @app.route('/psych_test/<string:test_id>')
-    def psych_test_take(test_id):
-        return render_template('psych_test_take.html', test_id=test_id)
-
-    @app.route('/psych_test/result/<string:result_id>')
-    def psych_test_result(result_id):
-        return render_template('psych_test_result.html', result_id=result_id)
-
-    # --- Admin Routes ---
     @app.route('/admin/dashboard')
     def admin_dashboard():
         return render_template('admin_dashboard.html')
@@ -225,7 +169,7 @@ def configure_app(app):
     @app.route('/admin/user_management')
     def user_management():
         return render_template('user_management.html')
-
+    
     @app.route('/admin/menu_management')
     def menu_management():
         return render_template('menu_management.html')
@@ -254,7 +198,6 @@ def configure_app(app):
     def data_analytics():
         return render_template('data_analytics.html')
 
-    # 챗봇 피드백 관리 페이지 라우트
     @app.route('/admin/chatbot_feedback')
     def chatbot_feedback():
         return render_template('charbot_feedback.html')
@@ -263,17 +206,18 @@ def configure_app(app):
     def admin_inquiry_management():
         return render_template('admin_inquiry_management.html')
 
-    # --- Error Page Route ---
+    # --- 에러 페이지 라우트 ---
     @app.route('/404_page')
     def not_found_page():
         return render_template('404.html')
 
     return app
 
-# 애플리케이션 인스턴스 생성 및 설정
-configure_app(app) 
-
+# 이 스크립트가 직접 실행될 때 (예: python backend/app.py)
 if __name__ == '__main__':
-    # Railway에서 할당한 포트를 사용하거나, 없으면 기본값으로 5000을 사용
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host='0.0.0.0', port=port, use_reloader=False)
+    app = create_app()
+    # Railway는 PORT 환경 변수를 통해 사용할 포트를 동적으로 지정합니다.
+    port = int(os.environ.get('PORT', 5000))
+    # Gunicorn과 같은 전문 WSGI 서버를 배포 환경에서 사용하므로, debug=True는 로컬 개발 시에만 유용합니다.
+    app.run(host='0.0.0.0', port=port, debug=True)
+
