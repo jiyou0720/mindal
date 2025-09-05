@@ -1,12 +1,11 @@
 import os
 import sys
-from flask import Flask, render_template, g, request, jsonify
+from flask import Flask, render_template
 from flask_cors import CORS
 from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # 로컬 개발을 위해 .env 파일에서 환경 변수를 로드합니다.
-# Railway와 같은 배포 환경에서는 이 파일을 사용하지 않고, 플랫폼에 설정된 환경 변수를 직접 사용합니다.
 load_dotenv()
 
 def create_app(test_config=None):
@@ -24,7 +23,6 @@ def create_app(test_config=None):
                 static_folder='../frontend/static')
 
     # --- 기본 설정 ---
-    # 세션 관리, CSRF 보호 등에 사용되는 보안 키를 설정합니다.
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_very_secret_default_key_for_dev')
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
     
@@ -32,40 +30,36 @@ def create_app(test_config=None):
         app.config.from_mapping(test_config)
 
     # --- 데이터베이스 설정 (Railway 호환) ---
-    # 1. Railway에서 주입해주는 환경 변수(MYSQL_URL, MONGO_URL)를 우선적으로 찾습니다.
     mysql_url = os.environ.get("MYSQL_URL")
     mongo_url = os.environ.get("MONGO_URL")
 
-    # 2. 만약 위 변수들이 없다면 (주로 로컬 개발 환경), .env 파일의 값을 조합하여 사용합니다.
     if not mysql_url:
+        # 로컬 개발 환경을 위한 폴백(fallback) 로직
         MYSQL_USER = os.environ.get("MYSQL_USER")
-        MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")
+        MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
         MYSQL_HOST = os.environ.get("MYSQL_HOST")
         MYSQL_PORT = os.environ.get("MYSQL_PORT")
         MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE")
         if all([MYSQL_USER, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE]):
-            # 비밀번호가 없는 경우를 대비하여 처리
-            password_segment = f":{MYSQL_PASSWORD}" if MYSQL_PASSWORD else ""
-            mysql_url = f"mysql+pymysql://{MYSQL_USER}{password_segment}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
-    
+            mysql_url = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
+
     if not mongo_url:
         mongo_url = os.environ.get("MONGO_URI")
 
-    # 3. 최종적으로 얻은 주소를 Flask 설정에 적용합니다.
-    # PyMySQL 드라이버를 사용하기 위해, Railway의 'mysql://' 주소를 'mysql+pymysql://'로 변경합니다.
-    if mysql_url and mysql_url.startswith('mysql://'):
+    if not mysql_url or not mongo_url:
+        raise RuntimeError("데이터베이스 연결 정보를 찾을 수 없습니다. Railway 환경 변수를 확인하세요.")
+
+    if mysql_url.startswith('mysql://'):
          app.config['SQLALCHEMY_DATABASE_URI'] = mysql_url.replace('mysql://', 'mysql+pymysql://', 1)
     else:
         app.config['SQLALCHEMY_DATABASE_URI'] = mysql_url
 
     app.config["MONGO_URI"] = mongo_url
 
-    # 리버스 프록시 환경(예: Railway)에서 올바른 IP와 프로토콜을 인식하도록 설정합니다.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     CORS(app, supports_credentials=True)
 
     # --- Flask 확장 프로그램 초기화 ---
-    # extensions.py에서 생성한 인스턴스들을 app과 연결합니다.
     from backend.extensions import db, mongo, migrate, jwt, bcrypt
     db.init_app(app)
     mongo.init_app(app)
@@ -74,9 +68,9 @@ def create_app(test_config=None):
     bcrypt.init_app(app)
 
     # --- API 블루프린트(라우트 그룹) 등록 ---
-    # 각 기능별로 분리된 라우트 파일들을 app에 등록합니다.
+    # 실제 파일 이름으로 수정
     from backend.routes.auth_routes import auth_bp
-    from backend.routes.user_routes import user_bp
+    from backend.routes.login_register_routes import user_bp # 'user_routes' -> 'login_register_routes'로 수정
     from backend.routes.diary_routes import diary_bp
     from backend.routes.mood_routes import mood_bp
     from backend.routes.chat_routes import chat_bp
@@ -99,9 +93,7 @@ def create_app(test_config=None):
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
 
-
     # --- HTML 페이지 렌더링 라우트 ---
-    # endpoint를 직접 지정하여 HTML 템플릿의 url_for()와 이름을 일치시킵니다.
     @app.route('/', endpoint='index')
     def index_page():
         return render_template('index.html')
@@ -223,13 +215,10 @@ def create_app(test_config=None):
     return app
 
 # Gunicorn과 같은 WSGI 서버는 이 'app' 변수를 찾아 실행합니다.
-# 애플리케이션 팩토리로부터 app 인스턴스를 전역 스코프에서 생성합니다.
 app = create_app()
 
 # 이 스크립트가 직접 실행될 때 (예: python backend/app.py)
 if __name__ == '__main__':
-    # Railway는 PORT 환경 변수를 사용하므로, 해당 변수가 있으면 사용하고 없으면 5000번 포트를 사용합니다.
     port = int(os.environ.get('PORT', 5000))
-    # debug=False로 설정하여 운영 환경과 유사하게 실행합니다.
     app.run(host='0.0.0.0', port=port, debug=False)
 
