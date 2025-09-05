@@ -8,10 +8,10 @@ import jwt
 import datetime
 import uuid
 
-auth_bp = Blueprint('auth_api', __name__)
+user_bp = Blueprint('user_api', __name__)
 
 # 사용자 등록 (회원가입)
-@auth_bp.route('/register', methods=['POST'])
+@user_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
     username = data.get('username')
@@ -63,7 +63,7 @@ def register():
     return jsonify({'message': '회원가입이 성공적으로 완료되었습니다!'}), 201
 
 # 사용자 로그인
-@auth_bp.route('/login', methods=['POST'])
+@user_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
     email = data.get('email')
@@ -96,7 +96,7 @@ def login():
     }), 200
 
 
-@auth_bp.route('/me', methods=['GET'])
+@user_bp.route('/me', methods=['GET'])
 @token_required
 def get_current_user():
     user_id = g.user_id
