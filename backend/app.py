@@ -36,7 +36,7 @@ def create_app(test_config=None):
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_very_secret_default_key_for_dev')
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
     
-    if test_config:
+    if test_config:F
         app.config.from_mapping(test_config)
 
     # --- 데이터베이스 설정 (Railway 호환) ---
