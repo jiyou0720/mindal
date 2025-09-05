@@ -14,23 +14,16 @@ def create_app(test_config=None):
     """
     # --- 경로 설정 수정 ---
     # 'backend'와 같은 내부 모듈을 올바르게 임포트하기 위해 프로젝트 루트와 backend 경로를 추가합니다.
-    # 이 수정은 'login_register_routes.py'와 같은 하위 모듈이 'maria_models'를 찾을 수 있도록 합니다.
     script_dir = os.path.dirname(__file__) # /app/backend
     project_root = os.path.abspath(os.path.join(script_dir, '..')) # /app
     
-    # 프로젝트 루트 경로 추가 (예: from backend.routes... 를 위함)
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
         
-    # backend 경로 추가 (예: from maria_models... 를 위함)
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir)
 
     # --- 임포트 충돌 방지 패치 ---
-    # 프로젝트 내에서 'from maria_models'와 'from backend.maria_models'를 혼용하여 발생하는
-    # "Table is already defined" 오류를 해결합니다.
-    # 'backend.maria_models'를 먼저 로드하고, 'maria_models'라는 이름으로도 접근할 수 있도록 하여
-    # 항상 동일한 모듈 인스턴스를 사용하도록 강제합니다.
     if 'backend.maria_models' not in sys.modules:
         import backend.maria_models
     if 'maria_models' not in sys.modules:
@@ -86,9 +79,9 @@ def create_app(test_config=None):
     bcrypt.init_app(app)
 
     # --- API 블루프린트(라우트 그룹) 등록 ---
-    # 실제 파일 이름으로 수정
+    # 실제 Blueprint 변수 이름으로 수정
     from backend.routes.auth_routes import auth_bp
-    from backend.routes.login_register_routes import user_bp # 'user_routes' -> 'login_register_routes'로 수정
+    from backend.routes.login_register_routes import lr_bp as user_bp # user_bp 대신 lr_bp를 가져와서 user_bp라는 별명으로 사용
     from backend.routes.diary_routes import diary_bp
     from backend.routes.mood_routes import mood_bp
     from backend.routes.chat_routes import chat_bp
@@ -100,7 +93,7 @@ def create_app(test_config=None):
     from backend.routes.inquiry_routes import inquiry_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(user_bp, url_prefix='/api/user')
+    app.register_blueprint(user_bp, url_prefix='/api/user') # 이제 user_bp는 lr_bp를 가리킴
     app.register_blueprint(diary_bp, url_prefix='/api/diary')
     app.register_blueprint(mood_bp, url_prefix='/api/mood')
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
