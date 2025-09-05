@@ -1,7 +1,7 @@
 # backend/routes/login_register_routes.py
 from flask import Blueprint, request, jsonify, current_app, g
 from werkzeug.security import generate_password_hash, check_password_hash
-from maria_models import User, Role, UserRole
+from backend.maria_models import User, Role, UserRole
 from extensions import db
 from backend.routes.auth_routes import token_required
 import jwt
