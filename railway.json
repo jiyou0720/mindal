@@ -6,7 +6,7 @@
   "deploy": {
     "runtime": "V2",
     "numReplicas": 1,
-    "startCommand": "flask --app backend.app db upgrade && gunicorn --bind 0.0.0.0:$PORT backend.app:app",
+    "startCommand": "flask --app backend.app db --directory backend/migrations upgrade && gunicorn --bind 0.0.0.0:$PORT backend.app:app",
     "sleepApplication": false,
     "useLegacyStacker": false,
     "multiRegionConfig": {
