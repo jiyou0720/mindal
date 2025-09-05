@@ -1,0 +1,4 @@
+# 이 파일은 Railway에게 어떤 도구를 설치해야 하는지 알려줍니다.
+[phases.setup]
+# 기본 파이썬, gcc와 함께 Node.js(npm 포함)도 설치하도록 설정
+nixPkgs = ["python3", "gcc", "nodejs_20"]
