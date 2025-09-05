@@ -211,7 +211,7 @@ def create_app(test_config=None):
 
     @app.route('/admin/chatbot_feedback', endpoint='chatbot_feedback')
     def chatbot_feedback_page():
-        return render_template('charbot_feedback.html')
+        return render_template('chatbot_feedback.html')
 
     @app.route('/admin/inquiry_management', endpoint='admin_inquiry_management')
     def admin_inquiry_management_page():
