@@ -12,11 +12,19 @@ def create_app(test_config=None):
     """
     Flask 애플리케이션 인스턴스를 생성하고 설정하는 '애플리케이션 팩토리' 함수입니다.
     """
-    # 'backend'와 같은 내부 모듈을 올바르게 임포트하기 위해 프로젝트 루트 경로를 추가합니다.
-    script_dir = os.path.dirname(__file__)
-    project_root = os.path.abspath(os.path.join(script_dir, '..'))
+    # --- 경로 설정 수정 ---
+    # 'backend'와 같은 내부 모듈을 올바르게 임포트하기 위해 프로젝트 루트와 backend 경로를 추가합니다.
+    # 이 수정은 'login_register_routes.py'와 같은 하위 모듈이 'maria_models'를 찾을 수 있도록 합니다.
+    script_dir = os.path.dirname(__file__) # /app/backend
+    project_root = os.path.abspath(os.path.join(script_dir, '..')) # /app
+    
+    # 프로젝트 루트 경로 추가 (예: from backend.routes... 를 위함)
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
+        
+    # backend 경로 추가 (예: from maria_models... 를 위함)
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
 
     app = Flask(__name__,
                 template_folder='../frontend/templates',
