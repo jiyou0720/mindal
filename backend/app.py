@@ -81,7 +81,7 @@ def create_app(test_config=None):
     # --- API 블루프린트(라우트 그룹) 등록 ---
     # 실제 Blueprint 변수 이름으로 수정
     from backend.routes.auth_routes import auth_bp
-    from backend.routes.login_register_routes import lr_bp as user_bp # user_bp 대신 lr_bp를 가져와서 user_bp라는 별명으로 사용
+    from backend.routes.login_register_routes import user_bp # 실제 변수 이름인 user_bp를 직접 가져옵니다.
     from backend.routes.diary_routes import diary_bp
     from backend.routes.mood_routes import mood_bp
     from backend.routes.chat_routes import chat_bp
@@ -93,7 +93,7 @@ def create_app(test_config=None):
     from backend.routes.inquiry_routes import inquiry_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(user_bp, url_prefix='/api/user') # 이제 user_bp는 lr_bp를 가리킴
+    app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(diary_bp, url_prefix='/api/diary')
     app.register_blueprint(mood_bp, url_prefix='/api/mood')
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
