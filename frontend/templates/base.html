@@ -31,312 +31,126 @@
         <main class="main-content">
             {# PC/Laptop (768px 초과)에서만 보이는 메인 헤더 #}
             <header class="main-header">
-                {# PC용 삼색바 토글 버튼 #}
-                <button id="sidebar-toggle"><i class="fas fa-bars"></i></button>
-                <h1>{% block page_title %}{% endblock %}</h1>
-                {# PC용 다크 모드 토글 버튼 #}
-                <button id="darkModeToggleHeader" class="dark-mode-toggle header-dark-mode-toggle">
-                    <i class="fas fa-moon"></i> <span>다크 모드</span>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
                 </button>
+                <div class="header-title-container">
+                    <h1 class="header-title">{% block page_title %}대시보드{% endblock %}</h1>
+                </div>
             </header>
-            <div class="content-wrapper">
-                {% block content %}{% endblock %}
-            </div>
+
+            {# 모바일 (768px 이하)에서만 보이는 모바일 헤더 #}
+            <header class="mobile-header">
+                <button class="sidebar-toggle" id="mobileSidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <a href="{{ url_for('index') }}" class="mobile-logo-link">
+                    <img src="{{ url_for('static', filename='images/main_logo.png') }}" alt="Mind AI 로고" class="mobile-logo">
+                </a>
+                <div class="mobile-header-placeholder"></div>
+            </header>
+
+            {% block content %}{% endblock %}
         </main>
-        {# NEW: 모바일 사이드바가 열렸을 때 나타날 오버레이 #}
-        <div id="mobileSidebarOverlay" class="mobile-sidebar-overlay"></div>
-    </div>
 
-    <!-- Custom Alert Modal -->
-    <div id="alertModalOverlay" class="alert-modal-overlay">
-        <div class="alert-modal">
-            <h3 id="alertModalTitle">알림</h3>
-            <p id="alertModalMessage"></p>
-            <button id="alertModalCloseButton">확인</button>
-        </div>
-    </div>
+        <div class="mobile-sidebar-overlay"></div>
 
-    <!-- Custom Confirm Modal -->
-    <div id="confirmModalOverlay" class="alert-modal-overlay">
-        <div class="alert-modal">
-            <h3 id="confirmModalTitle">확인</h3>
-            <p id="confirmModalMessage"></p>
-            <button id="confirmModalConfirmButton">확인</button>
-            <button id="confirmModalCancelButton" style="background-color: #6c88a9; margin-left: 10px;">취소</button>
-        </div>
     </div>
 
     <script>
-        // Global variables for Flask URL endpoints
-        const loginUrl = "{{ url_for('login') }}";
-        const homeUrl = "{{ url_for('index') }}";
-        const myPageUrl = "{{ url_for('my_page') }}";
-        const editProfileUrl = "{{ url_for('edit_profile') }}";
-        const signupUrl = "{{ url_for('signup') }}";
-
-        // Custom Alert/Confirm functions (replacing alert/confirm)
-        function showAlert(message, title = '알림') {
-            const alertModalOverlay = document.getElementById('alertModalOverlay');
-            const alertModalTitle = document.getElementById('alertModalTitle');
-            const alertModalMessage = document.getElementById('alertModalMessage');
-            const alertModalCloseButton = document.getElementById('alertModalCloseButton');
-
-            alertModalTitle.textContent = title;
-            alertModalMessage.textContent = message;
-            alertModalOverlay.classList.add('visible');
-
-            return new Promise(resolve => {
-                alertModalCloseButton.onclick = () => {
-                    alertModalOverlay.classList.remove('visible');
-                    resolve(true);
-                };
-            });
-        }
-
-        function showConfirm(message, title = '확인') {
-            const confirmModalOverlay = document.getElementById('confirmModalOverlay');
-            const confirmModalTitle = document.getElementById('confirmModalTitle');
-            const confirmModalMessage = document.getElementById('confirmModalMessage');
-            const confirmModalConfirmButton = document.getElementById('confirmModalConfirmButton');
-            const confirmModalCancelButton = document.getElementById('confirmModalCancelButton');
-
-            confirmModalTitle.textContent = title;
-            confirmModalMessage.textContent = message;
-            confirmModalOverlay.classList.add('visible');
-
-            return new Promise(resolve => {
-                confirmModalConfirmButton.onclick = () => {
-                    confirmModalOverlay.classList.remove('visible');
-                    resolve(true);
-                };
-                confirmModalCancelButton.onclick = () => {
-                    confirmModalOverlay.classList.remove('visible');
-                    resolve(false);
-                };
-            });
-        }
-
-        // fetchWithAuth function
-        async function fetchWithAuth(url, options = {}) {
+        document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('access_token');
-            const headers = {
-                ...options.headers,
-            };
+            const menuContainer = document.getElementById('menu-items-container');
+            const authLinksContainer = document.getElementById('auth-links');
 
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            options.headers = headers;
-
-            try {
-                const response = await fetch(url, options);
-
-                // If 401 Unauthorized, redirect to login
-                if (response.status === 401) {
-                    console.warn('Unauthorized access, redirecting to login.');
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('nickname');
-                    localStorage.removeItem('user_id');
-                    localStorage.removeItem('user_roles');
-                    await showAlert('세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.');
-                    window.location.href = loginUrl;
-                    return;
-                }
-
-                return response;
-            } catch (error) {
-                console.error('Fetch error:', error);
-                throw error;
-            }
-        }
-
-        // Function to update UI based on login status (PC sidebar & Mobile menu)
-        async function updateUIForLoggedIn(nickname, roles) {
-            const pcAuthLinks = document.getElementById('auth-links');
-            const mobileAuthLinks = document.querySelector('.mobile-menu-auth-links');
-
-            const loggedInHtml = `
-                <p class="welcome-message">환영합니다, ${nickname}님!</p>
-                <a href="${myPageUrl}" class="auth-link"><i class="fas fa-user-circle"></i> <span>마이페이지</span></a>
-                <a href="#" id="logout-link" class="auth-link"><i class="fas fa-sign-out-alt"></i> <span>로그아웃</span></a>
-            `;
-            
-            if (pcAuthLinks) pcAuthLinks.innerHTML = loggedInHtml;
-            if (mobileAuthLinks) mobileAuthLinks.innerHTML = loggedInHtml;
-
-            const logoutLinks = document.querySelectorAll('#logout-link');
-            logoutLinks.forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('nickname');
-                    localStorage.removeItem('user_id');
-                    localStorage.removeItem('user_roles');
-                    window.location.href = loginUrl;
-                });
-            });
-        }
-
-        function updateUIForLoggedOut() {
-            const pcAuthLinks = document.getElementById('auth-links');
-            const mobileAuthLinks = document.querySelector('.mobile-menu-auth-links');
-
-            const loggedOutHtml = `
-                <a href="${loginUrl}" class="auth-link"><i class="fas fa-sign-in-alt"></i> <span>로그인</span></a>
-                <a href="${signupUrl}" class="auth-link"><i class="fas fa-user-plus"></i> <span>회원가입</span></a>
-            `;
-
-            if (pcAuthLinks) pcAuthLinks.innerHTML = loggedOutHtml;
-            if (mobileAuthLinks) mobileAuthLinks.innerHTML = loggedOutHtml;
-        }
-
-        // Function to fetch and render menu items based on user roles (PC sidebar & Mobile menu)
-        async function fetchAndRenderMenuItems() {
-            const pcMenuContainer = document.querySelector('aside.sidebar .sidebar-nav ul');
-            const mobileMenuContainer = document.getElementById('mobile-menu-items-container');
-            const token = localStorage.getItem('access_token');
-
-            // Default public menus
-            const defaultPublicMenusHtml = `
-                <li><a href="${homeUrl}"><i class="fas fa-home"></i> <span>홈</span></a></li>
-                <li><a href="{{ url_for('community_list') }}"><i class="fas fa-users"></i> <span>커뮤니티</span></a></li>
-            `;
-            
-            if (!token) {
-                if (pcMenuContainer) pcMenuContainer.innerHTML = defaultPublicMenusHtml;
-                if (mobileMenuContainer) mobileMenuContainer.innerHTML = defaultPublicMenusHtml;
-                return;
-            }
-
-            try {
-                const response = await fetchWithAuth('/api/admin/menu_items/my_menu', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (!response.ok) {
-                    console.warn('Failed to fetch user-specific menus. Falling back to public menus.');
-                    if (pcMenuContainer) pcMenuContainer.innerHTML = defaultPublicMenusHtml;
-                    if (mobileMenuContainer) mobileMenuContainer.innerHTML = defaultPublicMenusHtml;
-                    return;
-                }
-
-                const data = await response.json();
-                const menuItems = data.menu_items;
-                
-                if (!menuItems || menuItems.length === 0) {
-                    if (pcMenuContainer) pcMenuContainer.innerHTML = defaultPublicMenusHtml;
-                    if (mobileMenuContainer) mobileMenuContainer.innerHTML = defaultPublicMenusHtml;
-                    return;
-                }
-
-                let menuHtml = '';
-                menuItems.forEach(item => {
-                    menuHtml += `
-                        <li>
-                            <a href="${item.url}">
-                                <i class="${item.icon || 'fas fa-circle-notch'}"></i> 
-                                <span>${item.name}</span>
-                            </a>
-                        </li>
+            // UI 업데이트 함수
+            function updateAuthUI() {
+                const token = localStorage.getItem('access_token');
+                if (token) {
+                    // 로그인 상태
+                    authLinksContainer.innerHTML = `
+                        <a href="{{ url_for('my_page') }}" class="sidebar-link"><i class="fas fa-user-circle"></i> <span>마이페이지</span></a>
+                        <a href="#" id="logout-button" class="sidebar-link"><i class="fas fa-sign-out-alt"></i> <span>로그아웃</span></a>
                     `;
-                });
-                if (pcMenuContainer) pcMenuContainer.innerHTML = menuHtml;
-                if (mobileMenuContainer) mobileMenuContainer.innerHTML = menuHtml;
-
-            } catch (error) {
-                console.error('Menu rendering error:', error);
-                if (pcMenuContainer) pcMenuContainer.innerHTML = defaultPublicMenusHtml;
-                if (mobileMenuContainer) mobileMenuContainer.innerHTML = defaultPublicMenusHtml;
-            }
-        }
-
-        // Dark Mode Toggle Logic
-        const darkModeToggleSidebar = document.getElementById('darkModeToggle');
-        const darkModeToggleHeader = document.getElementById('darkModeToggleHeader');
-        const body = document.body;
-
-        function applyThemePreference() {
-            const savedTheme = localStorage.getItem('theme');
-            const isDark = savedTheme === 'dark';
-            
-            if (isDark) {
-                body.classList.add('dark-mode');
-            } else {
-                body.classList.remove('dark-mode');
-            }
-            
-            // 버튼 텍스트 및 아이콘 업데이트
-            const moonIcon = '<i class="fas fa-moon"></i>';
-            const sunIcon = '<i class="fas fa-sun"></i>';
-            const darkText = '<span>다크 모드</span>';
-            const lightText = '<span>라이트 모드</span>';
-            
-            if (darkModeToggleSidebar) {
-                darkModeToggleSidebar.innerHTML = isDark ? `${sunIcon} ${lightText}` : `${moonIcon} ${darkText}`;
-            }
-            if (darkModeToggleHeader) {
-                darkModeToggleHeader.innerHTML = isDark ? `${sunIcon} ${lightText}` : `${moonIcon} ${darkText}`;
-            }
-        }
-
-        function toggleDarkMode() {
-            const isDark = body.classList.contains('dark-mode');
-            localStorage.setItem('theme', isDark ? 'light' : 'dark');
-            applyThemePreference();
-        }
-        
-        if (darkModeToggleSidebar) darkModeToggleSidebar.addEventListener('click', toggleDarkMode);
-        if (darkModeToggleHeader) darkModeToggleHeader.addEventListener('click', toggleDarkMode);
-
-        // 화면 크기 체크 함수
-        function isMobile() {
-            return window.innerWidth <= 768;
-        }
-
-        // Initial check on page load
-        document.addEventListener('DOMContentLoaded', async () => {
-            applyThemePreference();
-
-            const token = localStorage.getItem('access_token');
-            const userNickname = localStorage.getItem('nickname');
-            const userId = localStorage.getItem('user_id');
-            const userRoles = localStorage.getItem('user_roles');
-
-            if (token && userNickname && userId && userRoles) {
-                try {
-                    const response = await fetchWithAuth('/api/auth/me', { method: 'GET' });
-                    if (response && response.ok) {
-                        const data = await response.json();
-                        localStorage.setItem('nickname', data.user.nickname);
-                        localStorage.setItem('user_id', data.user.id);
-                        localStorage.setItem('user_roles', JSON.stringify(data.user.roles));
-                        updateUIForLoggedIn(data.user.nickname, data.user.roles);
-                        fetchAndRenderMenuItems();
-                    } else {
-                        updateUIForLoggedOut();
-                        fetchAndRenderMenuItems();
-                    }
-                } catch (error) {
-                    console.error('Auth check error:', error);
-                    updateUIForLoggedOut();
-                    fetchAndRenderMenuItems();
+                    document.getElementById('logout-button').addEventListener('click', handleLogout);
+                } else {
+                    // 로그아웃 상태
+                    authLinksContainer.innerHTML = `
+                        <a href="{{ url_for('login_page') }}" class="sidebar-link"><i class="fas fa-sign-in-alt"></i> <span>로그인</span></a>
+                        <a href="{{ url_for('signup_page') }}" class="sidebar-link"><i class="fas fa-user-plus"></i> <span>회원가입</span></a>
+                    `;
                 }
-            } else {
-                updateUIForLoggedOut();
-                fetchAndRenderMenuItems();
             }
 
-            // Sidebar toggle logic
+            // 로그아웃 처리 함수
+            function handleLogout(e) {
+                if(e) e.preventDefault();
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('nickname');
+                localStorage.removeItem('role');
+                updateAuthUI();
+                // 메뉴도 다시 로드
+                loadMenus();
+                window.location.href = "{{ url_for('login_page') }}";
+            }
+
+            // 메뉴 로드 함수
+            async function loadMenus() {
+                try {
+                    const response = await fetch('/api/menus');
+                    if (!response.ok) throw new Error('메뉴 로딩 실패');
+                    const menus = await response.json();
+
+                    menuContainer.innerHTML = ''; // 기존 메뉴 초기화
+                    menus.forEach(menu => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<a href="${menu.url}" class="sidebar-link"><i class="${menu.icon}"></i> <span>${menu.name}</span></a>`;
+                        menuContainer.appendChild(li);
+                    });
+                } catch (error) {
+                    console.error('메뉴 로딩 중 오류:', error);
+                    menuContainer.innerHTML = '<li>메뉴를 불러올 수 없습니다.</li>';
+                }
+            }
+            
+            // 초기화
+            updateAuthUI();
+            loadMenus();
+
+            // 다크 모드 토글
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            darkModeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                // 나중에 로컬 스토리지에 저장하는 로직 추가
+            });
+
+            // 사이드바 토글 로직
             const container = document.querySelector('.container');
-            const sidebarToggle = document.getElementById('sidebar-toggle');
-            const mobileSidebarOverlay = document.getElementById('mobileSidebarOverlay');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+            const mobileSidebarOverlay = document.querySelector('.mobile-sidebar-overlay');
             const sidebar = document.querySelector('.sidebar');
 
-            if (sidebarToggle && container) {
+            const isMobile = () => window.innerWidth <= 768;
+
+            if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', () => {
                     if (isMobile()) {
-                        // 모바일: 오버레이 사이드바 토글
+                        // 모바일: 사이드바 나타남/사라짐
+                        container.classList.toggle('mobile-sidebar-open');
+                        mobileSidebarOverlay.classList.toggle('visible');
+                    } else {
+                        // PC: 사이드바 접힘/펼침
+                        container.classList.toggle('sidebar-collapsed');
+                    }
+                });
+            }
+            
+            if (mobileSidebarToggle) {
+                 mobileSidebarToggle.addEventListener('click', () => {
+                    if (isMobile()) {
+                        // 모바일: 사이드바 나타남/사라짐
                         container.classList.toggle('mobile-sidebar-open');
                         mobileSidebarOverlay.classList.toggle('visible');
                     } else {
@@ -380,3 +194,4 @@
     {% block scripts %}{% endblock %}
 </body>
 </html>
+
