@@ -26,6 +26,16 @@ def create_app(test_config=None):
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir)
 
+    # --- 임포트 충돌 방지 패치 ---
+    # 프로젝트 내에서 'from maria_models'와 'from backend.maria_models'를 혼용하여 발생하는
+    # "Table is already defined" 오류를 해결합니다.
+    # 'backend.maria_models'를 먼저 로드하고, 'maria_models'라는 이름으로도 접근할 수 있도록 하여
+    # 항상 동일한 모듈 인스턴스를 사용하도록 강제합니다.
+    if 'backend.maria_models' not in sys.modules:
+        import backend.maria_models
+    if 'maria_models' not in sys.modules:
+        sys.modules['maria_models'] = sys.modules['backend.maria_models']
+
     app = Flask(__name__,
                 template_folder='../frontend/templates',
                 static_folder='../frontend/static')
