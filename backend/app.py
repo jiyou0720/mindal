@@ -13,9 +13,8 @@ def create_app(test_config=None):
     Flask 애플리케이션 인스턴스를 생성하고 설정하는 '애플리케이션 팩토리' 함수입니다.
     """
     # --- 경로 설정 수정 ---
-    # 'backend'와 같은 내부 모듈을 올바르게 임포트하기 위해 프로젝트 루트와 backend 경로를 추가합니다.
-    script_dir = os.path.dirname(__file__) # /app/backend
-    project_root = os.path.abspath(os.path.join(script_dir, '..')) # /app
+    script_dir = os.path.dirname(__file__)
+    project_root = os.path.abspath(os.path.join(script_dir, '..'))
     
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
@@ -45,7 +44,6 @@ def create_app(test_config=None):
     mongo_url = os.environ.get("MONGO_URL")
 
     if not mysql_url:
-        # 로컬 개발 환경을 위한 폴백(fallback) 로직
         MYSQL_USER = os.environ.get("MYSQL_USER")
         MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
         MYSQL_HOST = os.environ.get("MYSQL_HOST")
@@ -78,33 +76,7 @@ def create_app(test_config=None):
     jwt.init_app(app)
     bcrypt.init_app(app)
 
-    # --- API 블루프린트(라우트 그룹) 등록 ---
-    # 실제 Blueprint 변수 이름으로 수정
-    from backend.routes.auth_routes import auth_bp
-    from backend.routes.login_register_routes import user_bp # 실제 변수 이름인 user_bp를 직접 가져옵니다.
-    from backend.routes.diary_routes import diary_bp
-    from backend.routes.mood_routes import mood_bp
-    from backend.routes.chat_routes import chat_bp
-    from backend.routes.community_routes import community_bp
-    from backend.routes.psych_test_routes import psych_test_bp
-    from backend.routes.admin_routes import admin_bp
-    from backend.routes.dashboard_routes import dashboard_bp
-    from backend.routes.graph_routes import graph_bp
-    from backend.routes.inquiry_routes import inquiry_bp
-
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(user_bp, url_prefix='/api/user')
-    app.register_blueprint(diary_bp, url_prefix='/api/diary')
-    app.register_blueprint(mood_bp, url_prefix='/api/mood')
-    app.register_blueprint(chat_bp, url_prefix='/api/chat')
-    app.register_blueprint(community_bp, url_prefix='/api/community')
-    app.register_blueprint(psych_test_bp, url_prefix='/api/psych-test')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin')
-    app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
-    app.register_blueprint(graph_bp, url_prefix='/api/graph')
-    app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
-
-    # --- HTML 페이지 렌더링 라우트 ---
+    # --- HTML 페이지 렌더링 라우트 (API 블루프린트보다 먼저 위치해도 괜찮음) ---
     @app.route('/', endpoint='index')
     def index_page():
         return render_template('index.html')
@@ -222,6 +194,33 @@ def create_app(test_config=None):
     @app.errorhandler(404)
     def page_not_found(e):
         return render_template('404.html'), 404
+
+    # --- API 블루프린트 등록 (가장 마지막에 위치) ---
+    # 순환 참조 오류를 방지하기 위해, 모든 설정이 완료된 후 라우트들을 임포트하고 등록합니다.
+    with app.app_context():
+        from backend.routes.auth_routes import auth_bp
+        from backend.routes.login_register_routes import user_bp
+        from backend.routes.diary_routes import diary_bp
+        from backend.routes.mood_routes import mood_bp
+        from backend.routes.chat_routes import chat_bp
+        from backend.routes.community_routes import community_bp
+        from backend.routes.psych_test_routes import psych_test_bp
+        from backend.routes.admin_routes import admin_bp
+        from backend.routes.dashboard_routes import dashboard_bp
+        from backend.routes.graph_routes import graph_bp
+        from backend.routes.inquiry_routes import inquiry_bp
+
+        app.register_blueprint(auth_bp, url_prefix='/api/auth')
+        app.register_blueprint(user_bp, url_prefix='/api/user')
+        app.register_blueprint(diary_bp, url_prefix='/api/diary')
+        app.register_blueprint(mood_bp, url_prefix='/api/mood')
+        app.register_blueprint(chat_bp, url_prefix='/api/chat')
+        app.register_blueprint(community_bp, url_prefix='/api/community')
+        app.register_blueprint(psych_test_bp, url_prefix='/api/psych-test')
+        app.register_blueprint(admin_bp, url_prefix='/api/admin')
+        app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+        app.register_blueprint(graph_bp, url_prefix='/api/graph')
+        app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
 
     return app
 
