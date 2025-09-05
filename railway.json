@@ -6,7 +6,7 @@
   "deploy": {
     "runtime": "V2",
     "numReplicas": 1,
-    "startCommand": "cd backend && flask db upgrade && cd .. && gunicorn --bind 0.0.0.0:$PORT backend.app:app",
+    "startCommand": "cd backend && flask --app app db upgrade && cd .. && gunicorn --bind 0.0.0.0:$PORT backend.app:app",
     "sleepApplication": false,
     "variables": {
       "MYSQL_URL": "${{ MySQL.MYSQL_URL }}",
