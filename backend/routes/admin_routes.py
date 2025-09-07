@@ -1,4 +1,3 @@
-# backend/routes/admin_routes.py
 import os
 import logging
 import sys
@@ -363,7 +362,7 @@ def force_delete_user(user_id):
         current_app.logger.error(f"Error force deleting user {user_id}: {e}", exc_info=True)
         return jsonify({'message': '사용자 삭제에 실패했습니다.'}), 500
 
-# 공지사항 관련 API (MongoDB 사용 X, 수정 불필요)
+# 공지사항 관련 API
 @admin_bp.route('/notices', methods=['POST'])
 @token_required
 @roles_required(['관리자', '운영자'])
@@ -403,9 +402,6 @@ def create_notice():
 def get_all_notices_admin():
     try:
         notices = Notice.query.options(joinedload(Notice.author)).order_by(Notice.created_at.desc()).all()
-        
-        # [FIX] 'Notice' object has no attribute 'to_dict' 오류 해결
-        # to_dict() 대신 수동으로 딕셔너리 생성
         notices_data = []
         for notice in notices:
             notices_data.append({
@@ -417,7 +413,6 @@ def get_all_notices_admin():
                 'created_at': notice.created_at.isoformat() if notice.created_at else None,
                 'updated_at': notice.updated_at.isoformat() if notice.updated_at else None
             })
-            
         return jsonify({'notices': notices_data}), 200
     except Exception as e:
         current_app.logger.error(f"Error fetching all notices for admin: {e}", exc_info=True)
@@ -436,7 +431,16 @@ def get_notice(notice_id):
             notice.is_public = False
             db.session.commit()
 
-        return jsonify(notice.to_dict()), 200
+        notice_data = {
+            'id': notice.id, 'title': notice.title, 'content': notice.content,
+            'user_id': notice.user_id,
+            'is_public': notice.is_public,
+            'start_date': notice.start_date.isoformat() if notice.start_date else None,
+            'end_date': notice.end_date.isoformat() if notice.end_date else None,
+            'created_at': notice.created_at.isoformat() if notice.created_at else None,
+            'updated_at': notice.updated_at.isoformat() if notice.updated_at else None
+        }
+        return jsonify(notice_data), 200
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error fetching notice {notice_id}: {e}", exc_info=True)
@@ -529,7 +533,13 @@ def get_public_notices():
             )
         ).options(joinedload(Notice.author)).order_by(Notice.created_at.desc()).all()
 
-        notices_data = [n.to_dict(include_author=True) for n in public_notices]
+        notices_data = []
+        for n in public_notices:
+            notices_data.append({
+                'id': n.id, 'title': n.title, 'content': n.content,
+                'author_nickname': n.author.nickname if n.author else '알 수 없음',
+                'created_at': n.created_at.isoformat() if n.created_at else None
+            })
         return jsonify({'notices': notices_data}), 200
     except Exception as e:
         db.session.rollback()
@@ -550,6 +560,8 @@ def get_db_records():
         diary_entries = list(db_mongo.diary_entries.find({}).sort('created_at', -1).limit(100))
         for entry in diary_entries:
             user = db.session.get(User, entry.get('user_id'))
+            created_at_val = entry.get('created_at', datetime.datetime.utcnow())
+            timestamp_iso = created_at_val.isoformat() if isinstance(created_at_val, datetime.datetime) else created_at_val
             records_data.append({
                 'id': str(entry['_id']),
                 'user_id': entry.get('user_id'),
@@ -557,7 +569,7 @@ def get_db_records():
                 'user_email': user.email if user else 'Unknown',
                 'type': '일기',
                 'summary': entry.get('title', '제목 없음'),
-                'timestamp': entry.get('created_at', datetime.datetime.utcnow()).isoformat(),
+                'timestamp': timestamp_iso,
                 'conversation': [{'role': '일기 내용', 'text': entry.get('content', '내용 없음')}]
             })
         
@@ -565,6 +577,8 @@ def get_db_records():
         mood_entries = list(db_mongo.mood_entries.find({}).sort('timestamp', -1).limit(100))
         for entry in mood_entries:
             user = db.session.get(User, entry.get('user_id'))
+            timestamp_val = entry.get('timestamp', datetime.datetime.utcnow())
+            timestamp_iso_mood = timestamp_val.isoformat() if isinstance(timestamp_val, datetime.datetime) else timestamp_val
             records_data.append({
                 'id': str(entry['_id']),
                 'user_id': entry.get('user_id'),
@@ -572,7 +586,7 @@ def get_db_records():
                 'user_email': user.email if user else 'Unknown',
                 'type': '감정 기록',
                 'summary': f"감정: {entry.get('mood', '알 수 없음')}",
-                'timestamp': entry.get('timestamp', datetime.datetime.utcnow()).isoformat(),
+                'timestamp': timestamp_iso_mood,
                 'conversation': [{'role': '감정', 'text': entry.get('mood', '알 수 없음')}]
             })
 
@@ -720,7 +734,7 @@ def get_cms_content(content_type):
             item['_id'] = str(item['_id'])
         return jsonify({'content': content_items}), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error fetching CMS content for {content_type}: {e}", exc_info=True)
         return jsonify({'message': '콘텐츠를 불러오는 데 실패했습니다.'}), 500
 
 @admin_bp.route('/cms/<string:content_type>/<string:item_id>', methods=['GET'])
@@ -734,7 +748,7 @@ def get_cms_item(content_type, item_id):
         item['_id'] = str(item['_id'])
         return jsonify(item), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error fetching CMS item {item_id}: {e}", exc_info=True)
         return jsonify({'message': '콘텐츠를 불러오는 데 실패했습니다.'}), 500
 
 
@@ -755,7 +769,7 @@ def add_cms_content(content_type):
         result = db_mongo.cms_content.insert_one(new_item)
         return jsonify({'id': str(result.inserted_id)}), 201
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error adding CMS content for {content_type}: {e}", exc_info=True)
         return jsonify({'message': '콘텐츠 추가에 실패했습니다.'}), 500
 
 @admin_bp.route('/cms/<string:content_type>/<string:item_id>', methods=['PUT'])
@@ -774,7 +788,7 @@ def update_cms_content(content_type, item_id):
         if result.matched_count == 0: return jsonify({'message': '콘텐츠를 찾을 수 없습니다.'}), 404
         return jsonify({'message': '콘텐츠가 성공적으로 업데이트되었습니다.'}), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error updating CMS item {item_id}: {e}", exc_info=True)
         return jsonify({'message': '콘텐츠 수정에 실패했습니다.'}), 500
 
 
@@ -788,7 +802,7 @@ def delete_cms_content(content_type, item_id):
         if result.deleted_count == 0: return jsonify({'message': '콘텐츠를 찾을 수 없습니다.'}), 404
         return jsonify({'message': '콘텐츠가 성공적으로 삭제되었습니다.'}), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error deleting CMS item {item_id}: {e}", exc_info=True)
         return jsonify({'message': '콘텐츠 삭제에 실패했습니다.'}), 500
 
 
@@ -806,7 +820,7 @@ def get_analytics_mood_distribution():
             'datasets': [{'data': list(mood_counts.values())}]
         }), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error fetching mood distribution data: {e}", exc_info=True)
         return jsonify({'message': '감정 분포 데이터를 불러오는 데 실패했습니다.'}), 500
 
 
@@ -826,7 +840,7 @@ def get_analytics_diary_entry_counts():
             'datasets': [{'data': [res['count'] for res in results]}]
         }), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error fetching diary entry counts data: {e}", exc_info=True)
         return jsonify({'message': '월별 일기 작성량 데이터를 불러오는 데 실패했습니다.'}), 500
 
 @admin_bp.route('/analytics/top_keywords', methods=['GET'])
@@ -835,10 +849,6 @@ def get_analytics_diary_entry_counts():
 def get_analytics_top_keywords():
     try:
         db_mongo = get_mongo_db()
-        # 실제 구현: diary_entries에서 keywords 필드를 집계
-        # all_keywords = []
-        # for entry in db_mongo.diary_entries.find({}):
-        #     all_keywords.extend(entry.get('keywords', []))
         all_keywords = ["스트레스", "불안", "행복", "우울", "친구", "가족", "직장"] # 임시 데이터
         top_10 = Counter(all_keywords).most_common(10)
         return jsonify({
@@ -846,7 +856,7 @@ def get_analytics_top_keywords():
             'datasets': [{'data': [item[1] for item in top_10]}]
         }), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error fetching top keywords data: {e}", exc_info=True)
         return jsonify({'message': '상위 키워드 데이터를 불러오는 데 실패했습니다.'}), 500
 
 # 문의사항 관리 API
@@ -859,10 +869,9 @@ def get_all_inquiries_admin():
         all_inquiries = list(db_mongo.inquiries.find({}).sort('created_at', -1))
         for inquiry in all_inquiries:
             inquiry['_id'] = str(inquiry['_id'])
-            # ... (user info fetching)
         return jsonify({'inquiries': all_inquiries}), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error fetching all inquiries for admin: {e}", exc_info=True)
         return jsonify({'message': '문의사항 목록을 불러오는 데 실패했습니다.'}), 500
 
 @admin_bp.route('/inquiries/<string:inquiry_id>', methods=['GET'])
@@ -874,10 +883,9 @@ def get_inquiry_detail_admin(inquiry_id):
         inquiry = db_mongo.inquiries.find_one({'_id': ObjectId(inquiry_id)})
         if not inquiry: return jsonify({'message': '문의사항을 찾을 수 없습니다.'}), 404
         inquiry['_id'] = str(inquiry['_id'])
-        # ... (user info fetching)
         return jsonify(inquiry), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error fetching inquiry detail {inquiry_id} for admin: {e}", exc_info=True)
         return jsonify({'message': '문의사항 상세 정보를 불러오는 데 실패했습니다.'}), 500
 
 @admin_bp.route('/inquiries/<string:inquiry_id>/reply', methods=['PUT'])
@@ -897,7 +905,7 @@ def reply_to_inquiry(inquiry_id):
         if result.matched_count == 0: return jsonify({'message': '문의사항을 찾을 수 없습니다.'}), 404
         return jsonify({'message': '문의사항에 답변이 성공적으로 추가되었습니다.'}), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error replying to inquiry {inquiry_id}: {e}", exc_info=True)
         return jsonify({'message': '문의사항 답변에 실패했습니다.'}), 500
 
 
@@ -916,7 +924,7 @@ def update_inquiry_status(inquiry_id):
         if result.matched_count == 0: return jsonify({'message': '문의사항을 찾을 수 없습니다.'}), 404
         return jsonify({'message': f'문의사항 상태가 "{new_status}"로 변경되었습니다.'}), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error updating inquiry status {inquiry_id}: {e}", exc_info=True)
         return jsonify({'message': '문의사항 상태 변경에 실패했습니다.'}), 500
 
 @admin_bp.route('/inquiries/<string:inquiry_id>', methods=['DELETE'])
@@ -929,5 +937,6 @@ def delete_inquiry(inquiry_id):
         if result.deleted_count == 0: return jsonify({'message': '문의사항을 찾을 수 없습니다.'}), 404
         return jsonify({'message': '문의사항이 성공적으로 삭제되었습니다.'}), 200
     except Exception as e:
-        # ...
+        current_app.logger.error(f"Error deleting inquiry {inquiry_id}: {e}", exc_info=True)
         return jsonify({'message': '문의사항 삭제에 실패했습니다.'}), 500
+
