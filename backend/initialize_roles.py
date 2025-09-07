@@ -78,22 +78,21 @@ app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'default_jwt_sec
 
 db.init_app(app)
 
-with app.app_context():
-    # 데이터베이스 테이블이 없으면 생성
-    # 이 스크립트는 역할만 추가하므로 db.create_all()은 initialize_roles_and_admin.py에서만 호출하는 것이 좋습니다.
-    # 하지만, 역할 테이블이 없으면 오류가 나므로, 필요한 경우에만 실행하도록 합니다.
-    # 또는, 마이그레이션을 통해 테이블이 생성되었다고 가정합니다.
+def initialize_roles():
+    with app.app_context():
+        roles_to_add = ['관리자', '운영자', '에디터', '일반 사용자', '개발자', '연구자', '모든 사용자']
+        
+        for role_name in roles_to_add:
+            role = Role.query.filter_by(name=role_name).first()
+            if not role:
+                new_role = Role(name=role_name)
+                db.session.add(new_role)
+                print(f"역할 '{role_name}' 추가됨.")
+            else:
+                print(f"역할 '{role_name}' 이미 존재함.")
+        
+        db.session.commit()
+        print("역할 초기화 완료.")
 
-    roles_to_add = ['관리자', '운영자', '에디터', '일반 사용자', '개발자', '연구자', '모든 사용자']
-    
-    for role_name in roles_to_add:
-        role = Role.query.filter_by(name=role_name).first()
-        if not role:
-            new_role = Role(name=role_name)
-            db.session.add(new_role)
-            print(f"역할 '{role_name}' 추가됨.")
-        else:
-            print(f"역할 '{role_name}' 이미 존재함.")
-    
-    db.session.commit()
-    print("역할 초기화 완료.")
+if __name__ == "__main__":
+    initialize_roles()
