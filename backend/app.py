@@ -88,117 +88,170 @@ def create_app(test_config=None):
     jwt.init_app(app)
     bcrypt.init_app(app)
 
-    # --- API 블루프린트 등록 ---
-    from backend.routes.auth_routes import auth_bp
-    from backend.routes.diary_routes import diary_bp
-    from backend.routes.community_routes import community_bp
-    from backend.routes.admin_routes import admin_bp
-    from backend.routes.dashboard_routes import dashboard_bp
-    from backend.routes.graph_routes import graph_bp
-    from backend.routes.inquiry_routes import inquiry_bp
-    from backend.routes.psych_test_routes import psych_test_bp
-    
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(diary_bp, url_prefix='/api/diary')
-    app.register_blueprint(community_bp, url_prefix='/api/community')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin')
-    app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
-    app.register_blueprint(graph_bp, url_prefix='/api/graph')
-    app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
-    app.register_blueprint(psych_test_bp, url_prefix='/api/psych_test')
+    # --- API 블루프린트(라우트 그룹) 등록 ---
+    # 각 기능별로 분리된 라우트 파일들을 app에 등록합니다.
+    with app.app_context():
 
-    # --- CLI 명령어 등록 ---
-    @app.cli.command("init-db")
-    def init_db_command():
-        """데이터베이스를 초기화합니다."""
-        print("--- [CLI] 데이터베이스 초기화 시작 ---")
-        from backend.initialize_roles_and_admin import initialize_database
-        from backend.initialize_menus import initialize_menus
-        initialize_database()
-        initialize_menus()
-        print("--- [CLI] 데이터베이스 초기화 완료 ---")
+        from backend.routes.auth_routes import auth_bp
+        from backend.routes.login_register_routes import user_bp
+        from backend.routes.diary_routes import diary_bp
+        from backend.routes.mood_routes import mood_bp
+        from backend.routes.chat_routes import chat_bp
+        from backend.routes.community_routes import community_bp
+        from backend.routes.psych_test_routes import psych_test_bp
+        from backend.routes.admin_routes import admin_bp
+        from backend.routes.dashboard_routes import dashboard_bp
+        from backend.routes.graph_routes import graph_bp
+        from backend.routes.inquiry_routes import inquiry_bp
+
+        app.register_blueprint(auth_bp, url_prefix='/api/auth')
+        app.register_blueprint(user_bp, url_prefix='/api/user')
+        app.register_blueprint(diary_bp, url_prefix='/api/diary')
+        app.register_blueprint(mood_bp, url_prefix='/api/mood')
+        app.register_blueprint(chat_bp, url_prefix='/api/chat')
+        app.register_blueprint(community_bp, url_prefix='/api/community')
+        app.register_blueprint(psych_test_bp, url_prefix='/api/psych-test')
+        app.register_blueprint(admin_bp, url_prefix='/api/admin')
+        app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+        app.register_blueprint(graph_bp, url_prefix='/api/graph')
+        app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
+
 
     # --- HTML 페이지 렌더링 라우트 ---
+    # endpoint를 직접 지정하여 HTML 템플릿의 url_for()와 이름을 일치시킵니다.
     @app.route('/', endpoint='index')
-    def index(): return render_template('index.html')
-    
+    def index_page():
+        return render_template('index.html')
+
     @app.route('/login', endpoint='login')
-    def login_page(): return render_template('login.html')
+    def login_page():
+        return render_template('login.html')
 
     @app.route('/signup', endpoint='signup')
-    def signup_page(): return render_template('signup.html')
+    def signup_page():
+        return render_template('signup.html')
+    
+    @app.route('/my-page', endpoint='my_page')
+    def my_page():
+        return render_template('my_page.html')
 
-    @app.route('/profile', endpoint='profile')
-    def profile_page(): return render_template('profile.html')
+    @app.route('/edit-profile', endpoint='edit_profile')
+    def edit_profile_page():
+        return render_template('edit_profile.html')
 
-    @app.route('/community_list', endpoint='community_list')
-    def community_list_page(): return render_template('community_list.html')
-
-    @app.route('/post_detail/<int:post_id>', endpoint='post_detail')
-    def post_detail_page(post_id): return render_template('post_detail.html')
-
-    @app.route('/post_editor', endpoint='post_editor')
-    def post_editor_page(): return render_template('post_editor.html')
+    @app.route('/forgot-password', endpoint='forgot_password')
+    def forgot_password_page():
+        return render_template('forgot_password.html')
+        
+    @app.route('/ai-chat', endpoint='ai_chat')
+    def ai_chat_page():
+        return render_template('ai_chat.html')
 
     @app.route('/diary', endpoint='diary')
-    def diary_page(): return render_template('diary.html')
+    def diary_page():
+        return render_template('diary.html')
 
-    @app.route('/ai_chat', endpoint='ai_chat')
-    def ai_chat_page(): return render_template('ai_chat.html')
-
-    @app.route('/my_changes', endpoint='my_changes') # [수정] endpoint를 'my_page'에서 다시 'my_changes'로 변경
-    def my_changes_page(): return render_template('my_changes.html')
+    @app.route('/community', endpoint='community_list')
+    def community_list_page():
+        return render_template('community_list.html')
     
+    @app.route('/community/create', endpoint='community_create')
+    def community_create_page():
+        return render_template('community_create.html')
+
+    @app.route('/community/post/<int:post_id>', endpoint='community_detail')
+    def community_detail_page(post_id):
+        return render_template('community_detail.html', post_id=post_id)
+
+    @app.route('/community/edit/<int:post_id>', endpoint='community_edit')
+    def community_edit_page(post_id):
+        return render_template('community_edit.html', post_id=post_id)
+
+    @app.route('/psych-test', endpoint='psych_test_list')
+    def psych_test_list_page():
+        return render_template('psych_test_list.html')
+        
+    @app.route('/psych-test/<string:test_type>', endpoint='psych_test_take')
+    def psych_test_take_page(test_type):
+        return render_template('psych_test_take.html', test_type=test_type)
+
+    @app.route('/psych-test/result/<int:result_id>', endpoint='psych_test_result')
+    def psych_test_result_page(result_id):
+        return render_template('psych_test_result.html', result_id=result_id)
+        
     @app.route('/inquiry', endpoint='inquiry')
-    def inquiry_page(): return render_template('inquiry.html')
+    def inquiry_page():
+        return render_template('inquiry.html')
     
-    @app.route('/psych_test', endpoint='psych_test')
-    def psych_test_page(): return render_template('psych_test.html')
+    @app.route('/my-changes', endpoint='my_changes')
+    def my_changes_page():
+        return render_template('my_changes.html')
 
-    # Admin pages
+    # --- 관리자 페이지 라우트 ---
     @app.route('/admin/dashboard', endpoint='admin_dashboard')
-    def admin_dashboard_page(): return render_template('admin_dashboard.html')
+    def admin_dashboard_page():
+        return render_template('admin_dashboard.html')
 
     @app.route('/admin/user_management', endpoint='user_management')
-    def user_management_page(): return render_template('user_management.html')
+    def user_management_page():
+        return render_template('user_management.html')
 
     @app.route('/admin/menu_management', endpoint='menu_management')
-    def menu_management_page(): return render_template('menu_management.html')
-    
+    def menu_management_page():
+        return render_template('menu_management.html')
+
     @app.route('/admin/role_menu_assignment', endpoint='role_menu_assignment')
-    def role_menu_assignment_page(): return render_template('role_menu_assignment.html')
+    def role_menu_assignment_page():
+        return render_template('role_menu_assignment.html')
 
     @app.route('/admin/notice_management', endpoint='notice_management')
-    def notice_management_page(): return render_template('notice_management.html')
+    def notice_management_page():
+        return render_template('notice_management.html')
 
     @app.route('/admin/db_management', endpoint='db_management')
-    def db_management_page(): return render_template('db_management.html')
+    def db_management_page():
+        return render_template('db_management.html')
 
     @app.route('/admin/post_management', endpoint='post_management')
-    def post_management_page(): return render_template('post_management.html')
+    def post_management_page():
+        return render_template('post_management.html')
 
     @app.route('/admin/cms_management', endpoint='cms_management')
-    def cms_management_page(): return render_template('cms_management.html')
+    def cms_management_page():
+        return render_template('cms_management.html')
 
     @app.route('/admin/data_analytics', endpoint='data_analytics')
-    def data_analytics_page(): return render_template('data_analytics.html')
+    def data_analytics_page():
+        return render_template('data_analytics.html')
 
     @app.route('/admin/chatbot_feedback', endpoint='chatbot_feedback')
-    def chatbot_feedback_page(): return render_template('chatbot_feedback.html')
+    def chatbot_feedback_page():
+        return render_template('charbot_feedback.html')
 
     @app.route('/admin/inquiry_management', endpoint='admin_inquiry_management')
-    def admin_inquiry_management_page(): return render_template('admin_inquiry_management.html')
-    
+    def admin_inquiry_management_page():
+        return render_template('admin_inquiry_management.html')
+
     # --- 에러 핸들러 ---
     @app.errorhandler(404)
     def page_not_found(e):
         return render_template('404.html'), 404
 
     return app
+# app.py 마지막 부분 근처
+from backend.initialize_roles_and_admin import initialize_database
+from backend.initialize_menus import initialize_menus
+from backend.initialize_roles import initialize_roles
 
+# Flask 애플리케이션 생성
 app = create_app()
 
-if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+# 초기화 실행
+with app.app_context():
+    initialize_database()
+    initialize_roles()
+    initialize_menus()
 
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
