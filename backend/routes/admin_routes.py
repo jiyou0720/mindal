@@ -14,6 +14,12 @@ from collections import Counter
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 
+# --- Helper Function for MongoDB Connection ---
+def get_mongo_db():
+    """Provides a stable connection to the MongoDB database."""
+    db_name = current_app.config.get("MONGO_DBNAME", "mindbridge_db")
+    return mongo.cx[db_name]
+
 admin_bp = Blueprint('admin_api', __name__)
 
 @admin_bp.record_once
@@ -25,12 +31,6 @@ def record(state):
     else:
         state.app.logger.info(f"ADMIN UPLOAD_FOLDER already exists: {UPLOAD_FOLDER}")
 
-# [수정] 안정적인 MongoDB 연결을 위한 헬퍼 함수
-def get_mongo_db():
-    db_name = current_app.config.get("MONGO_DBNAME")
-    if not db_name or not mongo.cx:
-        raise ConnectionError("MongoDB is not configured or connected.")
-    return mongo.cx[db_name]
 
 # 대시보드 통계 API
 @admin_bp.route('/dashboard/stats', methods=['GET'])
@@ -402,23 +402,24 @@ def create_notice():
 @roles_required(['관리자', '운영자'])
 def get_all_notices_admin():
     try:
-        notices_to_update = Notice.query.filter(
-            Notice.is_public == True,
-            Notice.end_date != None,
-            Notice.end_date < datetime.datetime.utcnow()
-        ).all()
-
-        for notice in notices_to_update:
-            notice.is_public = False
-            db.session.add(notice)
-        if notices_to_update:
-            db.session.commit()
-
         notices = Notice.query.options(joinedload(Notice.author)).order_by(Notice.created_at.desc()).all()
-        notices_data = [n.to_dict() for n in notices]
+        
+        # [FIX] 'Notice' object has no attribute 'to_dict' 오류 해결
+        # to_dict() 대신 수동으로 딕셔너리 생성
+        notices_data = []
+        for notice in notices:
+            notices_data.append({
+                'id': notice.id,
+                'title': notice.title,
+                'content': notice.content,
+                'author_nickname': notice.author.nickname if notice.author else '알 수 없음',
+                'is_public': notice.is_public,
+                'created_at': notice.created_at.isoformat() if notice.created_at else None,
+                'updated_at': notice.updated_at.isoformat() if notice.updated_at else None
+            })
+            
         return jsonify({'notices': notices_data}), 200
     except Exception as e:
-        db.session.rollback()
         current_app.logger.error(f"Error fetching all notices for admin: {e}", exc_info=True)
         return jsonify({'message': '공지사항 목록을 불러오는 데 실패했습니다.'}), 500
 
@@ -930,4 +931,3 @@ def delete_inquiry(inquiry_id):
     except Exception as e:
         # ...
         return jsonify({'message': '문의사항 삭제에 실패했습니다.'}), 500
-
