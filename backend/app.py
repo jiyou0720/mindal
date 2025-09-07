@@ -36,7 +36,6 @@ def create_app(test_config=None):
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
 
-    # [수정] JWT_SECRET_KEY가 설정되지 않았으면 앱 실행을 중단시킵니다.
     if not app.config['JWT_SECRET_KEY']:
         raise ValueError("JWT_SECRET_KEY 환경 변수가 설정되지 않았습니다. 보안을 위해 반드시 설정해야 합니다.")
     
@@ -114,7 +113,6 @@ def create_app(test_config=None):
     # --- CLI 명령어 등록 ---
     @app.cli.command("init-db")
     def init_db_command():
-        """데이터베이스를 초기화합니다."""
         print("--- [CLI] 데이터베이스 초기화 시작 ---")
         from backend.initialize_roles_and_admin import initialize_database
         from backend.initialize_menus import initialize_menus
@@ -150,6 +148,10 @@ def create_app(test_config=None):
     @app.route('/community', endpoint='community_list')
     def community_list_page(): return render_template('community_list.html')
 
+    # [수정] 누락되었던 커뮤니티 관련 라우트 추가
+    @app.route('/community/create', endpoint='community_create')
+    def community_create_page(): return render_template('community_create.html')
+
     @app.route('/community/post/<int:post_id>', endpoint='community_detail')
     def community_detail_page(post_id): return render_template('community_detail.html', post_id=post_id)
 
@@ -171,7 +173,7 @@ def create_app(test_config=None):
     @app.route('/my-changes', endpoint='my_changes')
     def my_changes_page(): return render_template('my_changes.html')
 
-    # Admin pages
+    # --- 관리자 페이지 라우트 ---
     @app.route('/admin/dashboard', endpoint='admin_dashboard')
     def admin_dashboard_page(): return render_template('admin_dashboard.html')
 
@@ -199,8 +201,9 @@ def create_app(test_config=None):
     @app.route('/admin/data_analytics', endpoint='data_analytics')
     def data_analytics_page(): return render_template('data_analytics.html')
 
+    # [수정] 파일 이름 오타 수정
     @app.route('/admin/chatbot_feedback', endpoint='chatbot_feedback')
-    def chatbot_feedback_page(): return render_template('chatbot_feedback.html')
+    def chatbot_feedback_page(): return render_template('charbot_feedback.html')
 
     @app.route('/admin/inquiry_management', endpoint='admin_inquiry_management')
     def admin_inquiry_management_page(): return render_template('admin_inquiry_management.html')
