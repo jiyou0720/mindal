@@ -35,6 +35,10 @@ def create_app(test_config=None):
     # --- 기본 설정 ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+
+    # [수정] JWT_SECRET_KEY가 설정되지 않았으면 앱 실행을 중단시킵니다.
+    if not app.config['JWT_SECRET_KEY']:
+        raise ValueError("JWT_SECRET_KEY 환경 변수가 설정되지 않았습니다. 보안을 위해 반드시 설정해야 합니다.")
     
     if test_config:
         app.config.from_mapping(test_config)
@@ -97,22 +101,15 @@ def create_app(test_config=None):
     from backend.routes.graph_routes import graph_bp
     from backend.routes.inquiry_routes import inquiry_bp
     from backend.routes.psych_test_routes import psych_test_bp
-    # [수정] 아래 두 라우트는 실제 파일이 없거나 auth_routes와 중복될 수 있으므로, 우선순위에 따라 정리합니다.
-    # from backend.routes.login_register_routes import user_bp 
-    # from backend.routes.mood_routes import mood_bp
-    # from backend.routes.chat_routes import chat_bp
-
+    
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    # app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(diary_bp, url_prefix='/api/diary')
-    # app.register_blueprint(mood_bp, url_prefix='/api/mood')
-    # app.register_blueprint(chat_bp, url_prefix='/api/chat')
     app.register_blueprint(community_bp, url_prefix='/api/community')
-    app.register_blueprint(psych_test_bp, url_prefix='/api/psych-test')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
+    app.register_blueprint(psych_test_bp, url_prefix='/api/psych-test')
 
     # --- CLI 명령어 등록 ---
     @app.cli.command("init-db")
@@ -152,10 +149,6 @@ def create_app(test_config=None):
 
     @app.route('/community', endpoint='community_list')
     def community_list_page(): return render_template('community_list.html')
-    
-    # [수정] 아래 라우트들은 실제 templates 폴더에 파일이 없으므로 임시 주석 처리합니다.
-    # @app.route('/community/create', endpoint='community_create')
-    # def community_create_page(): return render_template('community_create.html')
 
     @app.route('/community/post/<int:post_id>', endpoint='community_detail')
     def community_detail_page(post_id): return render_template('community_detail.html', post_id=post_id)
@@ -207,11 +200,11 @@ def create_app(test_config=None):
     def data_analytics_page(): return render_template('data_analytics.html')
 
     @app.route('/admin/chatbot_feedback', endpoint='chatbot_feedback')
-    def chatbot_feedback_page(): return render_template('chatbot_feedback.html') # [수정] charbot -> chatbot
+    def chatbot_feedback_page(): return render_template('chatbot_feedback.html')
 
     @app.route('/admin/inquiry_management', endpoint='admin_inquiry_management')
     def admin_inquiry_management_page(): return render_template('admin_inquiry_management.html')
-
+    
     # --- 에러 핸들러 ---
     @app.errorhandler(404)
     def page_not_found(e):
