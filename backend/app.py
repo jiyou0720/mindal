@@ -97,15 +97,22 @@ def create_app(test_config=None):
     from backend.routes.graph_routes import graph_bp
     from backend.routes.inquiry_routes import inquiry_bp
     from backend.routes.psych_test_routes import psych_test_bp
-    
+    # [수정] 아래 두 라우트는 실제 파일이 없거나 auth_routes와 중복될 수 있으므로, 우선순위에 따라 정리합니다.
+    # from backend.routes.login_register_routes import user_bp 
+    # from backend.routes.mood_routes import mood_bp
+    # from backend.routes.chat_routes import chat_bp
+
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    # app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(diary_bp, url_prefix='/api/diary')
+    # app.register_blueprint(mood_bp, url_prefix='/api/mood')
+    # app.register_blueprint(chat_bp, url_prefix='/api/chat')
     app.register_blueprint(community_bp, url_prefix='/api/community')
+    app.register_blueprint(psych_test_bp, url_prefix='/api/psych-test')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
-    app.register_blueprint(psych_test_bp, url_prefix='/api/psych_test')
 
     # --- CLI 명령어 등록 ---
     @app.cli.command("init-db")
@@ -128,33 +135,48 @@ def create_app(test_config=None):
     @app.route('/signup', endpoint='signup')
     def signup_page(): return render_template('signup.html')
 
-    @app.route('/profile', endpoint='profile')
-    def profile_page(): return render_template('profile.html')
+    @app.route('/my-page', endpoint='my_page')
+    def my_page(): return render_template('my_page.html')
 
-    @app.route('/community_list', endpoint='community_list')
-    def community_list_page(): return render_template('community_list.html')
+    @app.route('/edit-profile', endpoint='edit_profile')
+    def edit_profile_page(): return render_template('edit_profile.html')
 
-    # [수정] 아래 두 라우트는 실제 파일이 없으므로 임시 주석 처리합니다.
-    # @app.route('/post_detail/<int:post_id>', endpoint='post_detail')
-    # def post_detail_page(post_id): return render_template('community_detail.html')
-
-    # @app.route('/post_editor', endpoint='post_editor')
-    # def post_editor_page(): return render_template('community_edit.html')
+    @app.route('/forgot-password', endpoint='forgot_password')
+    def forgot_password_page(): return render_template('forgot_password.html')
+        
+    @app.route('/ai-chat', endpoint='ai_chat')
+    def ai_chat_page(): return render_template('ai_chat.html')
 
     @app.route('/diary', endpoint='diary')
     def diary_page(): return render_template('diary.html')
 
-    @app.route('/ai_chat', endpoint='ai_chat')
-    def ai_chat_page(): return render_template('ai_chat.html')
-
-    @app.route('/my_changes', endpoint='my_changes')
-    def my_changes_page(): return render_template('my_changes.html')
+    @app.route('/community', endpoint='community_list')
+    def community_list_page(): return render_template('community_list.html')
     
+    # [수정] 아래 라우트들은 실제 templates 폴더에 파일이 없으므로 임시 주석 처리합니다.
+    # @app.route('/community/create', endpoint='community_create')
+    # def community_create_page(): return render_template('community_create.html')
+
+    @app.route('/community/post/<int:post_id>', endpoint='community_detail')
+    def community_detail_page(post_id): return render_template('community_detail.html', post_id=post_id)
+
+    @app.route('/community/edit/<int:post_id>', endpoint='community_edit')
+    def community_edit_page(post_id): return render_template('community_edit.html', post_id=post_id)
+
+    @app.route('/psych-test', endpoint='psych_test_list')
+    def psych_test_list_page(): return render_template('psych_test_list.html')
+        
+    @app.route('/psych-test/<string:test_type>', endpoint='psych_test_take')
+    def psych_test_take_page(test_type): return render_template('psych_test_take.html', test_type=test_type)
+
+    @app.route('/psych-test/result/<int:result_id>', endpoint='psych_test_result')
+    def psych_test_result_page(result_id): return render_template('psych_test_result.html', result_id=result_id)
+        
     @app.route('/inquiry', endpoint='inquiry')
     def inquiry_page(): return render_template('inquiry.html')
     
-    @app.route('/psych_test', endpoint='psych_test')
-    def psych_test_page(): return render_template('psych_test.html')
+    @app.route('/my-changes', endpoint='my_changes')
+    def my_changes_page(): return render_template('my_changes.html')
 
     # Admin pages
     @app.route('/admin/dashboard', endpoint='admin_dashboard')
@@ -165,7 +187,7 @@ def create_app(test_config=None):
 
     @app.route('/admin/menu_management', endpoint='menu_management')
     def menu_management_page(): return render_template('menu_management.html')
-    
+
     @app.route('/admin/role_menu_assignment', endpoint='role_menu_assignment')
     def role_menu_assignment_page(): return render_template('role_menu_assignment.html')
 
@@ -185,11 +207,11 @@ def create_app(test_config=None):
     def data_analytics_page(): return render_template('data_analytics.html')
 
     @app.route('/admin/chatbot_feedback', endpoint='chatbot_feedback')
-    def chatbot_feedback_page(): return render_template('chatbot_feedback.html') # [수정] 파일 이름 오타 수정
+    def chatbot_feedback_page(): return render_template('chatbot_feedback.html') # [수정] charbot -> chatbot
 
     @app.route('/admin/inquiry_management', endpoint='admin_inquiry_management')
     def admin_inquiry_management_page(): return render_template('admin_inquiry_management.html')
-    
+
     # --- 에러 핸들러 ---
     @app.errorhandler(404)
     def page_not_found(e):
@@ -199,7 +221,7 @@ def create_app(test_config=None):
 
 app = create_app()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)
 
