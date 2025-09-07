@@ -226,21 +226,19 @@ def create_app(test_config=None):
         return render_template('404.html'), 404
 
     return app
-
-from backend.initialize_roles_and_admin import initialize_database
-from backend.initialize_menus import initialize_menus
-from backend.initialize_roles import initialize_roles
+# app.py 마지막 부분 근처
+from initialize_roles_and_admin import initialize_database
+from initialize_menus import initialize_menus
+from initialize_roles import initialize_roles
 
 # Flask 애플리케이션 생성
 app = create_app()
 
 # 초기화 실행
 with app.app_context():
-    print(">>> 초기화 시작")
     initialize_database()
     initialize_roles()
     initialize_menus()
-    print(">>> 초기화 완료")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
