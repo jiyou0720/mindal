@@ -32,9 +32,11 @@ def create_app(test_config=None):
         app.config.from_mapping(test_config)
 
     # --- 데이터베이스 설정 (Railway 호환) ---
-    # 1. Railway에서 주입해주는 환경 변수(MYSQL_URL, MONGO_URL)를 우선적으로 찾습니다.
+    # 1. Railway에서 주입해주는 환경 변수(MYSQL_URL, MONGO_URL 등)를 우선적으로 찾습니다.
     mysql_url = os.environ.get("MYSQL_URL")
-    mongo_url = os.environ.get("MONGO_URL")
+    # Railway에서 제공하는 MongoDB 연결 변수(MONGO_URL 또는 MONGODB_URI)를 확인합니다.
+    mongo_url = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI")
+
 
     # 2. 만약 위 변수들이 없다면 (주로 로컬 개발 환경), .env 파일의 값을 조합하여 사용합니다.
     if not mysql_url:
@@ -49,6 +51,7 @@ def create_app(test_config=None):
             mysql_url = f"mysql+pymysql://{MYSQL_USER}{password_segment}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
     
     if not mongo_url:
+        # Railway 환경 변수가 없을 경우, 로컬 .env 파일의 MONGO_URI를 사용합니다.
         mongo_url = os.environ.get("MONGO_URI")
 
     # 3. 최종적으로 얻은 주소를 Flask 설정에 적용합니다.
@@ -211,7 +214,7 @@ def create_app(test_config=None):
 
     @app.route('/admin/chatbot_feedback', endpoint='chatbot_feedback')
     def chatbot_feedback_page():
-        return render_template('chatbot_feedback.html')
+        return render_template('charbot_feedback.html')
 
     @app.route('/admin/inquiry_management', endpoint='admin_inquiry_management')
     def admin_inquiry_management_page():
@@ -234,4 +237,3 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     # debug=False로 설정하여 운영 환경과 유사하게 실행합니다.
     app.run(host='0.0.0.0', port=port, debug=False)
-
