@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
 import logging
 from logging.handlers import RotatingFileHandler
+from urllib.parse import urlparse
 
 # --- 경로 설정 ---
 script_dir = os.path.dirname(__file__)
@@ -61,16 +62,17 @@ def create_app(test_config=None):
     db_name = None
     if mongo_uri:
         try:
-            db_name = mongo_uri.split('/')[-1].split('?')[0]
-        except IndexError:
-            pass # db_name remains None
+            parsed_uri = urlparse(mongo_uri)
+            db_name = parsed_uri.path.lstrip('/')
+        except Exception:
+            db_name = None
     
     if not db_name:
         db_name = 'mindbridge_db'
         print("INFO: MongoDB 데이터베이스 이름을 URI에서 찾을 수 없습니다. 기본값 'mindbridge_db'을 사용합니다.")
 
     app.config["MONGO_DBNAME"] = db_name
-    print(f"INFO: MongoDB URI: {mongo_uri[:30]}...")
+    print(f"INFO: MongoDB URI: {str(mongo_uri)[:30]}...")
     print(f"INFO: MongoDB DBNAME: {db_name}")
 
     print(">>> 데이터베이스 설정 완료.")
@@ -88,7 +90,6 @@ def create_app(test_config=None):
 
     # --- API 블루프린트 등록 ---
     from backend.routes.auth_routes import auth_bp
-    from backend.routes.user_routes import user_bp
     from backend.routes.diary_routes import diary_bp
     from backend.routes.community_routes import community_bp
     from backend.routes.admin_routes import admin_bp
@@ -98,7 +99,6 @@ def create_app(test_config=None):
     from backend.routes.psych_test_routes import psych_test_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(diary_bp, url_prefix='/api/diary')
     app.register_blueprint(community_bp, url_prefix='/api/community')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
