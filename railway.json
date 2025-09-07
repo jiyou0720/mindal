@@ -6,7 +6,7 @@
   "deploy": {
     "runtime": "V2",
     "numReplicas": 1,
-    "startCommand": "flask init-db && gunicorn --bind 0.0.0.0:$PORT backend.app:app",
+    "startCommand": "FLASK_APP=backend.app flask init-db && gunicorn --bind 0.0.0.0:$PORT backend.app:app",
     "releaseCommand": "cd backend && flask --app app db upgrade",
     "sleepApplication": false,
     "variables": {
@@ -15,4 +15,5 @@
     }
   }
 }
+
 
