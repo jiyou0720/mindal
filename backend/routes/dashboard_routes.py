@@ -12,18 +12,24 @@ def get_user_dashboard_stats():
     """현재 로그인된 사용자의 대시보드 통계 정보를 반환합니다."""
     user_id = g.user_id
     try:
+        # [수정] 안정적인 MongoDB 연결을 위해 db 객체를 직접 가져옵니다.
+        db_name = current_app.config.get("MONGO_DBNAME")
+        if not db_name or not mongo.cx:
+            raise ConnectionError("MongoDB is not configured or connected.")
+        db_mongo = mongo.cx[db_name]
+
         # AI 채팅 기록 (현재 모델이 없으므로 임시로 0을 반환)
         # TODO: AI 채팅 기록을 MongoDB에서 가져오는 로직 구현 필요
         ai_chat_count = 0
 
         # 작성된 일기 수 (MongoDB)
-        diary_entry_count = mongo.db.diary_entries.count_documents({'user_id': user_id})
+        diary_entry_count = db_mongo.diary_entries.count_documents({'user_id': user_id})
 
         # 총 사용자 수 (MariaDB) - 이 값은 모든 사용자에게 동일하게 보임
         total_user_count = User.query.count()
 
         # 가장 빈번한 감정 (MongoDB에서 최근 30개 기록 기준)
-        mood_entries = mongo.db.mood_entries.find({'user_id': user_id}).sort('recorded_at', -1).limit(30)
+        mood_entries = db_mongo.mood_entries.find({'user_id': user_id}).sort('recorded_at', -1).limit(30)
         moods = [entry['mood'] for entry in mood_entries]
         most_frequent_mood = "분석 중"
         if moods:
