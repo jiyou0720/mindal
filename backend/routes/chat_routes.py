@@ -11,7 +11,7 @@ chat_bp = Blueprint('chat', __name__)
 def call_openai_api(messages, model="gpt-4o", temperature=0.7, max_tokens=500):
     """Calls the OpenAI Chat Completion API and returns the response text."""
     try:
-        api_key = os.environ.get('OPENAI_API_KEY')
+        api_key = os.getenv.get('OPENAI_API_KEY')
         if not api_key:
             current_app.logger.error("OpenAI API key is not configured!")
             return "서버 설정 오류: OpenAI API 키가 없습니다."
@@ -50,10 +50,7 @@ def chat_with_openai():
         return jsonify({'error': 'Please enter a message.'}), 400
 
     if not chat_session_id:
-        # ========================================================== #
-        # [수정] 함수 이름 앞에 밑줄(_)을 추가하여 올바르게 호출합니다.
-        chat_session_id = ChatHistory._generate_session_id(user_id)
-        # ========================================================== #
+        chat_session_id = ChatHistory.generate_session_id(user_id)
         ChatSession.create_session(user_id, chat_session_id, "default")
         current_app.logger.info(f"New chat session created: {chat_session_id}")
 
@@ -228,3 +225,4 @@ def get_my_feedback():
     except Exception as e:
         current_app.logger.error(f"Error fetching user feedback for user {user_id}: {e}", exc_info=True)
         return jsonify({"message": "내 피드백을 불러오는 중 오류가 발생했습니다."}), 500
+
