@@ -30,7 +30,7 @@ def token_required(f):
                 current_app.logger.error("token_required: JWT_SECRET_KEY is not configured!")
                 return jsonify({'message': 'Server configuration error: JWT secret key missing.'}), 500
 
-            data = jwt.decode(token, secret_key, algorithms=["HS256"])
+            data = jwt.decode(token, secret_key, algorithms=["HS26"])
             g.user_id = data['user_id']
             g.username = data['username']
             g.nickname = data.get('nickname')
@@ -187,7 +187,7 @@ def get_current_user_info():
     
     return jsonify({'user': user.to_dict()}), 200
 
-# [추가] 사용자의 역할에 맞는 메뉴 목록 반환 API
+# [수정] 사용자의 역할에 맞는 메뉴 목록 반환 API (안정성 강화)
 @auth_bp.route('/menus', methods=['GET'])
 @token_required
 def get_user_menus():
@@ -198,8 +198,14 @@ def get_user_menus():
         return jsonify({"message": "사용자 역할을 확인할 수 없습니다."}), 403
 
     try:
+        # [수정] CLI 환경과 동일한 방식으로 DB 객체를 직접 가져옵니다.
+        db_name = current_app.config.get("MONGO_DBNAME")
+        if not db_name or not mongo.cx:
+            raise ConnectionError("MongoDB is not configured or connected.")
+        db_mongo = mongo.cx[db_name]
+
         # MongoDB에서 해당 역할들에 할당된 모든 메뉴 ID를 조회합니다.
-        assignments = mongo.db.role_menu_assignments.find({"role_name": {"$in": g.user_roles}})
+        assignments = db_mongo.role_menu_assignments.find({"role_name": {"$in": g.user_roles}})
         
         menu_ids = set()
         for assignment in assignments:
@@ -210,7 +216,7 @@ def get_user_menus():
             return jsonify([]) # 메뉴가 없으면 빈 리스트 반환
 
         # 중복을 제거한 메뉴 ID로 메뉴 상세 정보를 조회하고 'order' 순으로 정렬합니다.
-        user_menus = list(mongo.db.menu_items.find({"_id": {"$in": list(menu_ids)}}).sort("order", 1))
+        user_menus = list(db_mongo.menu_items.find({"_id": {"$in": list(menu_ids)}}).sort("order", 1))
 
         # ObjectId를 문자열로 변환하여 JSON으로 보낼 수 있도록 처리합니다.
         for menu in user_menus:
@@ -303,3 +309,4 @@ def reset_password():
     except Exception as e:
         current_app.logger.error(f"Error during password reset: {e}", exc_info=True)
         return jsonify({'message': '비밀번호 재설정 중 오류가 발생했습니다.'}), 500
+
