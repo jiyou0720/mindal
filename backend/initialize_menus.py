@@ -2,6 +2,7 @@ import sys
 import os
 import time
 from pymongo.errors import ConnectionFailure
+from flask import current_app
 
 # 프로젝트 루트 디렉토리를 Python 경로에 추가합니다.
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -15,31 +16,44 @@ def initialize_menus():
     """MongoDB에 기본 메뉴 아이템을 생성하고, 관리자 역할에 메뉴를 할당합니다."""
     print("메뉴 초기화를 시작합니다...")
 
-    # --- [수정] MongoDB 연결 재시도 로직 ---
+    db = None
+    # 현재 Flask 앱 컨텍스트에서 데이터베이스 이름을 가져옵니다.
+    db_name = current_app.config.get("MONGO_DBNAME")
+    if not db_name:
+        raise ValueError("MONGO_DBNAME이 Flask 설정에 없습니다.")
+
+    # --- [최종 수정] MongoDB 연결 및 DB 객체 직접 가져오기 ---
     retries = 5
-    delay = 3  # 재시도 간 3초 대기
+    delay = 3
     for i in range(retries):
         try:
-            # mongo.db가 None인지 직접 확인하여 연결 상태를 테스트합니다.
-            if mongo.db is None:
-                raise AttributeError("mongo.db is None, a connection has not been established.")
+            # mongo.cx (클라이언트)가 있는지 확인합니다.
+            if mongo.cx is None:
+                raise AttributeError("PyMongo 클라이언트(mongo.cx)를 사용할 수 없습니다.")
             
-            # MongoDB 서버에 'ping'을 보내 연결이 살아있는지 최종 확인합니다.
-            mongo.db.command('ping')
-            print(f"MongoDB 연결 성공 (시도 {i + 1}/{retries}).")
-            break  # 연결에 성공하면 재시도 루프를 중단합니다.
+            # 클라이언트에서 직접 데이터베이스 객체를 가져옵니다.
+            db = mongo.cx[db_name]
+            
+            # 연결이 활성화되었는지 확인하기 위해 ping 명령어를 보냅니다.
+            db.command('ping')
+            print(f"MongoDB 연결 성공 (시도 {i + 1}/{retries}). Database: '{db_name}'")
+            break  # 성공 시 루프 탈출
         except (ConnectionFailure, AttributeError) as e:
+            db = None # 실패 시 db 변수 초기화
             print(f"MongoDB 연결 대기 중... (시도 {i + 1}/{retries}): {e}")
             if i < retries - 1:
                 print(f"{delay}초 후 재시도합니다.")
                 time.sleep(delay)
             else:
                 print("최대 재시도 횟수를 초과했습니다. 메뉴 초기화에 실패했습니다.")
-                raise  # 모든 재시도 실패 시, 오류를 발생시켜 배포를 중단합니다.
-    
-    # --- 기존 메뉴 초기화 로직 ---
-    menu_items_collection = mongo.db.menu_items
-    assignments_collection = mongo.db.role_menu_assignments
+                raise
+
+    if db is None:
+        raise ConnectionFailure("여러 번의 재시도 후에도 MongoDB에 연결하지 못했습니다.")
+
+    # --- 기존 메뉴 초기화 로직 (이제 안정적인 db 변수 사용) ---
+    menu_items_collection = db.menu_items
+    assignments_collection = db.role_menu_assignments
 
     # 1. 애플리케이션의 모든 메뉴 아이템 정의
     all_menus = [
