@@ -30,7 +30,8 @@ def token_required(f):
                 current_app.logger.error("token_required: JWT_SECRET_KEY is not configured!")
                 return jsonify({'message': 'Server configuration error: JWT secret key missing.'}), 500
 
-            data = jwt.decode(token, secret_key, algorithms=["HS26"])
+            # [수정] 알고리즘 오타 수정 (HS26 -> HS256)
+            data = jwt.decode(token, secret_key, algorithms=["HS256"])
             g.user_id = data['user_id']
             g.username = data['username']
             g.nickname = data.get('nickname')
