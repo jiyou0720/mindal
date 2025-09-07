@@ -14,7 +14,7 @@ def call_openai_api(messages, model="gpt-4o", temperature=0.7, max_tokens=500):
         api_key = os.environ.get('OPENAI_API_KEY')
         if not api_key:
             current_app.logger.error("OpenAI API key is not configured!")
-            return "Server configuration error: OpenAI API key is missing."
+            return "서버 설정 오류: OpenAI API 키가 없습니다."
 
         client = openai.OpenAI(api_key=api_key)
 
@@ -28,13 +28,13 @@ def call_openai_api(messages, model="gpt-4o", temperature=0.7, max_tokens=500):
             return response.choices[0].message.content.strip()
         else:
             current_app.logger.warning(f"OpenAI API response did not contain valid choices: {response}")
-            return "The response was unclear. Please try again."
+            return "응답이 명확하지 않습니다. 다시 시도해 주세요."
     except openai.APIError as e:
         current_app.logger.error(f"OpenAI API Error: {e}")
-        return f"An API error occurred: {e}"
+        return f"API 오류가 발생했습니다: {e}"
     except Exception as e:
         current_app.logger.error(f"An unexpected error occurred during OpenAI API call: {e}", exc_info=True)
-        return "An unknown error occurred. Please try again."
+        return "알 수 없는 오류가 발생했습니다. 다시 시도해 주세요."
 
 # --- API Endpoints ---
 
@@ -152,7 +152,7 @@ def submit_chat_feedback():
     )
     return jsonify({'message': 'Feedback submitted successfully.', 'feedback_id': feedback_id}), 200
 
-# --- Admin Feedback Routes (Restored) ---
+# --- Admin Feedback Routes ---
 
 @chat_bp.route('/all_feedback', methods=['GET'])
 @token_required
@@ -200,4 +200,29 @@ def delete_feedback_item(feedback_id):
     except Exception as e:
         current_app.logger.error(f"Error deleting feedback item {feedback_id}: {e}", exc_info=True)
         return jsonify({'error': 'An error occurred while deleting feedback.'}), 500
+
+# [Restored] Endpoint to get all feedback for the current user
+@chat_bp.route('/my_feedback', methods=['GET'])
+@token_required
+def get_my_feedback():
+    user_id = g.user_id
+    try:
+        feedback_list = ChatbotFeedback.get_feedback_by_user(user_id)
+        
+        formatted_feedback = []
+        for fb in feedback_list:
+            fb_dict = {
+                'id': str(fb['_id']),
+                'user_id': fb['user_id'],
+                'chat_session_id': fb['chat_session_id'],
+                'rating': fb['rating'],
+                'comment': fb['comment'],
+                'timestamp': fb['timestamp'].isoformat() if isinstance(fb['timestamp'], datetime) else fb['timestamp'],
+            }
+            formatted_feedback.append(fb_dict)
+            
+        return jsonify({"feedback": formatted_feedback}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error fetching user feedback for user {user_id}: {e}", exc_info=True)
+        return jsonify({"message": "내 피드백을 불러오는 중 오류가 발생했습니다."}), 500
 
