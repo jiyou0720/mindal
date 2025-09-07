@@ -227,13 +227,20 @@ def create_app(test_config=None):
 
     return app
 
-# Gunicorn과 같은 WSGI 서버는 이 'app' 변수를 찾아 실행합니다.
-# 애플리케이션 팩토리로부터 app 인스턴스를 전역 스코프에서 생성합니다.
+# app.py 마지막 부분 근처
+from initialize_roles_and_admin import initialize_database
+from initialize_menus import initialize_menus
+from initialize_roles import initialize_roles
+
+# Flask 애플리케이션 생성
 app = create_app()
 
-# 이 스크립트가 직접 실행될 때 (예: python backend/app.py)
+# 초기화 실행
+with app.app_context():
+    initialize_database()
+    initialize_roles()
+    initialize_menus()
+
 if __name__ == '__main__':
-    # Railway는 PORT 환경 변수를 사용하므로, 해당 변수가 있으면 사용하고 없으면 5000번 포트를 사용합니다.
     port = int(os.environ.get('PORT', 5000))
-    # debug=False로 설정하여 운영 환경과 유사하게 실행합니다.
     app.run(host='0.0.0.0', port=port, debug=False)
