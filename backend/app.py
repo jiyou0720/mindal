@@ -100,6 +100,10 @@ def create_app(test_config=None):
     from backend.routes.graph_routes import graph_bp
     from backend.routes.inquiry_routes import inquiry_bp
     from backend.routes.psych_test_routes import psych_test_bp
+    # ========================================================== #
+    # [수정] chat_routes.py에서 chat_bp를 가져옵니다.
+    from backend.routes.chat_routes import chat_bp
+    # ========================================================== #
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(diary_bp, url_prefix='/api/diary')
@@ -109,6 +113,10 @@ def create_app(test_config=None):
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
     app.register_blueprint(psych_test_bp, url_prefix='/api/psych-test')
+    # ========================================================== #
+    # [수정] chat_bp를 '/api/chat' 접두사와 함께 등록합니다.
+    app.register_blueprint(chat_bp, url_prefix='/api/chat')
+    # ========================================================== #
 
     # --- CLI 명령어 등록 ---
     @app.cli.command("init-db")
@@ -211,6 +219,10 @@ def create_app(test_config=None):
     # --- 에러 핸들러 ---
     @app.errorhandler(404)
     def page_not_found(e):
+        # API 요청에 대한 404는 JSON으로 응답합니다.
+        if request.path.startswith('/api/'):
+            return jsonify(error="Not found"), 404
+        # 그 외에는 404 HTML 페이지를 렌더링합니다.
         return render_template('404.html'), 404
 
     return app
@@ -220,4 +232,3 @@ app = create_app()
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
