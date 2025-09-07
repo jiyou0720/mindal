@@ -11,7 +11,7 @@ chat_bp = Blueprint('chat', __name__)
 def call_openai_api(messages, model="gpt-4o", temperature=0.7, max_tokens=500):
     """Calls the OpenAI Chat Completion API and returns the response text."""
     try:
-        api_key = os.getenv.get('OPENAI_API_KEY')
+        api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             current_app.logger.error("OpenAI API key is not configured!")
             return "서버 설정 오류: OpenAI API 키가 없습니다."
