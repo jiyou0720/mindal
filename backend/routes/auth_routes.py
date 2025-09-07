@@ -1,6 +1,6 @@
 import os
 from flask import Blueprint, request, jsonify, g, current_app
-from backend.extensions import db
+from backend.extensions import db, mongo
 from backend.maria_models import User, Role, UserRole, NicknameHistory
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -8,6 +8,7 @@ import jwt
 import datetime
 import random
 import string
+from bson import ObjectId
 
 auth_bp = Blueprint('auth_api', __name__)
 
@@ -29,15 +30,13 @@ def token_required(f):
                 current_app.logger.error("token_required: JWT_SECRET_KEY is not configured!")
                 return jsonify({'message': 'Server configuration error: JWT secret key missing.'}), 500
 
-            # PyJWT 2.0+에서는 algorithms 인자가 필수입니다.
             data = jwt.decode(token, secret_key, algorithms=["HS256"])
             g.user_id = data['user_id']
             g.username = data['username']
             g.nickname = data.get('nickname')
             g.user_uid = data.get('user_uid')
-            g.email = data.get('email') # JWT 토큰에서 이메일 가져와 g 객체에 할당
+            g.email = data.get('email')
             
-            # DB에서 최신 역할 정보 가져와 g.user_roles에 할당
             user = db.session.get(User, g.user_id)
             if user:
                 g.user_roles = [role.name for role in user.roles]
@@ -104,9 +103,8 @@ def register():
         return jsonify({'message': '이미 존재하는 별명입니다.'}), 409
 
     try:
-        # 사용자 UID 생성
         user_uid = generate_numeric_uid()
-        while User.query.filter_by(user_uid=user_uid).first(): # 중복 방지
+        while User.query.filter_by(user_uid=user_uid).first():
             user_uid = generate_numeric_uid()
 
         new_user = User(
@@ -120,16 +118,12 @@ def register():
         )
         new_user.set_password(password)
 
-        # 기본 역할 '일반 사용자' 할당
         default_role = Role.query.filter_by(name='일반 사용자').first()
         if default_role:
             new_user.roles.append(default_role)
             current_app.logger.info("Default role '일반 사용자' assigned to new user.")
         else:
             current_app.logger.error("Default role '일반 사용자' not found in DB. Please run initialize_roles.py.")
-            # 역할 할당 실패 시, 사용자 생성은 진행하되 로그를 남김 (또는 에러 반환)
-            # 여기서는 사용자 생성은 진행하고 경고를 남깁니다.
-            # 만약 역할 할당이 필수적이라면 여기서 500 에러를 반환해야 합니다.
 
         db.session.add(new_user)
         db.session.commit()
@@ -152,7 +146,6 @@ def login_user():
     if not user or not user.check_password(password):
         return jsonify({'message': '잘못된 이메일 또는 비밀번호입니다.'}), 401
 
-    # 사용자 역할 정보 로드 (JWT에 포함하기 위해)
     user_roles_list = [user_role_obj.name for user_role_obj in user.roles]
 
     token = jwt.encode(
@@ -161,12 +154,12 @@ def login_user():
             'username': user.username,
             'nickname': user.nickname,
             'user_uid': user.user_uid,
-            'email': user.email, # 이메일도 토큰에 포함
-            'roles': user_roles_list, # 역할 목록을 토큰에 포함
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24) # 토큰 만료 시간 24시간
+            'email': user.email,
+            'roles': user_roles_list,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
         },
         current_app.config['JWT_SECRET_KEY'],
-        algorithm='HS256' # PyJWT 2.0+에서는 algorithm 인자가 필수입니다.
+        algorithm='HS256'
     )
     
     response = jsonify({
@@ -176,28 +169,58 @@ def login_user():
         'username': user.username,
         'nickname': user.nickname,
         'user_uid': user.user_uid,
-        'email': user.email, # 프론트엔드에서 바로 사용할 수 있도록 이메일도 반환
+        'email': user.email,
         'roles': user_roles_list
     })
-    
-    # 로그인 성공 시 프론트엔드에 메뉴 캐시 삭제 지시 (쿠키 또는 헤더를 통해)
-    # response.headers['X-Clear-Menu-Cache'] = 'true' # 이 부분은 요청에 의해 제거됨
     
     return response, 200
 
 
 @auth_bp.route('/me', methods=['GET'])
 @token_required
-def get_current_user():
+def get_current_user_info():
     user_id = g.user_id
     user = db.session.get(User, user_id)
 
     if not user:
         return jsonify({'message': '사용자를 찾을 수 없습니다.'}), 404
     
-    # User 모델의 to_dict 메서드를 사용하여 사용자 정보 반환
-    # to_dict 메서드에 roles가 포함되어 있으므로 별도로 추가할 필요 없음
     return jsonify({'user': user.to_dict()}), 200
+
+# [추가] 사용자의 역할에 맞는 메뉴 목록 반환 API
+@auth_bp.route('/menus', methods=['GET'])
+@token_required
+def get_user_menus():
+    """
+    현재 로그인된 사용자의 역할에 맞는 메뉴 목록을 반환합니다.
+    """
+    if not hasattr(g, 'user_roles') or not g.user_roles:
+        return jsonify({"message": "사용자 역할을 확인할 수 없습니다."}), 403
+
+    try:
+        # MongoDB에서 해당 역할들에 할당된 모든 메뉴 ID를 조회합니다.
+        assignments = mongo.db.role_menu_assignments.find({"role_name": {"$in": g.user_roles}})
+        
+        menu_ids = set()
+        for assignment in assignments:
+            for menu_id in assignment.get('menu_ids', []):
+                menu_ids.add(ObjectId(menu_id))
+
+        if not menu_ids:
+            return jsonify([]) # 메뉴가 없으면 빈 리스트 반환
+
+        # 중복을 제거한 메뉴 ID로 메뉴 상세 정보를 조회하고 'order' 순으로 정렬합니다.
+        user_menus = list(mongo.db.menu_items.find({"_id": {"$in": list(menu_ids)}}).sort("order", 1))
+
+        # ObjectId를 문자열로 변환하여 JSON으로 보낼 수 있도록 처리합니다.
+        for menu in user_menus:
+            menu['_id'] = str(menu['_id'])
+
+        return jsonify(user_menus)
+    except Exception as e:
+        current_app.logger.error(f"Error fetching menus for user {g.user_id}: {e}", exc_info=True)
+        return jsonify({"message": "메뉴를 불러오는 중 오류가 발생했습니다."}), 500
+
 
 # 사용자 프로필 업데이트
 @auth_bp.route('/profile', methods=['PUT'])
@@ -210,10 +233,8 @@ def update_profile():
     if not user:
         return jsonify({'message': '사용자를 찾을 수 없습니다.'}), 404
 
-    # 닉네임 변경 시 이력 기록
     new_nickname = data.get('nickname')
     if new_nickname and new_nickname != user.nickname:
-        # 새로운 닉네임이 이미 존재하는지 확인
         existing_user_with_new_nickname = User.query.filter_by(nickname=new_nickname).first()
         if existing_user_with_new_nickname and existing_user_with_new_nickname.id != user_id:
             return jsonify({'message': '이미 사용 중인 닉네임입니다.'}), 409
@@ -226,15 +247,13 @@ def update_profile():
         db.session.add(nickname_history_entry)
         user.nickname = new_nickname
 
-    # 다른 필드 업데이트
     user.gender = data.get('gender', user.gender)
     user.age = data.get('age', user.age)
     user.major = data.get('major', user.major)
-    user.updated_at = datetime.datetime.utcnow() # 업데이트 시간 갱신
+    user.updated_at = datetime.datetime.utcnow()
 
     try:
         db.session.commit()
-        # 업데이트된 사용자 정보를 to_dict()로 반환
         return jsonify({'message': '프로필이 성공적으로 업데이트되었습니다.', 'user': user.to_dict()}), 200
     except Exception as e:
         db.session.rollback()
