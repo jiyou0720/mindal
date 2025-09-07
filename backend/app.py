@@ -51,6 +51,11 @@ def create_app(test_config=None):
         print("INFO: Railway MONGO_URL이 없습니다. 로컬 .env 설정을 시도합니다.")
         mongo_url = os.environ.get("MONGO_URI")
 
+    # --- MongoDB URI 확인 로직 강화 ---
+    # 여기서 URI가 없으면, 설정 문제임을 명확히 알리고 실행을 중단시킵니다.
+    if not mongo_url:
+        raise ValueError("MongoDB URI를 찾을 수 없습니다. MONGO_URL 또는 MONGODB_URI 환경 변수를 설정해주세요.")
+
     # 최종 URI 설정 및 로그 출력
     if mysql_url and mysql_url.startswith('mysql://'):
          app.config['SQLALCHEMY_DATABASE_URI'] = mysql_url.replace('mysql://', 'mysql+pymysql://', 1)
