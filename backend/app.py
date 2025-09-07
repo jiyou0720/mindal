@@ -227,9 +227,9 @@ def create_app(test_config=None):
 
     return app
 # app.py 마지막 부분 근처
-from initialize_roles_and_admin import initialize_database
-from initialize_menus import initialize_menus
-from initialize_roles import initialize_roles
+from backend.initialize_roles_and_admin import initialize_database
+from backend.initialize_menus import initialize_menus
+from backend.initialize_roles import initialize_roles
 
 # Flask 애플리케이션 생성
 app = create_app()
