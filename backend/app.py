@@ -130,25 +130,26 @@ def create_app(test_config=None):
     @app.route('/signup', endpoint='signup')
     def signup_page(): return render_template('signup.html')
 
-    @app.route('/my-page', endpoint='my_page')
+    @app.route('/my_page', endpoint='my_page')
     def my_page(): return render_template('my_page.html')
 
-    @app.route('/edit-profile', endpoint='edit_profile')
+    @app.route('/edit_profile', endpoint='edit_profile')
     def edit_profile_page(): return render_template('edit_profile.html')
 
-    @app.route('/forgot-password', endpoint='forgot_password')
+    @app.route('/forgot_password', endpoint='forgot_password')
     def forgot_password_page(): return render_template('forgot_password.html')
         
-    @app.route('/ai-chat', endpoint='ai_chat')
+    # [수정] 메뉴 DB와 URL을 일치시킵니다.
+    @app.route('/ai_chat', endpoint='ai_chat')
     def ai_chat_page(): return render_template('ai_chat.html')
 
     @app.route('/diary', endpoint='diary')
     def diary_page(): return render_template('diary.html')
 
-    @app.route('/community', endpoint='community_list')
+    # [수정] 메뉴 DB와 URL을 일치시킵니다.
+    @app.route('/community_list', endpoint='community_list')
     def community_list_page(): return render_template('community_list.html')
 
-    # [수정] 누락되었던 커뮤니티 관련 라우트 추가
     @app.route('/community/create', endpoint='community_create')
     def community_create_page(): return render_template('community_create.html')
 
@@ -158,19 +159,19 @@ def create_app(test_config=None):
     @app.route('/community/edit/<int:post_id>', endpoint='community_edit')
     def community_edit_page(post_id): return render_template('community_edit.html', post_id=post_id)
 
-    @app.route('/psych-test', endpoint='psych_test_list')
+    @app.route('/psych_test_list', endpoint='psych_test_list')
     def psych_test_list_page(): return render_template('psych_test_list.html')
         
-    @app.route('/psych-test/<string:test_type>', endpoint='psych_test_take')
+    @app.route('/psych_test_take/<string:test_type>', endpoint='psych_test_take')
     def psych_test_take_page(test_type): return render_template('psych_test_take.html', test_type=test_type)
 
-    @app.route('/psych-test/result/<int:result_id>', endpoint='psych_test_result')
+    @app.route('/psych_test/result/<int:result_id>', endpoint='psych_test_result')
     def psych_test_result_page(result_id): return render_template('psych_test_result.html', result_id=result_id)
         
     @app.route('/inquiry', endpoint='inquiry')
     def inquiry_page(): return render_template('inquiry.html')
     
-    @app.route('/my-changes', endpoint='my_changes')
+    @app.route('/my_changes', endpoint='my_changes')
     def my_changes_page(): return render_template('my_changes.html')
 
     # --- 관리자 페이지 라우트 ---
@@ -201,7 +202,6 @@ def create_app(test_config=None):
     @app.route('/admin/data_analytics', endpoint='data_analytics')
     def data_analytics_page(): return render_template('data_analytics.html')
 
-    # [수정] 파일 이름 오타 수정
     @app.route('/admin/chatbot_feedback', endpoint='chatbot_feedback')
     def chatbot_feedback_page(): return render_template('charbot_feedback.html')
 
