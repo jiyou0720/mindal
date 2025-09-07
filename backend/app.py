@@ -146,7 +146,7 @@ def create_app(test_config=None):
     @app.route('/ai_chat', endpoint='ai_chat')
     def ai_chat_page(): return render_template('ai_chat.html')
 
-    @app.route('/my_changes', endpoint='my_page') # [수정] endpoint를 'my_changes'에서 'my_page'로 변경
+    @app.route('/my_changes', endpoint='my_changes') # [수정] endpoint를 'my_page'에서 다시 'my_changes'로 변경
     def my_changes_page(): return render_template('my_changes.html')
     
     @app.route('/inquiry', endpoint='inquiry')
