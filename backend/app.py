@@ -7,7 +7,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 # --- 경로 설정 ---
 # 'backend'와 같은 내부 모듈 및 루트의 스크립트를 올바르게 임포트하기 위해 프로젝트 루트 경로를 추가합니다.
-# 이 코드를 파일 최상단으로 이동하여 항상 먼저 실행되도록 합니다.
 script_dir = os.path.dirname(__file__)
 project_root = os.path.abspath(os.path.join(script_dir, '..'))
 if project_root not in sys.path:
@@ -31,11 +30,14 @@ def create_app(test_config=None):
     if test_config:
         app.config.from_mapping(test_config)
 
-    # --- 데이터베이스 설정 (Railway 호환) ---
+    # --- 데이터베이스 설정 (Railway 호환) 및 진단 로그 추가 ---
+    print(">>> 데이터베이스 설정을 시작합니다...")
     mysql_url = os.environ.get("MYSQL_URL")
     mongo_url = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI")
 
+    # 로컬 환경을 위한 폴백(Fallback) 로직
     if not mysql_url:
+        print("INFO: Railway MYSQL_URL이 없습니다. 로컬 .env 설정을 시도합니다.")
         MYSQL_USER = os.environ.get("MYSQL_USER")
         MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")
         MYSQL_HOST = os.environ.get("MYSQL_HOST")
@@ -46,14 +48,23 @@ def create_app(test_config=None):
             mysql_url = f"mysql+pymysql://{MYSQL_USER}{password_segment}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
     
     if not mongo_url:
+        print("INFO: Railway MONGO_URL이 없습니다. 로컬 .env 설정을 시도합니다.")
         mongo_url = os.environ.get("MONGO_URI")
 
+    # 최종 URI 설정 및 로그 출력
     if mysql_url and mysql_url.startswith('mysql://'):
          app.config['SQLALCHEMY_DATABASE_URI'] = mysql_url.replace('mysql://', 'mysql+pymysql://', 1)
     else:
         app.config['SQLALCHEMY_DATABASE_URI'] = mysql_url
-
+    
     app.config["MONGO_URI"] = mongo_url
+
+    # Railway 배포 로그에서 이 부분들을 확인하여 변수가 올바르게 설정되었는지 검증하세요.
+    print(f"INFO: MariaDB(MySQL) URI: {app.config['SQLALCHEMY_DATABASE_URI'][:30] if app.config.get('SQLALCHEMY_DATABASE_URI') else 'Not Set'}")
+    print(f"INFO: MongoDB URI: {app.config['MONGO_URI'][:30] if app.config.get('MONGO_URI') else 'Not Set'}")
+    print(">>> 데이터베이스 설정 완료.")
+
+
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     CORS(app, supports_credentials=True)
 
@@ -65,29 +76,150 @@ def create_app(test_config=None):
     jwt.init_app(app)
     bcrypt.init_app(app)
 
-    # --- API 블루프린트(라우트 그룹) 등록 ---
+    # --- API 블루프린트(라우트 그룹) 전체 등록 ---
     with app.app_context():
         from backend.routes.auth_routes import auth_bp
         from backend.routes.login_register_routes import user_bp
         from backend.routes.diary_routes import diary_bp
-        # ... 다른 블루프린트 임포트 ...
+        from backend.routes.mood_routes import mood_bp
+        from backend.routes.chat_routes import chat_bp
+        from backend.routes.community_routes import community_bp
+        from backend.routes.psych_test_routes import psych_test_bp
+        from backend.routes.admin_routes import admin_bp
+        from backend.routes.dashboard_routes import dashboard_bp
+        from backend.routes.graph_routes import graph_bp
+        from backend.routes.inquiry_routes import inquiry_bp
+
         app.register_blueprint(auth_bp, url_prefix='/api/auth')
         app.register_blueprint(user_bp, url_prefix='/api/user')
         app.register_blueprint(diary_bp, url_prefix='/api/diary')
-        # ... 다른 블루프린트 등록 ...
+        app.register_blueprint(mood_bp, url_prefix='/api/mood')
+        app.register_blueprint(chat_bp, url_prefix='/api/chat')
+        app.register_blueprint(community_bp, url_prefix='/api/community')
+        app.register_blueprint(psych_test_bp, url_prefix='/api/psych-test')
+        app.register_blueprint(admin_bp, url_prefix='/api/admin')
+        app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+        app.register_blueprint(graph_bp, url_prefix='/api/graph')
+        app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
 
-    # --- HTML 페이지 렌더링 라우트 ---
-    @app.route('/', defaults={'path': ''})
-    @app.route('/<path:path>')
-    def catch_all(path):
-        # 모든 프론트엔드 라우트를 index.html로 리디렉션합니다.
-        # 실제 파일(예: /static/...)에 대한 요청은 Flask가 자동으로 처리합니다.
-        return render_template("index.html")
+    # --- HTML 페이지 렌더링 라우트 전체 복원 ---
+    @app.route('/', endpoint='index')
+    def index_page():
+        return render_template('index.html')
+
+    @app.route('/login', endpoint='login')
+    def login_page():
+        return render_template('login.html')
+
+    @app.route('/signup', endpoint='signup')
+    def signup_page():
+        return render_template('signup.html')
+    
+    @app.route('/my-page', endpoint='my_page')
+    def my_page():
+        return render_template('my_page.html')
+
+    @app.route('/edit-profile', endpoint='edit_profile')
+    def edit_profile_page():
+        return render_template('edit_profile.html')
+
+    @app.route('/forgot-password', endpoint='forgot_password')
+    def forgot_password_page():
+        return render_template('forgot_password.html')
+        
+    @app.route('/ai-chat', endpoint='ai_chat')
+    def ai_chat_page():
+        return render_template('ai_chat.html')
+
+    @app.route('/diary', endpoint='diary')
+    def diary_page():
+        return render_template('diary.html')
+
+    @app.route('/community', endpoint='community_list')
+    def community_list_page():
+        return render_template('community_list.html')
+    
+    @app.route('/community/create', endpoint='community_create')
+    def community_create_page():
+        return render_template('community_create.html')
+
+    @app.route('/community/post/<int:post_id>', endpoint='community_detail')
+    def community_detail_page(post_id):
+        return render_template('community_detail.html', post_id=post_id)
+
+    @app.route('/community/edit/<int:post_id>', endpoint='community_edit')
+    def community_edit_page(post_id):
+        return render_template('community_edit.html', post_id=post_id)
+
+    @app.route('/psych-test', endpoint='psych_test_list')
+    def psych_test_list_page():
+        return render_template('psych_test_list.html')
+        
+    @app.route('/psych-test/<string:test_type>', endpoint='psych_test_take')
+    def psych_test_take_page(test_type):
+        return render_template('psych_test_take.html', test_type=test_type)
+
+    @app.route('/psych-test/result/<int:result_id>', endpoint='psych_test_result')
+    def psych_test_result_page(result_id):
+        return render_template('psych_test_result.html', result_id=result_id)
+        
+    @app.route('/inquiry', endpoint='inquiry')
+    def inquiry_page():
+        return render_template('inquiry.html')
+    
+    @app.route('/my-changes', endpoint='my_changes')
+    def my_changes_page():
+        return render_template('my_changes.html')
+
+    # --- 관리자 페이지 라우트 ---
+    @app.route('/admin/dashboard', endpoint='admin_dashboard')
+    def admin_dashboard_page():
+        return render_template('admin_dashboard.html')
+
+    @app.route('/admin/user_management', endpoint='user_management')
+    def user_management_page():
+        return render_template('user_management.html')
+
+    @app.route('/admin/menu_management', endpoint='menu_management')
+    def menu_management_page():
+        return render_template('menu_management.html')
+
+    @app.route('/admin/role_menu_assignment', endpoint='role_menu_assignment')
+    def role_menu_assignment_page():
+        return render_template('role_menu_assignment.html')
+
+    @app.route('/admin/notice_management', endpoint='notice_management')
+    def notice_management_page():
+        return render_template('notice_management.html')
+
+    @app.route('/admin/db_management', endpoint='db_management')
+    def db_management_page():
+        return render_template('db_management.html')
+
+    @app.route('/admin/post_management', endpoint='post_management')
+    def post_management_page():
+        return render_template('post_management.html')
+
+    @app.route('/admin/cms_management', endpoint='cms_management')
+    def cms_management_page():
+        return render_template('cms_management.html')
+
+    @app.route('/admin/data_analytics', endpoint='data_analytics')
+    def data_analytics_page():
+        return render_template('data_analytics.html')
+
+    @app.route('/admin/chatbot_feedback', endpoint='chatbot_feedback')
+    def chatbot_feedback_page():
+        return render_template('charbot_feedback.html')
+
+    @app.route('/admin/inquiry_management', endpoint='admin_inquiry_management')
+    def admin_inquiry_management_page():
+        return render_template('admin_inquiry_management.html')
+
 
     # --- 에러 핸들러 ---
     @app.errorhandler(404)
     def page_not_found(e):
-        # API 요청에 대한 404는 JSON으로, 그 외에는 HTML 페이지로 응답할 수 있습니다.
         return render_template('404.html'), 404
 
     return app
