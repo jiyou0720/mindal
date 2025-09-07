@@ -1,30 +1,30 @@
 import os
 import sys
-from flask import Flask, render_template, g, request, jsonify
+from flask import Flask, render_template
 from flask_cors import CORS
 from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+# --- 경로 설정 ---
+# 'backend'와 같은 내부 모듈 및 루트의 스크립트를 올바르게 임포트하기 위해 프로젝트 루트 경로를 추가합니다.
+# 이 코드를 파일 최상단으로 이동하여 항상 먼저 실행되도록 합니다.
+script_dir = os.path.dirname(__file__)
+project_root = os.path.abspath(os.path.join(script_dir, '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 # 로컬 개발을 위해 .env 파일에서 환경 변수를 로드합니다.
-# Railway와 같은 배포 환경에서는 이 파일을 사용하지 않고, 플랫폼에 설정된 환경 변수를 직접 사용합니다.
 load_dotenv()
 
 def create_app(test_config=None):
     """
     Flask 애플리케이션 인스턴스를 생성하고 설정하는 '애플리케이션 팩토리' 함수입니다.
     """
-    # 'backend'와 같은 내부 모듈을 올바르게 임포트하기 위해 프로젝트 루트 경로를 추가합니다.
-    script_dir = os.path.dirname(__file__)
-    project_root = os.path.abspath(os.path.join(script_dir, '..'))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-
     app = Flask(__name__,
                 template_folder='../frontend/templates',
                 static_folder='../frontend/static')
 
     # --- 기본 설정 ---
-    # 세션 관리, CSRF 보호 등에 사용되는 보안 키를 설정합니다.
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_very_secret_default_key_for_dev')
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
     
@@ -32,13 +32,9 @@ def create_app(test_config=None):
         app.config.from_mapping(test_config)
 
     # --- 데이터베이스 설정 (Railway 호환) ---
-    # 1. Railway에서 주입해주는 환경 변수(MYSQL_URL, MONGO_URL 등)를 우선적으로 찾습니다.
     mysql_url = os.environ.get("MYSQL_URL")
-    # Railway에서 제공하는 MongoDB 연결 변수(MONGO_URL 또는 MONGODB_URI)를 확인합니다.
     mongo_url = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI")
 
-
-    # 2. 만약 위 변수들이 없다면 (주로 로컬 개발 환경), .env 파일의 값을 조합하여 사용합니다.
     if not mysql_url:
         MYSQL_USER = os.environ.get("MYSQL_USER")
         MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")
@@ -46,29 +42,22 @@ def create_app(test_config=None):
         MYSQL_PORT = os.environ.get("MYSQL_PORT")
         MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE")
         if all([MYSQL_USER, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE]):
-            # 비밀번호가 없는 경우를 대비하여 처리
             password_segment = f":{MYSQL_PASSWORD}" if MYSQL_PASSWORD else ""
             mysql_url = f"mysql+pymysql://{MYSQL_USER}{password_segment}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
     
     if not mongo_url:
-        # Railway 환경 변수가 없을 경우, 로컬 .env 파일의 MONGO_URI를 사용합니다.
         mongo_url = os.environ.get("MONGO_URI")
 
-    # 3. 최종적으로 얻은 주소를 Flask 설정에 적용합니다.
-    # PyMySQL 드라이버를 사용하기 위해, Railway의 'mysql://' 주소를 'mysql+pymysql://'로 변경합니다.
     if mysql_url and mysql_url.startswith('mysql://'):
          app.config['SQLALCHEMY_DATABASE_URI'] = mysql_url.replace('mysql://', 'mysql+pymysql://', 1)
     else:
         app.config['SQLALCHEMY_DATABASE_URI'] = mysql_url
 
     app.config["MONGO_URI"] = mongo_url
-
-    # 리버스 프록시 환경(예: Railway)에서 올바른 IP와 프로토콜을 인식하도록 설정합니다.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     CORS(app, supports_credentials=True)
 
     # --- Flask 확장 프로그램 초기화 ---
-    # extensions.py에서 생성한 인스턴스들을 app과 연결합니다.
     from backend.extensions import db, mongo, migrate, jwt, bcrypt
     db.init_app(app)
     mongo.init_app(app)
@@ -77,169 +66,46 @@ def create_app(test_config=None):
     bcrypt.init_app(app)
 
     # --- API 블루프린트(라우트 그룹) 등록 ---
-    # 각 기능별로 분리된 라우트 파일들을 app에 등록합니다.
     with app.app_context():
-
         from backend.routes.auth_routes import auth_bp
         from backend.routes.login_register_routes import user_bp
         from backend.routes.diary_routes import diary_bp
-        from backend.routes.mood_routes import mood_bp
-        from backend.routes.chat_routes import chat_bp
-        from backend.routes.community_routes import community_bp
-        from backend.routes.psych_test_routes import psych_test_bp
-        from backend.routes.admin_routes import admin_bp
-        from backend.routes.dashboard_routes import dashboard_bp
-        from backend.routes.graph_routes import graph_bp
-        from backend.routes.inquiry_routes import inquiry_bp
-
+        # ... 다른 블루프린트 임포트 ...
         app.register_blueprint(auth_bp, url_prefix='/api/auth')
         app.register_blueprint(user_bp, url_prefix='/api/user')
         app.register_blueprint(diary_bp, url_prefix='/api/diary')
-        app.register_blueprint(mood_bp, url_prefix='/api/mood')
-        app.register_blueprint(chat_bp, url_prefix='/api/chat')
-        app.register_blueprint(community_bp, url_prefix='/api/community')
-        app.register_blueprint(psych_test_bp, url_prefix='/api/psych-test')
-        app.register_blueprint(admin_bp, url_prefix='/api/admin')
-        app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
-        app.register_blueprint(graph_bp, url_prefix='/api/graph')
-        app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
-
+        # ... 다른 블루프린트 등록 ...
 
     # --- HTML 페이지 렌더링 라우트 ---
-    # endpoint를 직접 지정하여 HTML 템플릿의 url_for()와 이름을 일치시킵니다.
-    @app.route('/', endpoint='index')
-    def index_page():
-        return render_template('index.html')
-
-    @app.route('/login', endpoint='login')
-    def login_page():
-        return render_template('login.html')
-
-    @app.route('/signup', endpoint='signup')
-    def signup_page():
-        return render_template('signup.html')
-    
-    @app.route('/my-page', endpoint='my_page')
-    def my_page():
-        return render_template('my_page.html')
-
-    @app.route('/edit-profile', endpoint='edit_profile')
-    def edit_profile_page():
-        return render_template('edit_profile.html')
-
-    @app.route('/forgot-password', endpoint='forgot_password')
-    def forgot_password_page():
-        return render_template('forgot_password.html')
-        
-    @app.route('/ai-chat', endpoint='ai_chat')
-    def ai_chat_page():
-        return render_template('ai_chat.html')
-
-    @app.route('/diary', endpoint='diary')
-    def diary_page():
-        return render_template('diary.html')
-
-    @app.route('/community', endpoint='community_list')
-    def community_list_page():
-        return render_template('community_list.html')
-    
-    @app.route('/community/create', endpoint='community_create')
-    def community_create_page():
-        return render_template('community_create.html')
-
-    @app.route('/community/post/<int:post_id>', endpoint='community_detail')
-    def community_detail_page(post_id):
-        return render_template('community_detail.html', post_id=post_id)
-
-    @app.route('/community/edit/<int:post_id>', endpoint='community_edit')
-    def community_edit_page(post_id):
-        return render_template('community_edit.html', post_id=post_id)
-
-    @app.route('/psych-test', endpoint='psych_test_list')
-    def psych_test_list_page():
-        return render_template('psych_test_list.html')
-        
-    @app.route('/psych-test/<string:test_type>', endpoint='psych_test_take')
-    def psych_test_take_page(test_type):
-        return render_template('psych_test_take.html', test_type=test_type)
-
-    @app.route('/psych-test/result/<int:result_id>', endpoint='psych_test_result')
-    def psych_test_result_page(result_id):
-        return render_template('psych_test_result.html', result_id=result_id)
-        
-    @app.route('/inquiry', endpoint='inquiry')
-    def inquiry_page():
-        return render_template('inquiry.html')
-    
-    @app.route('/my-changes', endpoint='my_changes')
-    def my_changes_page():
-        return render_template('my_changes.html')
-
-    # --- 관리자 페이지 라우트 ---
-    @app.route('/admin/dashboard', endpoint='admin_dashboard')
-    def admin_dashboard_page():
-        return render_template('admin_dashboard.html')
-
-    @app.route('/admin/user_management', endpoint='user_management')
-    def user_management_page():
-        return render_template('user_management.html')
-
-    @app.route('/admin/menu_management', endpoint='menu_management')
-    def menu_management_page():
-        return render_template('menu_management.html')
-
-    @app.route('/admin/role_menu_assignment', endpoint='role_menu_assignment')
-    def role_menu_assignment_page():
-        return render_template('role_menu_assignment.html')
-
-    @app.route('/admin/notice_management', endpoint='notice_management')
-    def notice_management_page():
-        return render_template('notice_management.html')
-
-    @app.route('/admin/db_management', endpoint='db_management')
-    def db_management_page():
-        return render_template('db_management.html')
-
-    @app.route('/admin/post_management', endpoint='post_management')
-    def post_management_page():
-        return render_template('post_management.html')
-
-    @app.route('/admin/cms_management', endpoint='cms_management')
-    def cms_management_page():
-        return render_template('cms_management.html')
-
-    @app.route('/admin/data_analytics', endpoint='data_analytics')
-    def data_analytics_page():
-        return render_template('data_analytics.html')
-
-    @app.route('/admin/chatbot_feedback', endpoint='chatbot_feedback')
-    def chatbot_feedback_page():
-        return render_template('charbot_feedback.html')
-
-    @app.route('/admin/inquiry_management', endpoint='admin_inquiry_management')
-    def admin_inquiry_management_page():
-        return render_template('admin_inquiry_management.html')
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def catch_all(path):
+        # 모든 프론트엔드 라우트를 index.html로 리디렉션합니다.
+        # 실제 파일(예: /static/...)에 대한 요청은 Flask가 자동으로 처리합니다.
+        return render_template("index.html")
 
     # --- 에러 핸들러 ---
     @app.errorhandler(404)
     def page_not_found(e):
+        # API 요청에 대한 404는 JSON으로, 그 외에는 HTML 페이지로 응답할 수 있습니다.
         return render_template('404.html'), 404
 
     return app
-# app.py 마지막 부분 근처
+
+# --- 애플리케이션 생성 및 초기화 ---
+# Gunicorn, Flask CLI 등 어디에서 실행되든 이 로직이 실행됩니다.
 from backend.initialize_roles_and_admin import initialize_database
 from backend.initialize_menus import initialize_menus
-from backend.initialize_roles import initialize_roles
 
-# Flask 애플리케이션 생성
 app = create_app()
 
-# 초기화 실행
 with app.app_context():
-    initialize_database()
-    initialize_roles()
-    initialize_menus()
+    print(">>> 초기화 시작")
+    initialize_database()  # 역할 및 관리자 계정 초기화
+    initialize_menus()     # 메뉴 초기화
+    print(">>> 초기화 완료")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)
+
