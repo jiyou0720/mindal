@@ -1,6 +1,6 @@
 import os
 from flask import Blueprint, request, jsonify, g, current_app
-from openai import OpenAI  # ✅ 1. openai 임포트 방식 변경
+from openai import OpenAI
 from backend.routes.auth_routes import token_required, roles_required
 from backend.mongo_models import ChatHistory, ChatSession, ChatbotFeedback
 from datetime import datetime
@@ -8,7 +8,7 @@ from datetime import datetime
 chat_bp = Blueprint('chat', __name__)
 
 # --- OpenAI Helper Function ---
-def call_openai_api(messages, model="gpt-4o", temperature=0.7, max_tokens=500): # 모델명 원복
+def call_openai_api(messages, model="gpt-4o", temperature=0.7, max_tokens=500):
     """Calls the OpenAI Chat Completion API and returns the response text."""
     try:
         api_key = os.getenv("OPENAI_API_KEY")
@@ -16,8 +16,8 @@ def call_openai_api(messages, model="gpt-4o", temperature=0.7, max_tokens=500): 
             current_app.logger.error("OpenAI API key is not configured!")
             return "서버 설정 오류: OpenAI API 키가 없습니다."
 
-        # ✅ 3. 새로운 클라이언트 생성 방식 적용
-        client = OpenAI(api_key=api_key)
+        # ✅ API 키의 앞뒤 공백/개행 문자 제거
+        client = OpenAI(api_key=api_key.strip())
 
         response = client.chat.completions.create(
             model=model,
@@ -32,7 +32,6 @@ def call_openai_api(messages, model="gpt-4o", temperature=0.7, max_tokens=500): 
             current_app.logger.warning(f"OpenAI API response did not contain valid choices: {response}")
             return "응답이 명확하지 않습니다. 다시 시도해 주세요."
 
-    # ✅ 4. 예외 처리 방식 수정
     except Exception as e:
         current_app.logger.error(f"OpenAI API Error: {e}", exc_info=True)
         return f"OpenAI 호출 중 오류 발생: {e}"
@@ -100,8 +99,7 @@ def end_chat_session():
     )
     
     summary_messages = [{"role": "user", "content": summary_prompt}]
-    # 요약은 더 성능이 좋은 모델을 사용할 수 있습니다.
-    summary_text = call_openai_api(summary_messages, model="gpt-4o", temperature=0.5, max_tokens=200) # 모델명 원복
+    summary_text = call_openai_api(summary_messages, model="gpt-4o", temperature=0.5, max_tokens=200)
 
     ChatSession.update_session_summary(user_id, chat_session_id, summary_text)
     
