@@ -62,7 +62,7 @@ def chat_with_openai():
     )
     messages = [{"role": "system", "content": system_prompt}]
     
-    # ✅ 세션이 존재하고, 숨김 처리되지 않았을 때만 이전 대화 기록을 가져옵니다.
+    # 세션이 존재하고, 숨김 처리되지 않았을 때만 이전 대화 기록을 가져옵니다.
     session_info = ChatSession.get_session_by_id(user_id, chat_session_id)
     if session_info:
         for msg in ChatHistory.get_history(user_id, chat_session_id, limit=10):
@@ -93,10 +93,10 @@ def end_chat_session():
 
     conversation_text = "\n".join([f"{msg['sender']}: {msg['message']}" for msg in full_history])
     
+    # ✅ 요약 프롬프트를 한국어로 수정
     summary_prompt = (
-        "Please summarize the following psychological counseling conversation in 3-5 lines. "
-        "Include the main points, the user's emotional changes, and the counselor's intervention methods "
-        "to capture the core content:\n\n"
+        "다음 심리 상담 대화 내용을 한국어로 3~5줄로 요약해 주세요. "
+        "핵심 내용을 파악할 수 있도록 주요 논점, 사용자의 감정 변화, 상담사의 개입 방법이 포함되게 요약해 주세요:\n\n"
         f"{conversation_text}"
     )
     
@@ -135,7 +135,7 @@ def get_chat_history():
     if not chat_session_id:
         return jsonify({'error': 'session_id is required.'}), 400
     
-    # ✅ 숨겨진 세션인지 확인하는 로직
+    # 숨겨진 세션인지 확인하는 로직
     session_info = ChatSession.get_session_by_id(user_id, chat_session_id)
     if not session_info:
         return jsonify({'error': 'Session not found or you do not have permission to view it.'}), 404
@@ -150,7 +150,7 @@ def get_chat_history():
 @chat_bp.route('/session/<string:session_id>', methods=['DELETE'])
 @token_required
 def delete_chat_session(session_id):
-    # ✅ 소프트 삭제를 위한 함수 호출로 변경
+    # 소프트 삭제를 위한 함수 호출로 변경
     user_id = g.user_id
     success = ChatSession.hide_session_for_user(user_id, session_id)
     
@@ -166,14 +166,14 @@ def submit_chat_feedback():
     user_id = g.user_id
     data = request.get_json()
     
-    # ✅ 디버깅을 위해 수신된 데이터 로깅
+    # 디버깅을 위해 수신된 데이터 로깅
     current_app.logger.info(f"Received feedback submission from user {user_id}: {data}")
 
     chat_session_id = data.get('chat_session_id')
     rating = data.get('rating')
     comment = data.get('comment')
 
-    # ✅ 피드백 저장을 위한 필수 필드 검증 로직 추가
+    # 피드백 저장을 위한 필수 필드 검증 로직 추가
     if not all([chat_session_id, rating is not None]):
         current_app.logger.warning(
             f"Feedback submission failed for user {user_id} due to missing data. "
@@ -188,11 +188,11 @@ def submit_chat_feedback():
             rating=rating,
             comment=comment
         )
-        # ✅ 성공 로그 추가
+        # 성공 로그 추가
         current_app.logger.info(f"Successfully created feedback with ID: {feedback_id} for user {user_id}")
         return jsonify({'message': 'Feedback submitted successfully.', 'feedback_id': str(feedback_id)}), 200
     except Exception as e:
-        # ✅ 데이터베이스 저장 실패 시 에러 로그 추가
+        # 데이터베이스 저장 실패 시 에러 로그 추가
         current_app.logger.error(f"Failed to create feedback for user {user_id}. Error: {e}", exc_info=True)
         return jsonify({'error': 'An internal error occurred while saving feedback.'}), 500
 
