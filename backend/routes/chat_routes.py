@@ -111,7 +111,17 @@ def get_chat_sessions_metadata():
     user_id = g.user_id
     try:
         sessions_metadata = ChatSession.get_all_sessions_metadata(user_id)
-        return jsonify({'sessions': [s.to_dict() for s in sessions_metadata]}), 200
+        # ✅ ObjectId를 문자열로 변환하여 JSON 직렬화 오류 해결
+        sessions_list = []
+        for s in sessions_metadata:
+            session_dict = s.to_dict()
+            if '_id' in session_dict:
+                session_dict['_id'] = str(session_dict['_id'])
+            # timestamp 필드도 datetime 객체이면 isoformat 문자열로 변환
+            if 'timestamp' in session_dict and isinstance(session_dict['timestamp'], datetime):
+                 session_dict['timestamp'] = session_dict['timestamp'].isoformat()
+            sessions_list.append(session_dict)
+        return jsonify({'sessions': sessions_list}), 200
     except Exception as e:
         current_app.logger.error(f"Error fetching chat sessions metadata for user {user_id}: {e}", exc_info=True)
         return jsonify({'error': 'Failed to load chat session list.'}), 500
