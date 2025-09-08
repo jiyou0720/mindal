@@ -245,6 +245,49 @@ def delete_feedback_item(feedback_id):
         current_app.logger.error(f"Error deleting feedback item {feedback_id}: {e}", exc_info=True)
         return jsonify({'error': 'An error occurred while deleting feedback.'}), 500
 
+# --- Admin Chat Management Routes ---
+
+@chat_bp.route('/admin/sessions', methods=['GET'])
+@token_required
+@roles_required(['관리자', '개발자'])
+def get_all_chat_sessions_for_admin():
+    """관리자가 모든 상담 내역 요약을 조회하는 API"""
+    try:
+        all_sessions = ChatSession.get_all_sessions_for_admin()
+        sessions_list = []
+        for s in all_sessions:
+            session_dict = s.to_dict()
+            session_dict['_id'] = str(session_dict['_id'])
+            if isinstance(session_dict.get('created_at'), datetime):
+                session_dict['created_at'] = session_dict['created_at'].isoformat()
+            if isinstance(session_dict.get('updated_at'), datetime):
+                session_dict['updated_at'] = session_dict['updated_at'].isoformat()
+            sessions_list.append(session_dict)
+        return jsonify({'sessions': sessions_list}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error fetching all chat sessions for admin: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to load chat session list for admin.'}), 500
+
+@chat_bp.route('/admin/history/<string:chat_session_id>', methods=['GET'])
+@token_required
+@roles_required(['관리자', '개발자'])
+def get_chat_history_for_admin(chat_session_id):
+    """관리자가 특정 상담의 상세 대화 내역을 조회하는 API"""
+    try:
+        history = ChatHistory.get_history_by_session_id_for_admin(chat_session_id)
+        if not history:
+            return jsonify({'message': 'No chat history found for this session.'}), 404
+            
+        for item in history:
+            item['_id'] = str(item['_id'])
+            if isinstance(item.get('timestamp'), datetime):
+                item['timestamp'] = item['timestamp'].isoformat()
+        return jsonify({'history': history}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error fetching chat history for admin (session: {chat_session_id}): {e}", exc_info=True)
+        return jsonify({'error': 'Failed to load chat history for admin.'}), 500
+
+
 # [Restored] Endpoint to get all feedback for the current user
 @chat_bp.route('/my_feedback', methods=['GET'])
 @token_required
