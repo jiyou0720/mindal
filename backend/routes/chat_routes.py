@@ -49,7 +49,6 @@ def chat_with_openai():
         return jsonify({'error': 'Please enter a message.'}), 400
 
     if not chat_session_id:
-        # ✅ 'generate_session_id'를 '_generate_session_id'로 수정
         chat_session_id = ChatHistory._generate_session_id(user_id) 
         ChatSession.create_session(user_id, chat_session_id, "default")
         current_app.logger.info(f"New chat session created: {chat_session_id}")
@@ -63,12 +62,10 @@ def chat_with_openai():
     )
     messages = [{"role": "system", "content": system_prompt}]
     
-    # 세션이 존재하고, 숨김 처리되지 않았을 때만 이전 대화 기록을 가져옵니다.
-    session_info = ChatSession.get_session_by_id(user_id, chat_session_id)
-    if session_info:
-        for msg in ChatHistory.get_history(user_id, chat_session_id, limit=10):
-            role = "user" if msg["sender"] == "user" else "assistant"
-            messages.append({"role": role, "content": msg["message"]})
+    # ✅ 이전 대화 기록을 바로 가져오도록 수정
+    for msg in ChatHistory.get_history(user_id, chat_session_id, limit=10):
+        role = "user" if msg["sender"] == "user" else "assistant"
+        messages.append({"role": role, "content": msg["message"]})
     
     messages.append({"role": "user", "content": user_message})
 
@@ -135,11 +132,12 @@ def get_chat_history():
     if not chat_session_id:
         return jsonify({'error': 'session_id is required.'}), 400
     
-    session_info = ChatSession.get_session_by_id(user_id, chat_session_id)
-    if not session_info:
-        return jsonify({'error': 'Session not found or you do not have permission to view it.'}), 404
-
+    # ✅ session_info 확인 로직 제거
     history = ChatHistory.get_history(user_id, chat_session_id)
+    if not history:
+        # 히스토리가 없는 경우를 대비한 방어 코드
+        return jsonify({'history': []}), 200
+
     for item in history:
         item['_id'] = str(item['_id'])
         if isinstance(item.get('timestamp'), datetime):
@@ -149,13 +147,12 @@ def get_chat_history():
 @chat_bp.route('/session/<string:session_id>', methods=['DELETE'])
 @token_required
 def delete_chat_session(session_id):
+    # ✅ 소프트 삭제 대신 하드 삭제 로직으로 원복
     user_id = g.user_id
-    success = ChatSession.hide_session_for_user(user_id, session_id)
-    
-    if success:
-        return jsonify({'message': f'Session {session_id} has been hidden.'}), 200
-    else:
-        return jsonify({'error': 'Session not found or could not be hidden.'}), 404
+    ChatHistory.delete_session(user_id, session_id)
+    ChatSession.delete_session_metadata(user_id, session_id)
+    ChatbotFeedback.delete_by_chat_session_id(session_id)
+    return jsonify({'message': f'Session {session_id} has been deleted.'}), 200
 
 
 @chat_bp.route('/feedback', methods=['POST'])
