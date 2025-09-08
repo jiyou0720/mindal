@@ -73,7 +73,6 @@ class ChatHistory:
 class ChatSession:
     COLLECTION_NAME = "chat_sessions"
 
-    # ✅ is_hidden 필드 추가
     def __init__(self, user_id, chat_session_id, chat_style, summary, created_at=None, updated_at=None, _id=None, feedback=None, is_hidden=False):
         self._id = _id if _id else ObjectId()
         self.user_id = user_id
@@ -83,7 +82,7 @@ class ChatSession:
         self.created_at = created_at if created_at is not None else datetime.datetime.utcnow()
         self.updated_at = updated_at if updated_at is not None else datetime.datetime.utcnow()
         self.feedback = feedback
-        self.is_hidden = is_hidden # ✅ is_hidden 속성 초기화
+        self.is_hidden = is_hidden
 
     def to_dict(self):
         return {
@@ -95,7 +94,7 @@ class ChatSession:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "feedback": self.feedback,
-            "is_hidden": self.is_hidden # ✅ 딕셔너리에 is_hidden 포함
+            "is_hidden": self.is_hidden
         }
 
     @staticmethod
@@ -109,7 +108,7 @@ class ChatSession:
             chat_session_id=chat_session_id,
             chat_style=chat_style,
             summary=summary,
-            is_hidden=False # ✅ 생성 시 기본값은 False
+            is_hidden=False
         )
         try:
             db = get_mongo_db()
@@ -135,7 +134,6 @@ class ChatSession:
             current_app.logger.error(f"Error updating chat session summary in MongoDB: {e}")
             raise
 
-    # ✅ 소프트 삭제를 위한 hide_session_for_user 메소드 추가
     @staticmethod
     def hide_session_for_user(user_id, chat_session_id):
         """사용자에게 세션을 숨김 처리합니다 (소프트 삭제)."""
@@ -170,7 +168,6 @@ class ChatSession:
         """사용자에게 보여줄 숨겨지지 않은 모든 세션 메타데이터를 가져옵니다."""
         try:
             db = get_mongo_db()
-            # ✅ is_hidden이 True가 아닌 것만 조회
             cursor = db[ChatSession.COLLECTION_NAME].find({
                 "user_id": user_id,
                 "is_hidden": {"$ne": True}
@@ -193,7 +190,6 @@ class ChatSession:
             current_app.logger.error(f"Error deleting chat session metadata from MongoDB: {e}")
             raise
 
-# ... (이하 다른 모델들은 변경 없음) ...
 # MongoPostContent 모델
 class MongoPostContent:
     def __init__(self, content, attachment_paths=None, _id=None):
@@ -348,7 +344,8 @@ class PsychTestResult:
 
 # ChatbotFeedback 모델
 class ChatbotFeedback:
-    COLLECTION_NAME = 'chatbot_feedback'
+    # ✅ 컬렉션 이름을 'chat_feedback'으로 변경하여 혼란을 줄였습니다.
+    COLLECTION_NAME = 'chat_feedback'
 
     @staticmethod
     def create(user_id, chat_session_id, rating, comment, timestamp=None):
@@ -408,3 +405,4 @@ class ChatbotFeedback:
         db = get_mongo_db()
         result = db[ChatbotFeedback.COLLECTION_NAME].delete_many({'chat_session_id': chat_session_id})
         return result.deleted_count > 0
+
