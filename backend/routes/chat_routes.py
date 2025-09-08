@@ -165,10 +165,21 @@ def delete_chat_session(session_id):
 def submit_chat_feedback():
     user_id = g.user_id
     data = request.get_json()
+    chat_session_id = data.get('chat_session_id')
+    rating = data.get('rating')
+
+    # ✅ 피드백 저장을 위한 필수 필드 검증 로직 추가
+    if not all([chat_session_id, rating is not None]):
+        current_app.logger.warning(
+            f"Feedback submission failed for user {user_id} due to missing data. "
+            f"Session ID: {chat_session_id}, Rating: {rating}"
+        )
+        return jsonify({'error': 'Chat session ID and rating are required to submit feedback.'}), 400
+
     feedback_id = ChatbotFeedback.create(
         user_id=user_id,
-        chat_session_id=data.get('chat_session_id'),
-        rating=data.get('rating'),
+        chat_session_id=chat_session_id,
+        rating=rating,
         comment=data.get('comment')
     )
     return jsonify({'message': 'Feedback submitted successfully.', 'feedback_id': str(feedback_id)}), 200
@@ -246,4 +257,5 @@ def get_my_feedback():
     except Exception as e:
         current_app.logger.error(f"Error fetching user feedback for user {user_id}: {e}", exc_info=True)
         return jsonify({"message": "내 피드백을 불러오는 중 오류가 발생했습니다."}), 500
+
 
