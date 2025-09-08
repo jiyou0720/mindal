@@ -16,7 +16,6 @@ def call_openai_api(messages, model="gpt-4o", temperature=0.7, max_tokens=500):
             current_app.logger.error("OpenAI API key is not configured!")
             return "서버 설정 오류: OpenAI API 키가 없습니다."
 
-        # ✅ API 키의 앞뒤 공백/개행 문자 제거
         client = OpenAI(api_key=api_key.strip())
 
         response = client.chat.completions.create(
@@ -50,7 +49,8 @@ def chat_with_openai():
         return jsonify({'error': 'Please enter a message.'}), 400
 
     if not chat_session_id:
-        chat_session_id = ChatHistory.generate_session_id(user_id)
+        # ✅ 'generate_session_id'를 '_generate_session_id'로 수정
+        chat_session_id = ChatHistory._generate_session_id(user_id) 
         ChatSession.create_session(user_id, chat_session_id, "default")
         current_app.logger.info(f"New chat session created: {chat_session_id}")
 
@@ -63,9 +63,12 @@ def chat_with_openai():
     )
     messages = [{"role": "system", "content": system_prompt}]
     
-    for msg in ChatHistory.get_history(user_id, chat_session_id, limit=10):
-        role = "user" if msg["sender"] == "user" else "assistant"
-        messages.append({"role": role, "content": msg["message"]})
+    # 세션이 존재하고, 숨김 처리되지 않았을 때만 이전 대화 기록을 가져옵니다.
+    session_info = ChatSession.get_session_by_id(user_id, chat_session_id)
+    if session_info:
+        for msg in ChatHistory.get_history(user_id, chat_session_id, limit=10):
+            role = "user" if msg["sender"] == "user" else "assistant"
+            messages.append({"role": role, "content": msg["message"]})
     
     messages.append({"role": "user", "content": user_message})
 
@@ -110,8 +113,6 @@ def end_chat_session():
 def get_chat_sessions_metadata():
     user_id = g.user_id
     try:
-        # Note: ChatSession.get_all_sessions_metadata should be updated to only fetch sessions
-        # that are not soft-deleted by the user (e.g., where 'is_hidden_from_user' is False or null).
         sessions_metadata = ChatSession.get_all_sessions_metadata(user_id)
         sessions_list = []
         for s in sessions_metadata:
@@ -134,8 +135,6 @@ def get_chat_history():
     if not chat_session_id:
         return jsonify({'error': 'session_id is required.'}), 400
     
-    # Note: ChatSession.get_session_by_id should be implemented in your model.
-    # It should check if the session is hidden before returning it.
     session_info = ChatSession.get_session_by_id(user_id, chat_session_id)
     if not session_info:
         return jsonify({'error': 'Session not found or you do not have permission to view it.'}), 404
@@ -150,14 +149,7 @@ def get_chat_history():
 @chat_bp.route('/session/<string:session_id>', methods=['DELETE'])
 @token_required
 def delete_chat_session(session_id):
-    """
-    Performs a soft delete. The session is hidden from the user but remains in the database.
-    """
     user_id = g.user_id
-    
-    # Note: Implement ChatSession.hide_session_for_user in your model.
-    # This method should set a flag like 'is_hidden_from_user = True' in the ChatSession document.
-    # It should NOT delete the document.
     success = ChatSession.hide_session_for_user(user_id, session_id)
     
     if success:
