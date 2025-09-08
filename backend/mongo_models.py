@@ -68,6 +68,20 @@ class ChatHistory:
         except Exception as e:
             current_app.logger.error(f"Error deleting chat session from MongoDB: {e}")
             raise
+    
+    # ✅ 관리자를 위한 상세 대화 내역 조회 함수 추가
+    @staticmethod
+    def get_history_by_session_id_for_admin(chat_session_id):
+        """관리자가 특정 세션의 전체 대화 기록을 조회합니다."""
+        try:
+            db = get_mongo_db()
+            cursor = db[ChatHistory.COLLECTION_NAME].find(
+                {"chat_session_id": chat_session_id}
+            ).sort("timestamp", 1)
+            return list(cursor)
+        except Exception as e:
+            current_app.logger.error(f"Error fetching admin chat history from MongoDB: {e}")
+            raise
 
 # ChatSession 모델
 class ChatSession:
@@ -190,6 +204,21 @@ class ChatSession:
             current_app.logger.error(f"Error deleting chat session metadata from MongoDB: {e}")
             raise
 
+    # ✅ 관리자를 위한 전체 상담 내역 요약 조회 함수 추가
+    @staticmethod
+    def get_all_sessions_for_admin():
+        """관리자가 모든 사용자의 상담 세션 요약 정보를 조회합니다."""
+        try:
+            db = get_mongo_db()
+            # 사용자가 숨긴 내역까지 모두 포함하여 조회합니다.
+            cursor = db[ChatSession.COLLECTION_NAME].find().sort("created_at", -1)
+            return [ChatSession.from_mongo(doc) for doc in cursor]
+        except Exception as e:
+            current_app.logger.error(f"Error fetching all admin chat sessions from MongoDB: {e}")
+            raise
+
+
+# ... (이하 다른 모델들은 변경 없음) ...
 # MongoPostContent 모델
 class MongoPostContent:
     def __init__(self, content, attachment_paths=None, _id=None):
@@ -344,7 +373,6 @@ class PsychTestResult:
 
 # ChatbotFeedback 모델
 class ChatbotFeedback:
-    # ✅ 컬렉션 이름을 'chat_feedback'으로 변경하여 혼란을 줄였습니다.
     COLLECTION_NAME = 'chat_feedback'
 
     @staticmethod
