@@ -110,14 +110,14 @@ def end_chat_session():
 def get_chat_sessions_metadata():
     user_id = g.user_id
     try:
+        # Note: ChatSession.get_all_sessions_metadata should be updated to only fetch sessions
+        # that are not soft-deleted by the user (e.g., where 'is_hidden_from_user' is False or null).
         sessions_metadata = ChatSession.get_all_sessions_metadata(user_id)
-        # ✅ ObjectId를 문자열로 변환하여 JSON 직렬화 오류 해결
         sessions_list = []
         for s in sessions_metadata:
             session_dict = s.to_dict()
             if '_id' in session_dict:
                 session_dict['_id'] = str(session_dict['_id'])
-            # timestamp 필드도 datetime 객체이면 isoformat 문자열로 변환
             if 'timestamp' in session_dict and isinstance(session_dict['timestamp'], datetime):
                  session_dict['timestamp'] = session_dict['timestamp'].isoformat()
             sessions_list.append(session_dict)
@@ -133,6 +133,13 @@ def get_chat_history():
     chat_session_id = request.args.get('session_id')
     if not chat_session_id:
         return jsonify({'error': 'session_id is required.'}), 400
+    
+    # Note: ChatSession.get_session_by_id should be implemented in your model.
+    # It should check if the session is hidden before returning it.
+    session_info = ChatSession.get_session_by_id(user_id, chat_session_id)
+    if not session_info:
+        return jsonify({'error': 'Session not found or you do not have permission to view it.'}), 404
+
     history = ChatHistory.get_history(user_id, chat_session_id)
     for item in history:
         item['_id'] = str(item['_id'])
@@ -143,11 +150,21 @@ def get_chat_history():
 @chat_bp.route('/session/<string:session_id>', methods=['DELETE'])
 @token_required
 def delete_chat_session(session_id):
+    """
+    Performs a soft delete. The session is hidden from the user but remains in the database.
+    """
     user_id = g.user_id
-    ChatHistory.delete_session(user_id, session_id)
-    ChatSession.delete_session_metadata(user_id, session_id)
-    ChatbotFeedback.delete_by_chat_session_id(session_id)
-    return jsonify({'message': f'Session {session_id} has been deleted.'}), 200
+    
+    # Note: Implement ChatSession.hide_session_for_user in your model.
+    # This method should set a flag like 'is_hidden_from_user = True' in the ChatSession document.
+    # It should NOT delete the document.
+    success = ChatSession.hide_session_for_user(user_id, session_id)
+    
+    if success:
+        return jsonify({'message': f'Session {session_id} has been hidden.'}), 200
+    else:
+        return jsonify({'error': 'Session not found or could not be hidden.'}), 404
+
 
 @chat_bp.route('/feedback', methods=['POST'])
 @token_required
