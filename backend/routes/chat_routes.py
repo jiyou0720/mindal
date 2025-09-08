@@ -62,10 +62,12 @@ def chat_with_openai():
     )
     messages = [{"role": "system", "content": system_prompt}]
     
-    # ✅ 이전 대화 기록을 바로 가져오도록 수정
-    for msg in ChatHistory.get_history(user_id, chat_session_id, limit=10):
-        role = "user" if msg["sender"] == "user" else "assistant"
-        messages.append({"role": role, "content": msg["message"]})
+    # ✅ 세션이 존재하고, 숨김 처리되지 않았을 때만 이전 대화 기록을 가져옵니다.
+    session_info = ChatSession.get_session_by_id(user_id, chat_session_id)
+    if session_info:
+        for msg in ChatHistory.get_history(user_id, chat_session_id, limit=10):
+            role = "user" if msg["sender"] == "user" else "assistant"
+            messages.append({"role": role, "content": msg["message"]})
     
     messages.append({"role": "user", "content": user_message})
 
@@ -110,14 +112,15 @@ def end_chat_session():
 def get_chat_sessions_metadata():
     user_id = g.user_id
     try:
+        # 이 함수는 이제 mongo_models에서 알아서 숨김 처리된 세션을 제외하고 가져옵니다.
         sessions_metadata = ChatSession.get_all_sessions_metadata(user_id)
         sessions_list = []
         for s in sessions_metadata:
             session_dict = s.to_dict()
             if '_id' in session_dict:
                 session_dict['_id'] = str(session_dict['_id'])
-            if 'timestamp' in session_dict and isinstance(session_dict['timestamp'], datetime):
-                 session_dict['timestamp'] = session_dict['timestamp'].isoformat()
+            if 'created_at' in session_dict and isinstance(session_dict['created_at'], datetime):
+                 session_dict['created_at'] = session_dict['created_at'].isoformat()
             sessions_list.append(session_dict)
         return jsonify({'sessions': sessions_list}), 200
     except Exception as e:
@@ -132,12 +135,12 @@ def get_chat_history():
     if not chat_session_id:
         return jsonify({'error': 'session_id is required.'}), 400
     
-    # ✅ session_info 확인 로직 제거
-    history = ChatHistory.get_history(user_id, chat_session_id)
-    if not history:
-        # 히스토리가 없는 경우를 대비한 방어 코드
-        return jsonify({'history': []}), 200
+    # ✅ 숨겨진 세션인지 확인하는 로직
+    session_info = ChatSession.get_session_by_id(user_id, chat_session_id)
+    if not session_info:
+        return jsonify({'error': 'Session not found or you do not have permission to view it.'}), 404
 
+    history = ChatHistory.get_history(user_id, chat_session_id)
     for item in history:
         item['_id'] = str(item['_id'])
         if isinstance(item.get('timestamp'), datetime):
@@ -147,12 +150,14 @@ def get_chat_history():
 @chat_bp.route('/session/<string:session_id>', methods=['DELETE'])
 @token_required
 def delete_chat_session(session_id):
-    # ✅ 소프트 삭제 대신 하드 삭제 로직으로 원복
+    # ✅ 소프트 삭제를 위한 함수 호출로 변경
     user_id = g.user_id
-    ChatHistory.delete_session(user_id, session_id)
-    ChatSession.delete_session_metadata(user_id, session_id)
-    ChatbotFeedback.delete_by_chat_session_id(session_id)
-    return jsonify({'message': f'Session {session_id} has been deleted.'}), 200
+    success = ChatSession.hide_session_for_user(user_id, session_id)
+    
+    if success:
+        return jsonify({'message': f'Session {session_id} has been hidden.'}), 200
+    else:
+        return jsonify({'error': 'Session not found or could not be hidden.'}), 404
 
 
 @chat_bp.route('/feedback', methods=['POST'])
@@ -166,7 +171,7 @@ def submit_chat_feedback():
         rating=data.get('rating'),
         comment=data.get('comment')
     )
-    return jsonify({'message': 'Feedback submitted successfully.', 'feedback_id': feedback_id}), 200
+    return jsonify({'message': 'Feedback submitted successfully.', 'feedback_id': str(feedback_id)}), 200
 
 # --- Admin Feedback Routes ---
 
