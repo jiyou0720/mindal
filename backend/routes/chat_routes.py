@@ -165,8 +165,13 @@ def delete_chat_session(session_id):
 def submit_chat_feedback():
     user_id = g.user_id
     data = request.get_json()
+    
+    # ✅ 디버깅을 위해 수신된 데이터 로깅
+    current_app.logger.info(f"Received feedback submission from user {user_id}: {data}")
+
     chat_session_id = data.get('chat_session_id')
     rating = data.get('rating')
+    comment = data.get('comment')
 
     # ✅ 피드백 저장을 위한 필수 필드 검증 로직 추가
     if not all([chat_session_id, rating is not None]):
@@ -176,13 +181,20 @@ def submit_chat_feedback():
         )
         return jsonify({'error': 'Chat session ID and rating are required to submit feedback.'}), 400
 
-    feedback_id = ChatbotFeedback.create(
-        user_id=user_id,
-        chat_session_id=chat_session_id,
-        rating=rating,
-        comment=data.get('comment')
-    )
-    return jsonify({'message': 'Feedback submitted successfully.', 'feedback_id': str(feedback_id)}), 200
+    try:
+        feedback_id = ChatbotFeedback.create(
+            user_id=user_id,
+            chat_session_id=chat_session_id,
+            rating=rating,
+            comment=comment
+        )
+        # ✅ 성공 로그 추가
+        current_app.logger.info(f"Successfully created feedback with ID: {feedback_id} for user {user_id}")
+        return jsonify({'message': 'Feedback submitted successfully.', 'feedback_id': str(feedback_id)}), 200
+    except Exception as e:
+        # ✅ 데이터베이스 저장 실패 시 에러 로그 추가
+        current_app.logger.error(f"Failed to create feedback for user {user_id}. Error: {e}", exc_info=True)
+        return jsonify({'error': 'An internal error occurred while saving feedback.'}), 500
 
 # --- Admin Feedback Routes ---
 
@@ -257,5 +269,4 @@ def get_my_feedback():
     except Exception as e:
         current_app.logger.error(f"Error fetching user feedback for user {user_id}: {e}", exc_info=True)
         return jsonify({"message": "내 피드백을 불러오는 중 오류가 발생했습니다."}), 500
-
 
