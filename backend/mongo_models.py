@@ -433,4 +433,3 @@ class ChatbotFeedback:
         db = get_mongo_db()
         result = db[ChatbotFeedback.COLLECTION_NAME].delete_many({'chat_session_id': chat_session_id})
         return result.deleted_count > 0
-

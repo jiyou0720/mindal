@@ -100,4 +100,3 @@ def initialize_menus():
         print(f"'{role}' 역할에 메뉴 할당 완료.")
 
     print("메뉴 초기화가 성공적으로 완료되었습니다.")
-
