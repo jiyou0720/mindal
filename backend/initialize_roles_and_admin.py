@@ -1,6 +1,6 @@
 import os
 from backend.extensions import db, bcrypt
-from backend.maria_models import User, Role
+from backend.maria_models import User, Role, UserRole
 
 def initialize_database():
     """데이터베이스 역할과 관리자 계정을 확인하고 생성합니다."""
@@ -26,13 +26,11 @@ def initialize_database():
 
         admin_role = Role.query.filter_by(name='관리자').first()
         if not admin_role:
-            # 이 경우는 거의 없지만, 방어적으로 코딩
             print("CRITICAL: '관리자' 역할을 찾을 수 없어 새로 생성합니다.")
             admin_role = Role(name='관리자')
             db.session.add(admin_role)
             db.session.commit()
             admin_role = Role.query.filter_by(name='관리자').first()
-
 
         if not admin_user:
             print(f"관리자 계정({admin_email})을 생성합니다...")
@@ -49,16 +47,19 @@ def initialize_database():
                 nickname='관리자'
             )
             
-            # 중요: 다대다 관계에 맞게 역할 할당
-            new_admin_user.roles.append(admin_role)
+            # UserRole 중간 모델을 사용하여 관리자에게 역할을 할당합니다.
+            user_role_assignment = UserRole(user=new_admin_user, role=admin_role)
             
             db.session.add(new_admin_user)
+            db.session.add(user_role_assignment)
             db.session.commit()
             print("관리자 계정 생성 및 역할 할당 완료.")
         else:
-            # 기존 관리자 계정에 역할이 할당되었는지 확인
-            if not admin_user.roles.filter(Role.name == '관리자').first():
-                admin_user.roles.append(admin_role)
+            # 기존 관리자에게 역할이 할당되었는지 확인
+            existing_assignment = UserRole.query.filter_by(user_id=admin_user.id, role_id=admin_role.id).first()
+            if not existing_assignment:
+                user_role_assignment = UserRole(user=admin_user, role=admin_role)
+                db.session.add(user_role_assignment)
                 db.session.commit()
                 print("기존 관리자 계정에 '관리자' 역할 할당 완료.")
             else:
