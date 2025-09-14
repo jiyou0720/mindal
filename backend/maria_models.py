@@ -5,15 +5,10 @@ import uuid
 # --- 사용자 및 인증 관련 모델 ---
 
 # User와 Role의 관계를 위한 중간 테이블 (다대다 관계)
-# UserRole 클래스를 직접 정의하여 auth_routes.py의 import 문제를 해결합니다.
-class UserRole(db.Model):
-    __tablename__ = 'user_roles'
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), primary_key=True)
-
-    user = db.relationship("User", back_populates="roles")
-    role = db.relationship("Role", back_populates="users")
-
+user_roles = db.Table('user_roles',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True)
+)
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -25,8 +20,8 @@ class User(db.Model):
     nickname = db.Column(db.String(80), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # UserRole 모델을 통해 Role과의 관계를 설정합니다.
-    roles = db.relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
+    # User와 Role의 관계를 표준적인 다대다 방식으로 수정
+    roles = db.relationship('Role', secondary=user_roles, back_populates='users', lazy='joined')
     
     posts = db.relationship('Post', backref='author', lazy=True)
     comments = db.relationship('Comment', backref='author', lazy=True)
@@ -39,8 +34,8 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
     
-    # UserRole 모델을 통해 User와의 관계를 설정합니다.
-    users = db.relationship("UserRole", back_populates="role", cascade="all, delete-orphan")
+    # User와 Role의 관계를 표준적인 다대다 방식으로 수정
+    users = db.relationship('User', secondary=user_roles, back_populates='roles')
     menus = db.relationship('RoleMenu', back_populates='role')
 
 class NicknameHistory(db.Model):
