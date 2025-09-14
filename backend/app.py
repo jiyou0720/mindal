@@ -60,23 +60,20 @@ def create_app(test_config=None):
 
     # MongoDB
     mongo_uri = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI") or os.environ.get("MONGO_URI")
-    app.config["MONGO_URI"] = mongo_uri
-    
-    db_name = None
-    if mongo_uri:
-        try:
-            parsed_uri = urlparse(mongo_uri)
-            db_name = parsed_uri.path.lstrip('/')
-        except Exception:
-            db_name = None
-    
-    if not db_name:
-        db_name = 'mindbridge_db'
-        print("INFO: MongoDB 데이터베이스 이름을 URI에서 찾을 수 없습니다. 기본값 'mindbridge_db'을 사용합니다.")
+    db_name = os.environ.get("MONGO_DBNAME", "mindbridge_db") # 환경 변수에서 직접 DBNAME을 가져옵니다.
 
+    app.config["MONGO_URI"] = mongo_uri
     app.config["MONGO_DBNAME"] = db_name
-    print(f"INFO: MongoDB URI: {str(mongo_uri)[:30]}...")
+
+    # MONGO_URI가 없는 경우를 대비한 방어 코드
+    if not mongo_uri:
+        print("WARNING: MongoDB URI가 설정되지 않았습니다.")
+        # 필요한 경우 여기서 에러를 발생시키거나 기본 로컬 URI를 설정할 수 있습니다.
+        # 예: app.config["MONGO_URI"] = "mongodb://localhost:27017/mindbridge_db"
+
+    print(f"INFO: MongoDB URI: {str(mongo_uri)[:30] if mongo_uri else 'Not Set'}...")
     print(f"INFO: MongoDB DBNAME: {db_name}")
+
 
     print(">>> 데이터베이스 설정 완료.")
     
