@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
 import logging
 from logging.handlers import RotatingFileHandler
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 # --- 경로 설정 ---
 script_dir = os.path.dirname(__file__)
@@ -59,20 +59,24 @@ def create_app(test_config=None):
     print(f"INFO: MariaDB(MySQL) URI: {app.config['SQLALCHEMY_DATABASE_URI'][:30]}...")
 
     # MongoDB
-    mongo_uri = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI") or os.environ.get("MONGO_URI")
-    db_name = os.environ.get("MONGO_DBNAME", "mindbridge_db") # 환경 변수에서 직접 DBNAME을 가져옵니다.
+    mongo_uri_from_env = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI") or os.environ.get("MONGO_URI")
+    db_name = os.environ.get("MONGO_DBNAME", "mindbridge_db")
 
-    app.config["MONGO_URI"] = mongo_uri
-    app.config["MONGO_DBNAME"] = db_name
-
-    # MONGO_URI가 없는 경우를 대비한 방어 코드
-    if not mongo_uri:
+    if not mongo_uri_from_env:
         print("WARNING: MongoDB URI가 설정되지 않았습니다.")
-        # 필요한 경우 여기서 에러를 발생시키거나 기본 로컬 URI를 설정할 수 있습니다.
-        # 예: app.config["MONGO_URI"] = "mongodb://localhost:27017/mindbridge_db"
+        final_mongo_uri = f"mongodb://localhost:27017/{db_name}"
+    else:
+        # 환경 변수에서 가져온 URI를 파싱합니다.
+        parsed_uri = urlparse(mongo_uri_from_env)
+        # URI의 path 부분을 원하는 데이터베이스 이름으로 교체하여 새로운 URI를 생성합니다.
+        uri_components = list(parsed_uri)
+        uri_components[2] = f"/{db_name}"  # path 컴포넌트
+        final_mongo_uri = urlunparse(uri_components)
 
-    print(f"INFO: MongoDB URI: {str(mongo_uri)[:30] if mongo_uri else 'Not Set'}...")
-    print(f"INFO: MongoDB DBNAME: {db_name}")
+    app.config["MONGO_URI"] = final_mongo_uri
+
+    print(f"INFO: MongoDB URI (final): {app.config['MONGO_URI']}")
+    print(f"INFO: MongoDB DBNAME used: {db_name}")
 
 
     print(">>> 데이터베이스 설정 완료.")
@@ -229,3 +233,4 @@ app = create_app()
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
