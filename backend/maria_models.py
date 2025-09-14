@@ -17,6 +17,8 @@ class User(db.Model):
     posts = db.relationship('Post', backref='author', lazy=True)
     comments = db.relationship('Comment', backref='author', lazy=True)
     diaries = db.relationship('Diary', backref='author', lazy=True)
+    notices = db.relationship('Notice', backref='author', lazy=True)
+    nickname_history = db.relationship('NicknameHistory', backref='user', lazy=True)
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -25,7 +27,23 @@ class Role(db.Model):
     users = db.relationship('User', back_populates='role')
     menus = db.relationship('RoleMenu', back_populates='role')
 
-# --- 메뉴 관리 모델 (추가된 부분) ---
+# User와 Role의 관계를 위한 중간 테이블 (auth_routes.py에서 import 시도)
+class UserRole(db.Model):
+    __tablename__ = 'user_roles'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+
+# 닉네임 변경 이력 모델 (auth_routes.py에서 import 시도)
+class NicknameHistory(db.Model):
+    __tablename__ = 'nickname_history'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    old_nickname = db.Column(db.String(80), nullable=False)
+    new_nickname = db.Column(db.String(80), nullable=False)
+    changed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# --- 메뉴 관리 모델 ---
 class Menu(db.Model):
     __tablename__ = 'menus'
     id = db.Column(db.Integer, primary_key=True)
@@ -97,4 +115,4 @@ class Notice(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     start_date = db.Column(db.DateTime, nullable=True)
     end_date = db.Column(db.DateTime, nullable=True)
-    author = db.relationship('User', backref='notices')
+
