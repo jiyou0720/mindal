@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
 import logging
 from logging.handlers import RotatingFileHandler
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 # --- 경로 설정 ---
 script_dir = os.path.dirname(__file__)
@@ -59,21 +59,24 @@ def create_app(test_config=None):
     print(f"INFO: MariaDB(MySQL) URI: {app.config['SQLALCHEMY_DATABASE_URI'][:30]}...")
 
     # MongoDB
-    mongo_uri = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI") or os.environ.get("MONGO_URI")
-    db_name = os.environ.get("MONGO_DBNAME", "mindbridge_db") # 환경 변수에서 직접 DBNAME을 가져옵니다.
+    mongo_uri_from_env = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI") or os.environ.get("MONGO_URI")
+    db_name = os.environ.get("MONGO_DBNAME", "mindbridge_db")
 
-    app.config["MONGO_URI"] = mongo_uri
-    app.config["MONGO_DBNAME"] = db_name
-
-    # MONGO_URI가 없는 경우를 대비한 방어 코드
-    if not mongo_uri:
+    if not mongo_uri_from_env:
         print("WARNING: MongoDB URI가 설정되지 않았습니다.")
-        # 필요한 경우 여기서 에러를 발생시키거나 기본 로컬 URI를 설정할 수 있습니다.
-        # 예: app.config["MONGO_URI"] = "mongodb://localhost:27017/mindbridge_db"
+        final_mongo_uri = f"mongodb://localhost:27017/{db_name}"
+    else:
+        # URI를 파싱하여 path 부분을 데이터베이스 이름으로 교체
+        parsed_uri = urlparse(mongo_uri_from_env)
+        uri_components = list(parsed_uri)
+        uri_components[2] = f"/{db_name}"
+        final_mongo_uri = urlunparse(uri_components)
 
-    print(f"INFO: MongoDB URI: {str(mongo_uri)[:30] if mongo_uri else 'Not Set'}...")
-    print(f"INFO: MongoDB DBNAME: {db_name}")
+    app.config["MONGO_URI"] = final_mongo_uri
+    app.config["MONGO_DBNAME"] = db_name # initialize_menus.py를 위한 설정
 
+    print(f"INFO: MongoDB URI (final): {app.config['MONGO_URI']}")
+    print(f"INFO: MongoDB DBNAME set: {app.config['MONGO_DBNAME']}")
 
     print(">>> 데이터베이스 설정 완료.")
     
@@ -97,10 +100,7 @@ def create_app(test_config=None):
     from backend.routes.graph_routes import graph_bp
     from backend.routes.inquiry_routes import inquiry_bp
     from backend.routes.psych_test_routes import psych_test_bp
-    # ========================================================== #
-    # [수정] chat_routes.py에서 chat_bp를 가져옵니다.
     from backend.routes.chat_routes import chat_bp
-    # ========================================================== #
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(diary_bp, url_prefix='/api/diary')
@@ -110,10 +110,7 @@ def create_app(test_config=None):
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(inquiry_bp, url_prefix='/api/inquiry')
     app.register_blueprint(psych_test_bp, url_prefix='/api/psych-test')
-    # ========================================================== #
-    # [수정] chat_bp를 '/api/chat' 접두사와 함께 등록합니다.
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
-    # ========================================================== #
 
     # --- CLI 명령어 등록 ---
     @app.cli.command("init-db")
@@ -144,14 +141,12 @@ def create_app(test_config=None):
     @app.route('/forgot_password', endpoint='forgot_password')
     def forgot_password_page(): return render_template('forgot_password.html')
         
-    # [수정] 메뉴 DB와 URL을 일치시킵니다.
     @app.route('/ai_chat', endpoint='ai_chat')
     def ai_chat_page(): return render_template('ai_chat.html')
 
     @app.route('/diary', endpoint='diary')
     def diary_page(): return render_template('diary.html')
 
-    # [수정] 메뉴 DB와 URL을 일치시킵니다.
     @app.route('/community_list', endpoint='community_list')
     def community_list_page(): return render_template('community_list.html')
 
@@ -214,12 +209,10 @@ def create_app(test_config=None):
     def admin_inquiry_management_page(): return render_template('admin_inquiry_management.html')
     
     # --- 에러 핸들러 ---
-    @app.errorhandler(404)
+    @app.errorhandler(44)
     def page_not_found(e):
-        # API 요청에 대한 404는 JSON으로 응답합니다.
         if request.path.startswith('/api/'):
             return jsonify(error="Not found"), 404
-        # 그 외에는 404 HTML 페이지를 렌더링합니다.
         return render_template('404.html'), 404
 
     return app
@@ -229,3 +222,4 @@ app = create_app()
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
