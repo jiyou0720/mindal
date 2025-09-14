@@ -118,4 +118,3 @@ def get_current_user():
         'major': user.major,
         'roles': user_roles_list
     }), 200
-

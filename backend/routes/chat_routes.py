@@ -312,4 +312,3 @@ def get_my_feedback():
     except Exception as e:
         current_app.logger.error(f"Error fetching user feedback for user {user_id}: {e}", exc_info=True)
         return jsonify({"message": "내 피드백을 불러오는 중 오류가 발생했습니다."}), 500
-

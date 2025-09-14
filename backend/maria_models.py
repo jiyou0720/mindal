@@ -1,83 +1,95 @@
+# backend/maria_models.py
+
+import datetime
 from backend.extensions import db
-from datetime import datetime
-import uuid
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.orm import relationship # relationship 임포트 확인
 
-# --- 사용자 및 인증 관련 모델 ---
-
-# User와 Role의 관계를 위한 중간 테이블 (다대다 관계)
-user_roles = db.Table('user_roles',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True)
-)
+# FIX: Define the UserRole association class as requested by other modules.
+class UserRole(db.Model):
+    __tablename__ = 'user_roles'
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), primary_key=True)
 
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    user_uid = db.Column(db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
-    nickname = db.Column(db.String(80), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    password_hash = db.Column(db.String(255), nullable=False)
+    user_uid = db.Column(db.String(255), unique=True, nullable=False)
+    nickname = db.Column(db.String(80), unique=True, nullable=True)
+    gender = db.Column(db.String(10))
+    age = db.Column(db.Integer)
+    major = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    # User와 Role의 다대다 관계 설정
+    roles = db.relationship('Role', secondary='user_roles',
+                            backref=db.backref('users', lazy='dynamic'))
     
-    # User와 Role의 관계를 표준적인 다대다 방식으로 수정
-    roles = db.relationship('Role', secondary=user_roles, back_populates='users', lazy='joined')
-    
-    posts = db.relationship('Post', backref='author', lazy=True)
-    comments = db.relationship('Comment', backref='author', lazy=True)
-    diaries = db.relationship('Diary', backref='author', lazy=True)
-    notices = db.relationship('Notice', backref='author', lazy=True)
-    nickname_history = db.relationship('NicknameHistory', backref='user', lazy=True)
+    # User와 Post의 일대다 관계 설정
+    posts = db.relationship('Post', backref='author', lazy=True, cascade="all, delete-orphan")
+    # User와 Comment의 일대다 관계 설정
+    comments = db.relationship('Comment', backref='author', lazy=True, cascade="all, delete-orphan")
+    # User와 PostLike의 일대다 관계 설정
+    post_likes = db.relationship('PostLike', backref='user', lazy=True, cascade="all, delete-orphan")
+    # User와 CommentLike의 일대다 관계 설정
+    comment_likes = db.relationship('CommentLike', backref='user', lazy=True, cascade="all, delete-orphan")
+    # User와 NicknameHistory의 일대다 관계 설정
+    nickname_history = db.relationship('NicknameHistory', backref='user', lazy=True, cascade="all, delete-orphan")
+
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    # NEW: to_dict method for User model
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'user_uid': self.user_uid,
+            'nickname': self.nickname,
+            'gender': self.gender,
+            'age': self.age,
+            'major': self.major,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'roles': [role.name for role in self.roles] # Include role names
+        }
+
+    def __repr__(self):
+        return f'<User {self.username}>'
 
 class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)
-    
-    # User와 Role의 관계를 표준적인 다대다 방식으로 수정
-    users = db.relationship('User', secondary=user_roles, back_populates='roles')
-    menus = db.relationship('RoleMenu', back_populates='role')
+    name = db.Column(db.String(80), unique=True, nullable=False)
 
-class NicknameHistory(db.Model):
-    __tablename__ = 'nickname_history'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    old_nickname = db.Column(db.String(80), nullable=False)
-    new_nickname = db.Column(db.String(80), nullable=False)
-    changed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    def __repr__(self):
+        return f'<Role {self.name}>'
 
-# --- 메뉴 관리 모델 ---
-class Menu(db.Model):
-    __tablename__ = 'menus'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    endpoint = db.Column(db.String(100), nullable=False, unique=True)
-    category = db.Column(db.String(100), nullable=False)
-    roles = db.relationship('RoleMenu', back_populates='menu')
-
-class RoleMenu(db.Model):
-    __tablename__ = 'role_menus'
-    id = db.Column(db.Integer, primary_key=True)
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
-    menu_id = db.Column(db.Integer, db.ForeignKey('menus.id'), nullable=False)
-    role = db.relationship('Role', back_populates='menus')
-    menu = db.relationship('Menu', back_populates='roles')
-
-# --- 게시판 관련 모델 ---
 class Post(db.Model):
     __tablename__ = 'posts'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    mongo_content_id = db.Column(db.String(24), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    # MongoDB에 저장된 본문 내용의 ObjectId를 참조
+    mongo_content_id = db.Column(db.String(255), nullable=False) 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_anonymous = db.Column(db.Boolean, default=False)
-    is_notice = db.Column(db.Boolean, default=False)
+    is_notice = db.Column(db.Boolean, default=False) # 공지사항 여부
     views = db.Column(db.Integer, default=0)
-    category = db.Column(db.String(50), nullable=False)
-    is_suspended = db.Column(db.Boolean, default=False, nullable=False)
-    suspended_until = db.Column(db.DateTime, nullable=True)
+    category = db.Column(db.String(50), nullable=True) # 게시글 카테고리
+    is_suspended = db.Column(db.Boolean, default=False) # NEW: 게시글 정지 여부
+    suspended_until = db.Column(db.DateTime, nullable=True) # NEW: 정지 해제 일시
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    
     comments = db.relationship('Comment', backref='post', lazy=True, cascade="all, delete-orphan")
     likes = db.relationship('PostLike', backref='post', lazy=True, cascade="all, delete-orphan")
 
@@ -85,37 +97,45 @@ class Comment(db.Model):
     __tablename__ = 'comments'
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    is_anonymous = db.Column(db.Boolean, default=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    likes = db.relationship('CommentLike', backref='comment', lazy=True, cascade="all, delete-orphan")
 
 class PostLike(db.Model):
     __tablename__ = 'post_likes'
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), primary_key=True)
+
+class CommentLike(db.Model):
+    __tablename__ = 'comment_likes'
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comments.id'), primary_key=True)
+
+class NicknameHistory(db.Model):
+    __tablename__ = 'nickname_history'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    old_nickname = db.Column(db.String(80), nullable=True)
+    new_nickname = db.Column(db.String(80), nullable=False)
+    changed_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
-# --- 다이어리 관련 모델 ---
-class Diary(db.Model):
-    __tablename__ = 'diaries'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    title = db.Column(db.String(200), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    mood = db.Column(db.String(50), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-# --- 공지사항 모델 ---
+# NEW: Notice Model for Notice Management
 class Notice(db.Model):
     __tablename__ = 'notices'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    start_date = db.Column(db.DateTime, nullable=True)
-    end_date = db.Column(db.DateTime, nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False) # 작성자 ID
+    is_public = db.Column(db.Boolean, default=True) # 공개/비공개 여부
+    start_date = db.Column(db.DateTime, nullable=True) # NEW: 게시 시작일 필드 추가
+    end_date = db.Column(db.DateTime, nullable=True)   # NEW: 게시 종료일 필드 추가
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
+    # Notice와 User의 관계 설정 (작성자)
+    author = relationship('User', backref='notices', lazy=True)
+
+    def __repr__(self):
+        return f'<Notice {self.title}>'

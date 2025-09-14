@@ -139,4 +139,3 @@ def initialize_menus():
 
 if __name__ == '__main__':
     initialize_menus()
-
