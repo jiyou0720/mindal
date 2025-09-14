@@ -95,3 +95,4 @@ def suspend_post(post_id):
 @token_required
 def create_notice():
     return jsonify({'message': 'Notice creation not implemented'}), 501
+
