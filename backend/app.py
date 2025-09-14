@@ -209,7 +209,7 @@ def create_app(test_config=None):
     def admin_inquiry_management_page(): return render_template('admin_inquiry_management.html')
     
     # --- 에러 핸들러 ---
-    @app.errorhandler(44)
+    @app.errorhandler(404)
     def page_not_found(e):
         if request.path.startswith('/api/'):
             return jsonify(error="Not found"), 404
