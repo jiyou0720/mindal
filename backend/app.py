@@ -192,8 +192,12 @@ def create_app(test_config=None):
 
     return app
 
+# ✅ Gunicorn이 찾을 수 있도록 전역 범위에서 app 객체를 생성합니다.
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
+    # 로컬에서 직접 실행할 때 사용할 포트를 설정합니다.
     port = int(os.environ.get('PORT', 5000))
+    # ✅ 이미 생성된 app 객체를 사용하여 개발 서버를 실행합니다.
     app.run(host='0.0.0.0', port=port, debug=True)
 
