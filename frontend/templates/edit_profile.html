@@ -107,7 +107,6 @@
                         console.log('edit_profile: Nickname history fetched:', history);
                         nicknameHistoryList.innerHTML = ''; // 기존 목록 초기화
 
-                        // **수정된 부분**: history가 배열이 아니거나 비어있는 경우를 안전하게 확인
                         if (!Array.isArray(history) || history.length === 0) {
                             noHistoryMessage.style.display = 'block';
                         } else {
@@ -164,12 +163,14 @@
                     if (response.ok) {
                         await showAlert(result.message || '프로필이 성공적으로 업데이트되었습니다.');
                         console.log('edit_profile: Profile update successful. New user data:', result.user);
-                        // localStorage의 닉네임 업데이트 (base.html의 환영 메시지 등에서 사용)
+                        
                         localStorage.setItem('nickname', result.user.nickname);
-                        // 닉네임 이력 새로고침
-                        fetchNicknameHistory();
-                        // 마이페이지로 돌아가거나 현재 페이지 정보 새로고침
-                        // window.location.href = myPageUrl; // 필요하다면 리다이렉트
+                        
+                        // **수정된 부분**: 닉네임 이력을 새로고침하여 변경 사항을 즉시 반영합니다.
+                        // 사용자에게 로딩 상태를 보여주어 더 나은 경험을 제공합니다.
+                        nicknameHistoryList.innerHTML = '<p>이력 목록을 새로고침하는 중...</p>';
+                        await fetchNicknameHistory();
+
                     } else {
                         await showAlert(result.message || `프로필 업데이트 실패: 상태 코드 ${response.status}`);
                         console.error('edit_profile: Profile update failed. Status:', response.status, 'Message:', result.message);
