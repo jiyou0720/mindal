@@ -127,9 +127,8 @@ def get_post_detail(post_id):
                 'content': comment_obj.content,
                 'user_id': comment_obj.user_id,
                 'author_nickname': comment_author_nickname,
-                # [FIX] Safely access is_anonymous, defaulting to False if not present.
-                # This prevents crashes if the DB column is missing.
-                'is_anonymous': getattr(comment_obj, 'is_anonymous', False),
+                # [FIX] DB 스키마가 수정되었으므로, 더 이상 getattr을 사용할 필요 없이 직접 접근합니다.
+                'is_anonymous': comment_obj.is_anonymous,
                 'created_at': comment_obj.created_at.isoformat(),
                 'updated_at': comment_obj.updated_at.isoformat()
             })
@@ -323,17 +322,13 @@ def create_comment(post_id):
         return jsonify({'message': '사용자 정보를 찾을 수 없습니다.'}), 500
 
     try:
-        # [FIX] Check if the Comment model has the 'is_anonymous' column before trying to save it.
-        # This makes the code resilient to DB schema changes.
-        comment_data = {
-            'content': content,
-            'post_id': post_id,
-            'user_id': user_id,
-        }
-        if hasattr(Comment, 'is_anonymous'):
-             comment_data['is_anonymous'] = is_anonymous
-
-        new_comment = Comment(**comment_data)
+        # [FIX] DB 스키마가 수정되었으므로, Comment 모델에 직접 is_anonymous 값을 전달합니다.
+        new_comment = Comment(
+            content=content,
+            post_id=post_id,
+            user_id=user_id,
+            is_anonymous=is_anonymous
+        )
         db.session.add(new_comment)
         db.session.commit()
         return jsonify({'message': '댓글이 성공적으로 작성되었습니다.', 'comment_id': new_comment.id}), 201
