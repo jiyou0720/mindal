@@ -120,17 +120,20 @@ document.addEventListener('DOMContentLoaded', function() {
         commentCountSpan.textContent = comments.length;
         commentsList.innerHTML = comments.length === 0 
             ? '<p class="no-comments">아직 댓글이 없습니다.</p>'
-            : comments.map(comment => `
+            : comments.map(comment => {
+                // [FIX] Explicitly check is_anonymous flag from backend
+                const authorDisplay = comment.is_anonymous ? '익명' : (comment.author_nickname || '사용자');
+                return `
                 <div class="comment-item">
                     <div class="comment-header">
-                        <span class="comment-author">${comment.is_anonymous ? '익명' : comment.author_nickname}</span>
+                        <span class="comment-author">${authorDisplay}</span>
                         <span class="comment-date">${new Date(comment.created_at).toLocaleString()}</span>
                     </div>
                     <div class="comment-body">
                         <p>${comment.content.replace(/\n/g, '<br>')}</p>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
     }
 
     async function handleLikePost() {
@@ -179,7 +182,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function handleDeletePost() {
-        if (!window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+        const confirmed = await showConfirm('정말로 이 게시글을 삭제하시겠습니까?');
+        if (!confirmed) {
             return;
         }
         try {
@@ -203,3 +207,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
