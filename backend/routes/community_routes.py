@@ -83,8 +83,7 @@ def get_posts():
 # 특정 게시글 상세 조회
 @community_bp.route('/posts/<int:post_id>', methods=['GET'])
 def get_post_detail(post_id):
-    # ✅ FIX: 데코레이터를 제거하고 함수 내에서 직접 토큰을 처리하여 앱 시작 오류 해결
-    g.user_id = None # 기본값으로 None 설정
+    g.user_id = None
     token = None
     if 'Authorization' in request.headers:
         try:
@@ -92,13 +91,13 @@ def get_post_detail(post_id):
             data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
             g.user_id = data['user_id']
         except Exception:
-            # 공개된 엔드포인트이므로 유효하지 않거나 만료된 토큰은 무시
             g.user_id = None
 
     try:
+        # ✅ FIX: PostLike.id를 PostLike.user_id로 변경하여 오류 수정
         post_query = db.session.query(
             Post,
-            func.count(db.distinct(PostLike.id)).label('like_count')
+            func.count(db.distinct(PostLike.user_id)).label('like_count')
         ).outerjoin(PostLike, Post.id == PostLike.post_id)\
          .filter(Post.id == post_id)\
          .group_by(Post.id)\
@@ -109,7 +108,6 @@ def get_post_detail(post_id):
         
         post_obj, like_count = post_query
 
-        # 조회수 증가
         post_obj.views += 1
         db.session.commit()
         
@@ -122,11 +120,10 @@ def get_post_detail(post_id):
         author_uid = post_obj.author.user_uid if post_obj.author and not post_obj.is_anonymous else ''
 
         user_liked = False
-        if g.user_id: # 로그인한 경우에만 확인
+        if g.user_id:
             user_like = PostLike.query.filter_by(user_id=g.user_id, post_id=post_id).first()
             user_liked = user_like is not None
 
-        # 댓글 목록 가져오기
         comments = []
         comment_objects = Comment.query.filter_by(post_id=post_id).order_by(Comment.created_at.asc()).all()
         for comment_obj in comment_objects:
@@ -166,7 +163,7 @@ def get_post_detail(post_id):
         }), 200
 
     except Exception as e:
-        db.session.rollback() # 조회수 증가 롤백
+        db.session.rollback()
         current_app.logger.error(f"Error fetching post detail {post_id}: {e}", exc_info=True)
         return jsonify({'message': '게시글 상세 정보를 불러오는 데 실패했습니다.'}), 500
 
