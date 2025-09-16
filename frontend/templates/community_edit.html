@@ -140,7 +140,8 @@
 
                 if (response.ok) {
                     await showAlert(result.message || '게시글이 성공적으로 수정되었습니다.');
-                    window.location.href = `/community/${postId}`; // 수정된 게시글 상세 페이지로 이동
+                    // [FIX] Correct the URL to match the Flask route
+                    window.location.href = `/community/post/${postId}`; // 수정된 게시글 상세 페이지로 이동
                 } else {
                     await showAlert(result.message || '게시글 수정에 실패했습니다.');
                 }
