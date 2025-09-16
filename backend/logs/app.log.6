@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-2025-07-28 09:58:54,711 ERROR: An unhandled exception occurred: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in C:\mindai\backend\app.py:122]
+2025-07-28 09:58:58,306 ERROR: Exception on /community/edit/3 [GET] [in C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py:781]
 Traceback (most recent call last):
   File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
     rv = self.dispatch_request()
@@ -57,37 +57,8 @@ Traceback (most recent call last):
   File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
     raise TemplateNotFound(template)
 jinja2.exceptions.TemplateNotFound: 500.html
-2025-07-28 09:58:58,304 ERROR: An unhandled exception occurred: Could not build url for endpoint 'community'. Did you mean 'community_list' instead? [in C:\mindai\backend\app.py:122]
-Traceback (most recent call last):
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 808, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
-  File "C:\mindai\backend\app.py", line 188, in community_edit
-    return render_template('community_edit.html', post_id=post_id)
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 150, in render_template
-    return _render(app, template, context)
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 131, in _render
-    rv = template.render(context)
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1304, in render
-    self.environment.handle_exception()
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 939, in handle_exception
-    raise rewrite_traceback_stack(source=source)
-  File "C:\mindai\frontend\templates\community_edit.html", line 1, in top-level template code
-    {% extends "base.html" %}
-  File "C:\mindai\frontend\templates\base.html", line 32, in top-level template code
-    {% block content %}{% endblock %}
-  File "C:\mindai\frontend\templates\community_edit.html", line 74, in block 'content'
-    const communityListUrl = "{{ url_for('community') }}";
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1027, in url_for
-    return self.handle_url_build_error(error, endpoint, values)
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1016, in url_for
-    rv = url_adapter.build(  # type: ignore[union-attr]
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\werkzeug\routing\map.py", line 924, in build
-    raise BuildError(endpoint, values, method, self)
-werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'community'. Did you mean 'community_list' instead?
 =======
-2025-07-28 09:58:54,711 ERROR: An unhandled exception occurred: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in C:\mindai\backend\app.py:122]
+2025-07-28 09:58:58,306 ERROR: Exception on /community/edit/3 [GET] [in C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py:781]
 Traceback (most recent call last):
   File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
     rv = self.dispatch_request()
@@ -145,33 +116,4 @@ Traceback (most recent call last):
   File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
     raise TemplateNotFound(template)
 jinja2.exceptions.TemplateNotFound: 500.html
-2025-07-28 09:58:58,304 ERROR: An unhandled exception occurred: Could not build url for endpoint 'community'. Did you mean 'community_list' instead? [in C:\mindai\backend\app.py:122]
-Traceback (most recent call last):
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 823, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 808, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
-  File "C:\mindai\backend\app.py", line 188, in community_edit
-    return render_template('community_edit.html', post_id=post_id)
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 150, in render_template
-    return _render(app, template, context)
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 131, in _render
-    rv = template.render(context)
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1304, in render
-    self.environment.handle_exception()
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 939, in handle_exception
-    raise rewrite_traceback_stack(source=source)
-  File "C:\mindai\frontend\templates\community_edit.html", line 1, in top-level template code
-    {% extends "base.html" %}
-  File "C:\mindai\frontend\templates\base.html", line 32, in top-level template code
-    {% block content %}{% endblock %}
-  File "C:\mindai\frontend\templates\community_edit.html", line 74, in block 'content'
-    const communityListUrl = "{{ url_for('community') }}";
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1027, in url_for
-    return self.handle_url_build_error(error, endpoint, values)
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1016, in url_for
-    rv = url_adapter.build(  # type: ignore[union-attr]
-  File "C:\Users\ADsThinkCentre\AppData\Local\Programs\Python\Python310\lib\site-packages\werkzeug\routing\map.py", line 924, in build
-    raise BuildError(endpoint, values, method, self)
-werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'community'. Did you mean 'community_list' instead?
 >>>>>>> 32e57f7623365b93a09d34dc9cad501cc18c11af

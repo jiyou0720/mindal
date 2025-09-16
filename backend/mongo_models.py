@@ -214,6 +214,7 @@ class ChatSession:
             current_app.logger.error(f"Error fetching all admin chat sessions from MongoDB: {e}")
             raise
 
+
 # MongoPostContent 모델
 class MongoPostContent:
     def __init__(self, content, attachment_paths=None, _id=None):
@@ -428,4 +429,3 @@ class ChatbotFeedback:
         db = get_mongo_db()
         result = db[ChatbotFeedback.COLLECTION_NAME].delete_many({'chat_session_id': chat_session_id})
         return result.deleted_count > 0
-
