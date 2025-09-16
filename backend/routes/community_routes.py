@@ -94,7 +94,6 @@ def get_post_detail(post_id):
             g.user_id = None
 
     try:
-        # ✅ FIX: PostLike.id를 PostLike.user_id로 변경하여 오류 수정
         post_query = db.session.query(
             Post,
             func.count(db.distinct(PostLike.user_id)).label('like_count')
@@ -169,8 +168,18 @@ def get_post_detail(post_id):
 
 # 게시글 작성
 @community_bp.route('/posts', methods=['POST'])
-@token_required
 def create_post():
+    token = None
+    if 'Authorization' in request.headers:
+        token = request.headers['Authorization'].split(" ")[1]
+    if not token:
+        return jsonify({'message': '로그인이 필요합니다.'}), 401
+    try:
+        token_data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+        g.user_id = token_data['user_id']
+    except Exception:
+        return jsonify({'message': '유효하지 않은 토큰입니다. 다시 로그인해주세요.'}), 401
+
     data = request.get_json()
     title = data.get('title')
     content = data.get('content')
@@ -211,8 +220,18 @@ def create_post():
 
 # 게시글 수정
 @community_bp.route('/posts/<int:post_id>', methods=['PUT'])
-@token_required
 def update_post(post_id):
+    token = None
+    if 'Authorization' in request.headers:
+        token = request.headers['Authorization'].split(" ")[1]
+    if not token:
+        return jsonify({'message': '로그인이 필요합니다.'}), 401
+    try:
+        token_data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+        g.user_id = token_data['user_id']
+    except Exception:
+        return jsonify({'message': '유효하지 않은 토큰입니다. 다시 로그인해주세요.'}), 401
+
     data = request.get_json()
     title = data.get('title')
     content = data.get('content')
@@ -248,8 +267,18 @@ def update_post(post_id):
 
 # 게시글 삭제
 @community_bp.route('/posts/<int:post_id>', methods=['DELETE'])
-@token_required
 def delete_post(post_id):
+    token = None
+    if 'Authorization' in request.headers:
+        token = request.headers['Authorization'].split(" ")[1]
+    if not token:
+        return jsonify({'message': '로그인이 필요합니다.'}), 401
+    try:
+        token_data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+        g.user_id = token_data['user_id']
+    except Exception:
+        return jsonify({'message': '유효하지 않은 토큰입니다. 다시 로그인해주세요.'}), 401
+
     try:
         post = db.session.get(Post, post_id)
         if not post:
@@ -272,9 +301,19 @@ def delete_post(post_id):
 
 # 게시글 좋아요/좋아요 취소
 @community_bp.route('/posts/<int:post_id>/like', methods=['POST'])
-@token_required
 def toggle_post_like(post_id):
-    user_id = g.user_id
+    token = None
+    if 'Authorization' in request.headers:
+        token = request.headers['Authorization'].split(" ")[1]
+    if not token:
+        return jsonify({'message': '로그인이 필요합니다.'}), 401
+    try:
+        token_data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+        user_id = token_data['user_id']
+    except Exception as e:
+        current_app.logger.error(f"Token validation error: {e}")
+        return jsonify({'message': '유효하지 않은 토큰입니다. 다시 로그인해주세요.'}), 401
+
     try:
         post = db.session.get(Post, post_id)
         if not post:
@@ -304,10 +343,19 @@ def toggle_post_like(post_id):
 
 # 댓글 작성 API
 @community_bp.route('/posts/<int:post_id>/comments', methods=['POST'])
-@token_required
 def create_comment(post_id):
+    token = None
+    if 'Authorization' in request.headers:
+        token = request.headers['Authorization'].split(" ")[1]
+    if not token:
+        return jsonify({'message': '로그인이 필요합니다.'}), 401
+    try:
+        token_data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+        g.user_id = token_data['user_id']
+    except Exception:
+        return jsonify({'message': '유효하지 않은 토큰입니다. 다시 로그인해주세요.'}), 401
+
     data = request.get_json()
-    user_id = g.user_id
     content = data.get('content')
     is_anonymous = data.get('is_anonymous', False)
 
@@ -322,7 +370,7 @@ def create_comment(post_id):
         new_comment = Comment(
             content=content,
             post_id=post_id,
-            user_id=user_id,
+            user_id=g.user_id,
             is_anonymous=is_anonymous
         )
         db.session.add(new_comment)
