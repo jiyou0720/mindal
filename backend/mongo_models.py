@@ -1,320 +1,431 @@
-import os
-from flask import Blueprint, request, jsonify, g, current_app
-from backend.extensions import db, mongo
-from backend.maria_models import Post, Comment, User, PostLike 
-from backend.routes.auth_routes import token_required
 from bson.objectid import ObjectId
-from werkzeug.utils import secure_filename
+import json
 import datetime
-import uuid
-import jwt
-from sqlalchemy.orm import joinedload
-from sqlalchemy import func
+from flask import current_app
+from backend.extensions import mongo
 
+def get_mongo_db():
+    """안정적으로 MongoDB 데이터베이스 객체를 가져옵니다."""
+    db_name = current_app.config.get("MONGO_DBNAME", "mindbridge_db")
+    return mongo.cx[db_name]
 
-community_bp = Blueprint('community_api', __name__)
+# ChatHistory 모델
+class ChatHistory:
+    COLLECTION_NAME = "chat_history"
 
-# --- 게시글 관련 API ---
+    @staticmethod
+    def add_message(user_id, sender, message, chat_session_id=None):
+        if chat_session_id is None:
+            chat_session_id = ChatHistory._generate_session_id(user_id)
 
-# 게시글 목록 조회
-@community_bp.route('/posts', methods=['GET'])
-def get_posts():
-    try:
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 25, type=int)
-        search_query = request.args.get('search_query', '', type=str)
-        category_filter = request.args.get('category_filter', '', type=str)
-
-        query = db.session.query(
-            Post,
-            func.count(db.distinct(PostLike.user_id)).label('like_count'),
-            func.count(db.distinct(Comment.id)).label('comment_count')
-        ).outerjoin(PostLike, Post.id == PostLike.post_id)\
-         .outerjoin(Comment, Post.id == Comment.post_id)\
-         .group_by(Post.id)
-
-        if search_query:
-            query = query.filter(Post.title.like(f'%{search_query}%'))
-            
-        if category_filter:
-            query = query.filter(Post.category == category_filter)
-
-        query = query.order_by(Post.is_notice.desc(), Post.created_at.desc())
-
-        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-        posts_paginated = pagination.items
-
-        posts_data = []
-        for post, like_count, comment_count in posts_paginated:
-            author_nickname = post.author.nickname if post.author and not post.is_anonymous else '익명'
-            author_uid = post.author.user_uid if post.author and not post.is_anonymous else ''
-
-            posts_data.append({
-                'id': post.id,
-                'title': post.title,
-                'user_id': post.user_id,
-                'author_nickname': author_nickname,
-                'author_uid': author_uid,
-                'is_anonymous': post.is_anonymous,
-                'is_notice': post.is_notice,
-                'views': post.views,
-                'category': post.category,
-                'likes': like_count,
-                'comment_count': comment_count,
-                'created_at': post.created_at.isoformat(),
-                'updated_at': post.updated_at.isoformat(),
-                'is_suspended': post.is_suspended,
-                'suspended_until': post.suspended_until.isoformat() if post.suspended_until else None
-            })
-
-        return jsonify({
-            'posts': posts_data,
-            'total_pages': pagination.pages,
-            'current_page': pagination.page,
-            'total_posts': pagination.total
-        }), 200
-
-    except Exception as e:
-        current_app.logger.error(f"Error fetching community posts: {e}", exc_info=True)
-        return jsonify({'message': '게시글 목록을 불러오는 데 실패했습니다.'}), 500
-
-# 특정 게시글 상세 조회
-@community_bp.route('/posts/<int:post_id>', methods=['GET'])
-def get_post_detail(post_id):
-    try:
-        g.user_id = None
-        auth_header = request.headers.get('Authorization')
-        if auth_header and auth_header.startswith('Bearer '):
-            token = auth_header.split(" ")[1]
-            try:
-                decoded_token = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
-                g.user_id = decoded_token['user_id']
-            except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
-                g.user_id = None
-        
-        post_query = db.session.query(
-            Post,
-            func.count(db.distinct(PostLike.user_id)).label('like_count')
-        ).outerjoin(PostLike, Post.id == PostLike.post_id)\
-         .filter(Post.id == post_id)\
-         .group_by(Post.id)
-        
-        post_result = post_query.first()
-        
-        if not post_result:
-            return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
-        
-        post_obj, like_count = post_result
-
-        post_obj.views += 1
-        db.session.commit()
-
-        mongo_content = mongo.db.post_contents.find_one({'_id': ObjectId(post_obj.mongo_content_id)})
-        content_text = mongo_content['content'] if mongo_content else '내용 없음'
-
-        author_nickname = '익명' if post_obj.is_anonymous else (post_obj.author.nickname if post_obj.author else '알 수 없음')
-        author_uid = '' if post_obj.is_anonymous else (post_obj.author.user_uid if post_obj.author else '')
-
-        user_liked = False
-        if g.user_id:
-            user_liked = db.session.query(PostLike).filter_by(user_id=g.user_id, post_id=post_id).first() is not None
-
-        comments = []
-        comment_objects = Comment.query.filter_by(post_id=post_id).order_by(Comment.created_at.asc()).all()
-        for comment_obj in comment_objects:
-            comment_author_nickname = '익명' if comment_obj.is_anonymous else (comment_obj.author.nickname if comment_obj.author else '탈퇴한 사용자')
-            comments.append({
-                'id': comment_obj.id,
-                'content': comment_obj.content,
-                'user_id': comment_obj.user_id,
-                'author_nickname': comment_author_nickname,
-                'is_anonymous': comment_obj.is_anonymous,
-                'created_at': comment_obj.created_at.isoformat(),
-                'updated_at': comment_obj.updated_at.isoformat()
-            })
-
-        return jsonify({
-            'id': post_obj.id,
-            'title': post_obj.title,
-            'content': content_text,
-            'user_id': post_obj.user_id,
-            'author_nickname': author_nickname,
-            'author_uid': author_uid,
-            'is_anonymous': post_obj.is_anonymous,
-            'views': post_obj.views,
-            'category': post_obj.category,
-            'likes': like_count,
-            'comment_count': len(comments),
-            'user_liked': user_liked,
-            'created_at': post_obj.created_at.isoformat(),
-            'updated_at': post_obj.updated_at.isoformat(),
-            'comments': comments
-        }), 200
-
-    except Exception as e:
-        current_app.logger.error(f"Error fetching post detail {post_id}: {e}", exc_info=True)
-        return jsonify({'message': '게시글 상세 정보를 불러오는 데 실패했습니다.'}), 500
-
-# 게시글 작성
-@community_bp.route('/posts', methods=['POST'])
-@token_required
-def create_post():
-    data = request.get_json()
-    title = data.get('title')
-    content = data.get('content')
-    category = data.get('category')
-    is_anonymous = data.get('is_anonymous', False)
-
-    if not all([title, content, category]):
-        return jsonify({'message': '제목, 내용, 카테고리는 필수입니다.'}), 400
-
-    try:
-        mongo_post_content = {
-            'content': content,
-            'created_at': datetime.datetime.utcnow(),
-            'user_id': g.user_id
+        chat_data = {
+            "user_id": user_id,
+            "chat_session_id": chat_session_id,
+            "sender": sender,
+            "message": message,
+            "timestamp": datetime.datetime.utcnow()
         }
-        mongo_result = mongo.db.post_contents.insert_one(mongo_post_content)
-        mongo_content_id = str(mongo_result.inserted_id)
+        try:
+            db = get_mongo_db()
+            result = db[ChatHistory.COLLECTION_NAME].insert_one(chat_data)
+            return {**chat_data, "_id": str(result.inserted_id)}
+        except Exception as e:
+            current_app.logger.error(f"Error adding chat message to MongoDB: {e}")
+            raise
 
-        new_post = Post(
-            title=title,
-            mongo_content_id=mongo_content_id,
-            user_id=g.user_id,
-            is_anonymous=is_anonymous,
-            category=category,
-            views=0
-        )
-        db.session.add(new_post)
-        db.session.commit()
-        return jsonify({'message': '게시글이 성공적으로 작성되었습니다.', 'post_id': new_post.id}), 201
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error creating post: {e}", exc_info=True)
-        return jsonify({'message': '게시글 작성에 실패했습니다.'}), 500
-
-# 게시글 수정
-@community_bp.route('/posts/<int:post_id>', methods=['PUT'])
-@token_required
-def update_post(post_id):
-    data = request.get_json()
-    title = data.get('title')
-    content = data.get('content')
-    category = data.get('category')
-    is_anonymous = data.get('is_anonymous', None)
-
-    try:
-        post = db.session.get(Post, post_id)
-        if not post:
-            return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
+    @staticmethod
+    def get_history(user_id, chat_session_id=None, limit=None):
+        query = {"user_id": user_id}
+        if chat_session_id:
+            query["chat_session_id"] = chat_session_id
         
-        if post.user_id != g.user_id:
-            return jsonify({'message': '게시글 수정 권한이 없습니다.'}), 403
+        try:
+            db = get_mongo_db()
+            cursor = db[ChatHistory.COLLECTION_NAME].find(query).sort("timestamp", 1)
+            if limit:
+                cursor = cursor.limit(limit)
+            return list(cursor)
+        except Exception as e:
+            current_app.logger.error(f"Error fetching chat history from MongoDB: {e}")
+            raise
 
-        if title is not None: post.title = title
-        if category is not None: post.category = category
-        if is_anonymous is not None: post.is_anonymous = is_anonymous
-        post.updated_at = datetime.datetime.utcnow()
+    @staticmethod
+    def get_all_sessions(user_id):
+        raise NotImplementedError("Use ChatSession.get_all_sessions_metadata instead.")
 
-        if content is not None:
-            mongo.db.post_contents.update_one(
-                {'_id': ObjectId(post.mongo_content_id)},
-                {'$set': {'content': content, 'updated_at': datetime.datetime.utcnow()}}
+    @staticmethod
+    def _generate_session_id(user_id):
+        return f"{user_id}_{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+
+    @staticmethod
+    def delete_session(user_id, chat_session_id):
+        try:
+            db = get_mongo_db()
+            result = db[ChatHistory.COLLECTION_NAME].delete_many(
+                {"user_id": user_id, "chat_session_id": chat_session_id}
             )
+            return result.deleted_count
+        except Exception as e:
+            current_app.logger.error(f"Error deleting chat session from MongoDB: {e}")
+            raise
+    
+    @staticmethod
+    def get_history_by_session_id_for_admin(chat_session_id):
+        """관리자가 특정 세션의 전체 대화 기록을 조회합니다."""
+        try:
+            db = get_mongo_db()
+            cursor = db[ChatHistory.COLLECTION_NAME].find(
+                {"chat_session_id": chat_session_id}
+            ).sort("timestamp", 1)
+            return list(cursor)
+        except Exception as e:
+            current_app.logger.error(f"Error fetching admin chat history from MongoDB: {e}")
+            raise
 
-        db.session.commit()
-        return jsonify({'message': '게시글이 성공적으로 수정되었습니다.'}), 200
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error updating post {post_id}: {e}", exc_info=True)
-        return jsonify({'message': '게시글 수정에 실패했습니다.'}), 500
+# ChatSession 모델
+class ChatSession:
+    COLLECTION_NAME = "chat_sessions"
 
-# 게시글 삭제
-@community_bp.route('/posts/<int:post_id>', methods=['DELETE'])
-@token_required
-def delete_post(post_id):
-    try:
-        post = db.session.get(Post, post_id)
-        if not post:
-            return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
-        
-        if post.user_id != g.user_id:
-            return jsonify({'message': '게시글 삭제 권한이 없습니다.'}), 403
+    def __init__(self, user_id, chat_session_id, chat_style, summary, created_at=None, updated_at=None, _id=None, feedback=None, is_hidden=False):
+        self._id = _id if _id else ObjectId()
+        self.user_id = user_id
+        self.chat_session_id = chat_session_id
+        self.chat_style = chat_style
+        self.summary = summary
+        self.created_at = created_at if created_at is not None else datetime.datetime.utcnow()
+        self.updated_at = updated_at if updated_at is not None else datetime.datetime.utcnow()
+        self.feedback = feedback
+        self.is_hidden = is_hidden
 
-        if post.mongo_content_id:
-            mongo.db.post_contents.delete_one({'_id': ObjectId(post.mongo_content_id)})
+    def to_dict(self):
+        return {
+            "_id": self._id,
+            "user_id": self.user_id,
+            "chat_session_id": self.chat_session_id,
+            "chat_style": self.chat_style,
+            "summary": self.summary,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "feedback": self.feedback,
+            "is_hidden": self.is_hidden
+        }
 
-        db.session.delete(post)
-        db.session.commit()
-        return jsonify({'message': '게시글이 성공적으로 삭제되었습니다.'}), 200
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error deleting post {post_id}: {e}", exc_info=True)
-        return jsonify({'message': '게시글 삭제에 실패했습니다.'}), 500
+    @staticmethod
+    def from_mongo(data):
+        return ChatSession(**data)
 
-# 게시글 좋아요/좋아요 취소
-@community_bp.route('/posts/<int:post_id>/like', methods=['POST'])
-@token_required
-def toggle_post_like(post_id):
-    user_id = g.user_id
-    try:
-        post = db.session.get(Post, post_id)
-        if not post:
-            return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
-
-        existing_like = PostLike.query.filter_by(user_id=user_id, post_id=post_id).first()
-
-        if existing_like:
-            db.session.delete(existing_like)
-            liked = False
-        else:
-            new_like = PostLike(user_id=user_id, post_id=post_id)
-            db.session.add(new_like)
-            liked = True
-        
-        db.session.commit()
-        
-        like_count = db.session.query(func.count(PostLike.user_id)).filter(PostLike.post_id == post_id).scalar()
-        
-        return jsonify({
-            'message': '좋아요를 취소했습니다.' if not liked else '게시글에 좋아요를 눌렀습니다.',
-            'liked': liked,
-            'like_count': like_count
-        }), 200
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error toggling like for post {post_id} by user {user_id}: {e}", exc_info=True)
-        return jsonify({'message': '좋아요 처리에 실패했습니다.'}), 500
-
-# 댓글 작성 API
-@community_bp.route('/posts/<int:post_id>/comments', methods=['POST'])
-@token_required
-def create_comment(post_id):
-    data = request.get_json()
-    user_id = g.user_id
-    content = data.get('content')
-    is_anonymous = data.get('is_anonymous', False)
-
-    if not content:
-        return jsonify({'message': '댓글 내용을 입력해주세요.'}), 400
-
-    post = db.session.get(Post, post_id)
-    if not post:
-        return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
-
-    try:
-        # ✅ is_anonymous 값을 Comment 모델 생성자에 전달
-        new_comment = Comment(
-            content=content,
-            post_id=post_id,
+    @staticmethod
+    def create_session(user_id, chat_session_id, chat_style="default", summary="No summary yet"):
+        session_data = ChatSession(
             user_id=user_id,
-            is_anonymous=is_anonymous
+            chat_session_id=chat_session_id,
+            chat_style=chat_style,
+            summary=summary,
+            is_hidden=False
         )
-        db.session.add(new_comment)
-        db.session.commit()
-        return jsonify({'message': '댓글이 성공적으로 작성되었습니다.', 'comment_id': new_comment.id}), 201
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error creating comment for post {post_id}: {e}", exc_info=True)
-        return jsonify({'message': '댓글 작성에 실패했습니다.'}), 500
+        try:
+            db = get_mongo_db()
+            session_dict = session_data.to_dict()
+            del session_dict['_id'] 
+            result = db[ChatSession.COLLECTION_NAME].insert_one(session_dict)
+            session_data._id = result.inserted_id
+            return session_data
+        except Exception as e:
+            current_app.logger.error(f"Error creating chat session in MongoDB: {e}")
+            raise
+
+    @staticmethod
+    def update_session_summary(user_id, chat_session_id, summary):
+        try:
+            db = get_mongo_db()
+            result = db[ChatSession.COLLECTION_NAME].update_one(
+                {"user_id": user_id, "chat_session_id": chat_session_id},
+                {"$set": {"summary": summary, "updated_at": datetime.datetime.utcnow()}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            current_app.logger.error(f"Error updating chat session summary in MongoDB: {e}")
+            raise
+
+    @staticmethod
+    def hide_session_for_user(user_id, chat_session_id):
+        """사용자에게 세션을 숨김 처리합니다 (소프트 삭제)."""
+        try:
+            db = get_mongo_db()
+            result = db[ChatSession.COLLECTION_NAME].update_one(
+                {"user_id": user_id, "chat_session_id": chat_session_id},
+                {"$set": {"is_hidden": True, "updated_at": datetime.datetime.utcnow()}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            current_app.logger.error(f"Error hiding chat session in MongoDB: {e}")
+            raise
+
+    @staticmethod
+    def get_session_by_id(user_id, chat_session_id):
+        """숨겨지지 않은 특정 세션 정보를 가져옵니다."""
+        try:
+            db = get_mongo_db()
+            doc = db[ChatSession.COLLECTION_NAME].find_one({
+                "user_id": user_id,
+                "chat_session_id": chat_session_id,
+                "is_hidden": {"$ne": True}
+            })
+            return ChatSession.from_mongo(doc) if doc else None
+        except Exception as e:
+            current_app.logger.error(f"Error fetching single chat session metadata from MongoDB: {e}")
+            raise
+
+    @staticmethod
+    def get_all_sessions_metadata(user_id):
+        """사용자에게 보여줄 숨겨지지 않은 모든 세션 메타데이터를 가져옵니다."""
+        try:
+            db = get_mongo_db()
+            cursor = db[ChatSession.COLLECTION_NAME].find({
+                "user_id": user_id,
+                "is_hidden": {"$ne": True}
+            }).sort("created_at", -1)
+            return [ChatSession.from_mongo(doc) for doc in cursor]
+        except Exception as e:
+            current_app.logger.error(f"Error fetching all chat sessions metadata from MongoDB: {e}")
+            raise
+
+    @staticmethod
+    def delete_session_metadata(user_id, chat_session_id):
+        """데이터베이스에서 세션 메타데이터를 완전히 삭제합니다 (하드 삭제)."""
+        try:
+            db = get_mongo_db()
+            result = db[ChatSession.COLLECTION_NAME].delete_one(
+                {"user_id": user_id, "chat_session_id": chat_session_id}
+            )
+            return result.deleted_count > 0
+        except Exception as e:
+            current_app.logger.error(f"Error deleting chat session metadata from MongoDB: {e}")
+            raise
+
+    @staticmethod
+    def get_all_sessions_for_admin():
+        """관리자가 모든 사용자의 상담 세션 요약 정보를 조회합니다."""
+        try:
+            db = get_mongo_db()
+            cursor = db[ChatSession.COLLECTION_NAME].find().sort("created_at", -1)
+            return [ChatSession.from_mongo(doc) for doc in cursor]
+        except Exception as e:
+            current_app.logger.error(f"Error fetching all admin chat sessions from MongoDB: {e}")
+            raise
+
+# MongoPostContent 모델
+class MongoPostContent:
+    def __init__(self, content, attachment_paths=None, _id=None):
+        self._id = _id if _id else ObjectId()
+        self.content = content
+        self.attachment_paths = attachment_paths if attachment_paths is not None else []
+
+    def to_dict(self):
+        return {
+            "_id": self._id,
+            "content": self.content,
+            "attachment_paths": self.attachment_paths
+        }
+
+    @staticmethod
+    def from_mongo(data):
+        return MongoPostContent(**data)
+
+# MenuItem 모델
+class MenuItem:
+    def __init__(self, name, path, icon_class, required_roles=None, order=None, _id=None):
+        self.name = name
+        self.path = path
+        self.icon_class = icon_class
+        self.required_roles = required_roles if required_roles is not None else []
+        self.order = order
+        self._id = _id if _id else ObjectId()
+    
+    def to_dict(self):
+        return self.__dict__
+
+    @staticmethod
+    def from_mongo(data):
+        return MenuItem(**data)
+
+# DiaryEntry 모델
+class DiaryEntry:
+    def __init__(self, user_id, title, content, date, mood_emoji_key, created_at=None, updated_at=None, _id=None):
+        self._id = _id if _id else ObjectId()
+        self.user_id = user_id
+        self.title = title
+        self.content = content
+        self.date = date
+        self.mood_emoji_key = mood_emoji_key
+        self.created_at = created_at if created_at is not None else datetime.datetime.utcnow()
+        self.updated_at = updated_at if updated_at is not None else datetime.datetime.utcnow()
+
+    def to_dict(self):
+        return {
+            "_id": self._id,
+            "user_id": self.user_id,
+            "title": self.title,
+            "content": self.content,
+            "date": self.date,
+            "mood_emoji_key": self.mood_emoji_key,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+    
+    @staticmethod
+    def from_mongo(data):
+        return DiaryEntry(**data)
+
+# MoodEntry 모델
+class MoodEntry:
+    def __init__(self, user_id, date, mood_score, timestamp=None, _id=None):
+        self._id = _id if _id else ObjectId()
+        self.user_id = user_id
+        self.date = date
+        self.mood_score = mood_score
+        self.timestamp = timestamp if timestamp is not None else datetime.datetime.utcnow()
+
+    def to_dict(self):
+        return self.__dict__
+
+    @staticmethod
+    def from_mongo(data):
+        return MoodEntry(**data)
+
+# Inquiry 모델
+class Inquiry:
+    def __init__(self, user_id, username, email, title, content, created_at=None, _id=None, status="pending", reply_content=None, replied_at=None, replied_by_user_id=None):
+        self._id = _id if _id else ObjectId()
+        self.user_id = user_id
+        self.username = username
+        self.email = email
+        self.title = title
+        self.content = content
+        self.created_at = created_at if created_at is not None else datetime.datetime.utcnow()
+        self.status = status
+        self.reply_content = reply_content
+        self.replied_at = replied_at
+        self.replied_by_user_id = replied_by_user_id
+
+    def to_dict(self):
+        return self.__dict__
+
+    @staticmethod
+    def from_mongo(data):
+        return Inquiry(**data)
+
+# PsychTest 모델
+class PsychTest:
+    def __init__(self, title, description, test_type, questions=None, created_at=None, _id=None):
+        self._id = _id if _id else ObjectId()
+        self.title = title
+        self.description = description
+        self.test_type = test_type
+        self.questions = questions if questions is not None else []
+        self.created_at = created_at if created_at is not None else datetime.datetime.utcnow()
+
+    def to_dict(self):
+        return self.__dict__
+    
+    @staticmethod
+    def from_mongo(data):
+        return PsychTest(**data)
+
+# PsychQuestion 모델
+class PsychQuestion:
+    def __init__(self, test_id, question_text, options, order, _id=None):
+        self._id = _id if _id else ObjectId()
+        self.test_id = test_id
+        self.question_text = question_text
+        self.options = options
+        self.order = order
+
+    def to_dict(self):
+        return self.__dict__
+
+    @staticmethod
+    def from_mongo(data):
+        return PsychQuestion(**data)
+
+# PsychTestResult 모델
+class PsychTestResult:
+    def __init__(self, user_id, test_id, answers, result_summary, result_details=None, created_at=None, _id=None):
+        self._id = _id if _id else ObjectId()
+        self.user_id = user_id
+        self.test_id = test_id
+        self.answers = answers
+        self.result_summary = result_summary
+        self.result_details = result_details
+        self.created_at = created_at if created_at is not None else datetime.datetime.utcnow()
+
+    def to_dict(self):
+        return self.__dict__
+
+    @staticmethod
+    def from_mongo(data):
+        return PsychTestResult(**data)
+
+# ChatbotFeedback 모델
+class ChatbotFeedback:
+    COLLECTION_NAME = 'chat_feedback'
+
+    @staticmethod
+    def create(user_id, chat_session_id, rating, comment, timestamp=None):
+        if timestamp is None:
+            timestamp = datetime.datetime.utcnow()
+        feedback_data = {
+            'user_id': user_id,
+            'chat_session_id': chat_session_id,
+            'rating': rating,
+            'comment': comment,
+            'timestamp': timestamp,
+        }
+        db = get_mongo_db()
+        result = db[ChatbotFeedback.COLLECTION_NAME].insert_one(feedback_data)
+        return str(result.inserted_id)
+
+    @staticmethod
+    def get_by_id(feedback_id):
+        db = get_mongo_db()
+        return db[ChatbotFeedback.COLLECTION_NAME].find_one({'_id': ObjectId(feedback_id)})
+
+    @staticmethod
+    def get_all():
+        db = get_mongo_db()
+        return list(db[ChatbotFeedback.COLLECTION_NAME].find().sort('timestamp', -1))
+
+    @staticmethod
+    def get_feedback_by_user(user_id):
+        db = get_mongo_db()
+        return list(db[ChatbotFeedback.COLLECTION_NAME].find({'user_id': user_id}).sort('timestamp', -1))
+
+    @staticmethod
+    def update(feedback_id, new_rating=None, new_comment=None):
+        update_fields = {}
+        if new_rating is not None:
+            update_fields['rating'] = new_rating
+        if new_comment is not None:
+            update_fields['comment'] = new_comment
+
+        if update_fields:
+            db = get_mongo_db()
+            result = db[ChatbotFeedback.COLLECTION_NAME].update_one(
+                {'_id': ObjectId(feedback_id)},
+                {'$set': update_fields}
+            )
+            return result.modified_count > 0
+        return False
+
+    @staticmethod
+    def delete(feedback_id):
+        db = get_mongo_db()
+        result = db[ChatbotFeedback.COLLECTION_NAME].delete_one({'_id': ObjectId(feedback_id)})
+        return result.deleted_count > 0
+
+    @staticmethod
+    def delete_by_chat_session_id(chat_session_id):
+        db = get_mongo_db()
+        result = db[ChatbotFeedback.COLLECTION_NAME].delete_many({'chat_session_id': chat_session_id})
+        return result.deleted_count > 0
 
