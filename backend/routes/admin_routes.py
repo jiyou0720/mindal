@@ -3,7 +3,7 @@ import logging
 import sys
 from flask import Blueprint, request, jsonify, g, current_app
 from backend.extensions import db, mongo
-from backend.maria_models import User, Post, Comment, Role, UserRole, Notice, PostLike
+from backend.maria_models import User, Post, Comment, Role, Notice, PostLike
 from backend.mongo_models import DiaryEntry, MoodEntry, Inquiry, PsychTest, PsychQuestion, PsychTestResult
 from backend.routes.auth_routes import token_required, roles_required
 from bson.objectid import ObjectId
@@ -445,6 +445,36 @@ def get_notice(notice_id):
         db.session.rollback()
         current_app.logger.error(f"Error fetching notice {notice_id}: {e}", exc_info=True)
         return jsonify({'message': '공지사항을 불러오는 데 실패했습니다.'}), 500
+
+@admin_bp.route('/notices/<int:notice_id>', methods=['PUT'])
+@token_required
+@roles_required(['관리자', '운영자'])
+def update_notice(notice_id):
+    data = request.get_json()
+    try:
+        notice = db.session.get(Notice, notice_id)
+        if not notice:
+            return jsonify({'message': '공지사항을 찾을 수 없습니다.'}), 404
+        
+        notice.title = data.get('title', notice.title)
+        notice.content = data.get('content', notice.content)
+        if data.get('is_public') is not None:
+            notice.is_public = data.get('is_public')
+        
+        start_date_str = data.get('start_date')
+        end_date_str = data.get('end_date')
+        if start_date_str is not None:
+            notice.start_date = datetime.datetime.fromisoformat(start_date_str.replace('Z', '+00:00')) if start_date_str else None
+        if end_date_str is not None:
+            notice.end_date = datetime.datetime.fromisoformat(end_date_str.replace('Z', '+00:00')) if end_date_str else None
+
+        db.session.commit()
+        return jsonify({'message': '공지사항이 성공적으로 수정되었습니다.'}), 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating notice {notice_id}: {e}", exc_info=True)
+        return jsonify({'message': '공지사항 수정에 실패했습니다.'}), 500
+
 
 @admin_bp.route('/notices/<int:notice_id>', methods=['PUT'])
 @token_required
