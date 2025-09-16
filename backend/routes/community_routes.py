@@ -14,6 +14,12 @@ from sqlalchemy import func
 
 community_bp = Blueprint('community_api', __name__)
 
+# --- Helper to get MongoDB ---
+def _get_mongo_db():
+    """Returns the MongoDB database object."""
+    db_name = current_app.config.get("MONGO_DBNAME", "mindbridge_db")
+    return mongo.cx[db_name]
+
 # --- 게시글 관련 API ---
 
 # 게시글 목록 조회
@@ -112,8 +118,9 @@ def get_post_detail(post_id):
         post_obj.views += 1
         db.session.commit()
 
-        # MongoDB에서 본문 내용 가져오기
-        mongo_content = mongo.db.post_contents.find_one({'_id': ObjectId(post_obj.mongo_content_id)})
+        # [FIX] Use new MongoDB access method
+        mongo_db = _get_mongo_db()
+        mongo_content = mongo_db.post_contents.find_one({'_id': ObjectId(post_obj.mongo_content_id)})
         content_text = mongo_content['content'] if mongo_content else '내용 없음'
 
         # 작성자 정보 (익명 여부에 따라 처리)
@@ -181,13 +188,16 @@ def create_post():
         return jsonify({'message': '제목, 내용, 카테고리는 필수입니다.'}), 400
 
     try:
+        # [FIX] Use new MongoDB access method
+        mongo_db = _get_mongo_db()
+        
         # MongoDB에 본문 내용 저장
         mongo_post_content = {
             'content': content,
             'created_at': datetime.datetime.utcnow(),
             'user_id': g.user_id # 본문 내용에도 사용자 ID 기록
         }
-        mongo_result = mongo.db.post_contents.insert_one(mongo_post_content)
+        mongo_result = mongo_db.post_contents.insert_one(mongo_post_content)
         mongo_content_id = str(mongo_result.inserted_id)
 
         new_post = Post(
@@ -234,7 +244,9 @@ def update_post(post_id):
 
         # MongoDB 본문 내용 업데이트
         if content is not None:
-            mongo.db.post_contents.update_one(
+            # [FIX] Use new MongoDB access method
+            mongo_db = _get_mongo_db()
+            mongo_db.post_contents.update_one(
                 {'_id': ObjectId(post.mongo_content_id)},
                 {'$set': {'content': content, 'updated_at': datetime.datetime.utcnow()}}
             )
@@ -261,7 +273,9 @@ def delete_post(post_id):
 
         # MongoDB 본문 내용 먼저 삭제
         if post.mongo_content_id:
-            mongo.db.post_contents.delete_one({'_id': ObjectId(post.mongo_content_id)})
+            # [FIX] Use new MongoDB access method
+            mongo_db = _get_mongo_db()
+            mongo_db.post_contents.delete_one({'_id': ObjectId(post.mongo_content_id)})
 
         db.session.delete(post)
         db.session.commit()
@@ -357,4 +371,3 @@ def update_comment(comment_id):
 @token_required
 def delete_comment(comment_id):
     return jsonify({'message': '댓글 삭제 기능은 아직 준비 중입니다.'}), 200
-
