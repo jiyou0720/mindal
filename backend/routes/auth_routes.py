@@ -279,7 +279,8 @@ def get_nickname_history():
             'new_nickname': entry.new_nickname,
             'changed_at': entry.changed_at.isoformat()
         } for entry in history]
-        return jsonify({'history': history_data}), 200
+        # **수정된 부분**: 프론트엔드에서 사용하는 키 이름('nickname_history')과 일치시켰습니다.
+        return jsonify({'nickname_history': history_data}), 200
     except Exception as e:
         current_app.logger.error(f"Error fetching nickname history for user {user_id}: {e}", exc_info=True)
         return jsonify({'message': '닉네임 변경 이력을 불러오는 데 실패했습니다.'}), 500
