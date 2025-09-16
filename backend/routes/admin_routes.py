@@ -101,7 +101,6 @@ def get_all_menu_items():
     except Exception as e:
         current_app.logger.error(f"Error fetching all menu items: {e}", exc_info=True)
         return jsonify({'message': '메뉴 목록을 불러오는 데 실패했습니다.'}), 500
-
 # 특정 메뉴 아이템 조회
 @admin_bp.route('/menu_items/<string:menu_id>', methods=['GET'])
 @token_required
