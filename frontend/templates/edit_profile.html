@@ -107,7 +107,8 @@
                         console.log('edit_profile: Nickname history fetched:', history);
                         nicknameHistoryList.innerHTML = ''; // 기존 목록 초기화
 
-                        if (history.length === 0) {
+                        // **수정된 부분**: history가 배열이 아니거나 비어있는 경우를 안전하게 확인
+                        if (!Array.isArray(history) || history.length === 0) {
                             noHistoryMessage.style.display = 'block';
                         } else {
                             noHistoryMessage.style.display = 'none';
@@ -185,3 +186,4 @@
         });
     </script>
 {% endblock %}
+
