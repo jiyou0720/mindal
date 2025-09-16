@@ -102,6 +102,7 @@ class Comment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     likes = db.relationship('CommentLike', backref='comment', lazy=True, cascade="all, delete-orphan")
+    is_anonymous = db.Column(db.Boolean, nullable=False, default=False)
 
 class PostLike(db.Model):
     __tablename__ = 'post_likes'
