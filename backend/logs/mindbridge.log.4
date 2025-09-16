@@ -1,4 +1,9 @@
-2025-09-17 00:55:07,634 ERROR: Exception on /api/auth/login [POST] [in C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py:875]
+2025-09-17 00:57:42,495 ERROR: Error fetching public notices: (sqlite3.OperationalError) no such table: notices
+[SQL: SELECT notices.id AS notices_id, notices.title AS notices_title, notices.content AS notices_content, notices.user_id AS notices_user_id, notices.is_public AS notices_is_public, notices.start_date AS notices_start_date, notices.end_date AS notices_end_date, notices.created_at AS notices_created_at, notices.updated_at AS notices_updated_at 
+FROM notices 
+WHERE notices.is_public = 1 AND notices.end_date IS NOT NULL AND notices.end_date < ?]
+[parameters: ('2025-09-16 15:57:42.488722',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in C:\mindai\backend\routes\admin_routes.py:546]
 Traceback (most recent call last):
   File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
     self.dialect.do_execute(
@@ -10,28 +15,17 @@ Traceback (most recent call last):
   File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
     cursor.execute(statement, parameters)
     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-sqlite3.OperationalError: no such table: users
+sqlite3.OperationalError: no such table: notices
 
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
-    response = self.full_dispatch_request()
-  File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-  File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ~^^^^^^^^^^^^^^^^^
-  File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 902, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
-  File "C:\mindai\backend\routes\auth_routes.py", line 145, in login_user
-    user = User.query.filter_by(email=email).first()
-  File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\orm\query.py", line 2759, in first
-    return self.limit(1)._iter().first()  # type: ignore
-           ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\mindai\backend\routes\admin_routes.py", line 521, in get_public_notices
+    ).all()
+      ~~~^^
+  File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\orm\query.py", line 2704, in all
+    return self._iter().all()  # type: ignore
+           ~~~~~~~~~~^^
   File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\orm\query.py", line 2857, in _iter
     result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
                                                   ~~~~~~~~~~~~~~~~~~~~^
@@ -112,17 +106,9 @@ Traceback (most recent call last):
   File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
     cursor.execute(statement, parameters)
     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: users
-[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.user_uid AS users_user_uid, users.nickname AS users_nickname, users.gender AS users_gender, users.age AS users_age, users.major AS users_major, users.created_at AS users_created_at, users.updated_at AS users_updated_at 
-FROM users 
-WHERE users.email = ?
- LIMIT ? OFFSET ?]
-[parameters: ('admin@example.com', 1, 0)]
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: notices
+[SQL: SELECT notices.id AS notices_id, notices.title AS notices_title, notices.content AS notices_content, notices.user_id AS notices_user_id, notices.is_public AS notices_is_public, notices.start_date AS notices_start_date, notices.end_date AS notices_end_date, notices.created_at AS notices_created_at, notices.updated_at AS notices_updated_at 
+FROM notices 
+WHERE notices.is_public = 1 AND notices.end_date IS NOT NULL AND notices.end_date < ?]
+[parameters: ('2025-09-16 15:57:42.488722',)]
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
-2025-09-17 00:55:35,466 INFO: MindBridge startup [in C:\mindai\backend\app.py:33]
-2025-09-17 00:55:36,601 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:31]
-2025-09-17 00:57:36,917 INFO: MindBridge startup [in C:\mindai\backend\app.py:33]
-2025-09-17 00:57:36,918 WARNING: JWT_SECRET_KEY가 설정되지 않았습니다. 개발용 기본 키를 사용합니다. 프로덕션 환경에서는 반드시 환경 변수를 설정해야 합니다. [in C:\mindai\backend\app.py:40]
-2025-09-17 00:57:36,921 WARNING: MySQL 환경 변수가 설정되지 않았습니다. 로컬 개발용 SQLite 데이터베이스를 사용합니다. [in C:\mindai\backend\app.py:55]
-2025-09-17 00:57:37,552 WARNING: MONGO_URI가 설정되지 않았습니다. MongoDB를 초기화하지 않습니다. [in C:\mindai\backend\app.py:105]
-2025-09-17 00:57:37,995 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:31]

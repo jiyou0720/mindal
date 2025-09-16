@@ -1,4 +1,4 @@
-2025-09-17 00:55:07,445 ERROR: Exception on /api/auth/login [POST] [in C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py:875]
+2025-09-17 00:55:07,634 ERROR: Exception on /api/auth/login [POST] [in C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py:875]
 Traceback (most recent call last):
   File "C:\Users\jypar\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
     self.dialect.do_execute(
@@ -119,3 +119,10 @@ WHERE users.email = ?
  LIMIT ? OFFSET ?]
 [parameters: ('admin@example.com', 1, 0)]
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-17 00:55:35,466 INFO: MindBridge startup [in C:\mindai\backend\app.py:33]
+2025-09-17 00:55:36,601 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:31]
+2025-09-17 00:57:36,917 INFO: MindBridge startup [in C:\mindai\backend\app.py:33]
+2025-09-17 00:57:36,918 WARNING: JWT_SECRET_KEY가 설정되지 않았습니다. 개발용 기본 키를 사용합니다. 프로덕션 환경에서는 반드시 환경 변수를 설정해야 합니다. [in C:\mindai\backend\app.py:40]
+2025-09-17 00:57:36,921 WARNING: MySQL 환경 변수가 설정되지 않았습니다. 로컬 개발용 SQLite 데이터베이스를 사용합니다. [in C:\mindai\backend\app.py:55]
+2025-09-17 00:57:37,552 WARNING: MONGO_URI가 설정되지 않았습니다. MongoDB를 초기화하지 않습니다. [in C:\mindai\backend\app.py:105]
+2025-09-17 00:57:37,995 INFO: ADMIN UPLOAD_FOLDER already exists: C:\mindai\backend\routes\..\..\frontend\static\uploads\admin [in C:\mindai\backend\routes\admin_routes.py:31]
