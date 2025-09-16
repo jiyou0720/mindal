@@ -1,9 +1,9 @@
 import os
 from flask import Blueprint, request, jsonify, g, current_app
-from backend.extensions import db
-# ✅ 안정적인 DB 접근을 위해 get_mongo_db 함수를 임포트합니다.
+from backend.extensions import db, mongo
+# ✅ mongo_models에서 get_mongo_db 임포트
 from backend.mongo_models import get_mongo_db
-from backend.maria_models import Post, Comment, User, PostLike # PostLike 임포트 확인
+from backend.maria_models import Post, Comment, User, PostLike
 from backend.routes.auth_routes import token_required
 from bson.objectid import ObjectId
 from werkzeug.utils import secure_filename
@@ -27,7 +27,6 @@ def get_posts():
         search_query = request.args.get('search_query', '', type=str)
         category_filter = request.args.get('category_filter', '', type=str)
 
-        # 게시글, 좋아요 수, 댓글 수를 함께 조회하는 쿼리
         query = db.session.query(
             Post,
             func.count(db.distinct(PostLike.user_id)).label('like_count'),
@@ -84,28 +83,38 @@ def get_posts():
 # 특정 게시글 상세 조회
 @community_bp.route('/posts/<int:post_id>', methods=['GET'])
 def get_post_detail(post_id):
+    # ✅ FIX: 데코레이터를 제거하고 함수 내에서 직접 토큰을 처리하여 앱 시작 오류 해결
+    g.user_id = None # 기본값으로 None 설정
+    token = None
+    if 'Authorization' in request.headers:
+        try:
+            token = request.headers['Authorization'].split(" ")[1]
+            data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+            g.user_id = data['user_id']
+        except Exception:
+            # 공개된 엔드포인트이므로 유효하지 않거나 만료된 토큰은 무시
+            g.user_id = None
+
     try:
-        post_query_result = db.session.query(
+        post_query = db.session.query(
             Post,
-            func.count(db.distinct(PostLike.user_id)).label('like_count'),
-            func.count(db.distinct(Comment.id)).label('comment_count')
+            func.count(db.distinct(PostLike.id)).label('like_count')
         ).outerjoin(PostLike, Post.id == PostLike.post_id)\
-         .outerjoin(Comment, Post.id == Comment.post_id)\
          .filter(Post.id == post_id)\
          .group_by(Post.id)\
          .first()
         
-        if not post_query_result:
+        if not post_query:
             return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
         
-        post_obj, like_count, comment_count = post_query_result
+        post_obj, like_count = post_query
 
+        # 조회수 증가
         post_obj.views += 1
         db.session.commit()
-
-        # ✅ 수정: get_mongo_db() 함수를 사용하여 DB 객체를 가져옵니다.
-        mongo_db = get_mongo_db()
-        mongo_content = mongo_db.post_contents.find_one({'_id': ObjectId(post_obj.mongo_content_id)})
+        
+        db_mongo = get_mongo_db()
+        mongo_content = db_mongo.post_contents.find_one({'_id': ObjectId(post_obj.mongo_content_id)})
         content_text = mongo_content['content'] if mongo_content else '내용 없음'
 
         author_nickname = post_obj.author.nickname if post_obj.author and not post_obj.is_anonymous else '익명'
@@ -113,22 +122,26 @@ def get_post_detail(post_id):
         author_uid = post_obj.author.user_uid if post_obj.author and not post_obj.is_anonymous else ''
 
         user_liked = False
-        if hasattr(g, 'user_id') and g.user_id:
+        if g.user_id: # 로그인한 경우에만 확인
             user_like = PostLike.query.filter_by(user_id=g.user_id, post_id=post_id).first()
             user_liked = user_like is not None
 
+        # 댓글 목록 가져오기
         comments = []
         comment_objects = Comment.query.filter_by(post_id=post_id).order_by(Comment.created_at.asc()).all()
         for comment_obj in comment_objects:
-            comment_author_nickname = comment_obj.author.nickname if comment_obj.author else '탈퇴한 사용자'
+            comment_author_nickname = '익명' if comment_obj.is_anonymous else (comment_obj.author.nickname if comment_obj.author else '탈퇴한 사용자')
             comments.append({
                 'id': comment_obj.id,
                 'content': comment_obj.content,
                 'user_id': comment_obj.user_id,
                 'author_nickname': comment_author_nickname,
+                'is_anonymous': comment_obj.is_anonymous,
                 'created_at': comment_obj.created_at.isoformat(),
                 'updated_at': comment_obj.updated_at.isoformat()
             })
+        
+        comment_count = len(comments)
 
         return jsonify({
             'id': post_obj.id,
@@ -153,6 +166,7 @@ def get_post_detail(post_id):
         }), 200
 
     except Exception as e:
+        db.session.rollback() # 조회수 증가 롤백
         current_app.logger.error(f"Error fetching post detail {post_id}: {e}", exc_info=True)
         return jsonify({'message': '게시글 상세 정보를 불러오는 데 실패했습니다.'}), 500
 
@@ -170,14 +184,13 @@ def create_post():
         return jsonify({'message': '제목, 내용, 카테고리는 필수입니다.'}), 400
 
     try:
+        db_mongo = get_mongo_db()
         mongo_post_content = {
             'content': content,
             'created_at': datetime.datetime.utcnow(),
             'user_id': g.user_id
         }
-        # ✅ 수정: get_mongo_db() 함수를 사용하여 DB 객체를 가져옵니다.
-        mongo_db = get_mongo_db()
-        mongo_result = mongo_db.post_contents.insert_one(mongo_post_content)
+        mongo_result = db_mongo.post_contents.insert_one(mongo_post_content)
         mongo_content_id = str(mongo_result.inserted_id)
 
         new_post = Post(
@@ -195,6 +208,8 @@ def create_post():
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error creating post: {e}", exc_info=True)
+        if 'mongo_content_id' in locals() and mongo_content_id:
+             db_mongo.post_contents.delete_one({'_id': ObjectId(mongo_content_id)})
         return jsonify({'message': '게시글 작성에 실패했습니다.'}), 500
 
 # 게시글 수정
@@ -215,16 +230,14 @@ def update_post(post_id):
         if post.user_id != g.user_id:
             return jsonify({'message': '게시글 수정 권한이 없습니다.'}), 403
 
-        post.title = title if title is not None else post.title
-        post.category = category if category is not None else post.category
-        if is_anonymous is not None:
-            post.is_anonymous = is_anonymous
+        if title is not None: post.title = title
+        if category is not None: post.category = category
+        if is_anonymous is not None: post.is_anonymous = is_anonymous
         post.updated_at = datetime.datetime.utcnow()
 
         if content is not None:
-            # ✅ 수정: get_mongo_db() 함수를 사용하여 DB 객체를 가져옵니다.
-            mongo_db = get_mongo_db()
-            mongo_db.post_contents.update_one(
+            db_mongo = get_mongo_db()
+            db_mongo.post_contents.update_one(
                 {'_id': ObjectId(post.mongo_content_id)},
                 {'$set': {'content': content, 'updated_at': datetime.datetime.utcnow()}}
             )
@@ -249,9 +262,8 @@ def delete_post(post_id):
             return jsonify({'message': '게시글 삭제 권한이 없습니다.'}), 403
 
         if post.mongo_content_id:
-            # ✅ 수정: get_mongo_db() 함수를 사용하여 DB 객체를 가져옵니다.
-            mongo_db = get_mongo_db()
-            mongo_db.post_contents.delete_one({'_id': ObjectId(post.mongo_content_id)})
+            db_mongo = get_mongo_db()
+            db_mongo.post_contents.delete_one({'_id': ObjectId(post.mongo_content_id)})
 
         db.session.delete(post)
         db.session.commit()
@@ -275,30 +287,23 @@ def toggle_post_like(post_id):
 
         if existing_like:
             db.session.delete(existing_like)
-            db.session.commit()
-            return jsonify({'message': '좋아요를 취소했습니다.', 'liked': False}), 200
+            message = '좋아요를 취소했습니다.'
+            liked = False
         else:
             new_like = PostLike(user_id=user_id, post_id=post_id)
             db.session.add(new_like)
-            db.session.commit()
-            return jsonify({'message': '게시글에 좋아요를 눌렀습니다.', 'liked': True}), 200
+            message = '게시글에 좋아요를 눌렀습니다.'
+            liked = True
+        
+        db.session.commit()
+
+        like_count = PostLike.query.filter_by(post_id=post_id).count()
+
+        return jsonify({'message': message, 'liked': liked, 'like_count': like_count}), 200
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error toggling like for post {post_id} by user {user_id}: {e}", exc_info=True)
         return jsonify({'message': '좋아요 처리에 실패했습니다.'}), 500
-
-# 게시글 신고 (기능 미구현)
-@community_bp.route('/posts/<int:post_id>/report', methods=['POST'])
-@token_required
-def report_post(post_id):
-    user_id = g.user_id
-    post = db.session.get(Post, post_id)
-    if not post:
-        return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
-    
-    current_app.logger.info(f"User {user_id} reported post {post_id}.")
-    
-    return jsonify({'message': '게시글이 신고되었습니다. 검토 후 조치하겠습니다.'}), 200
 
 # 댓글 작성 API
 @community_bp.route('/posts/<int:post_id>/comments', methods=['POST'])
@@ -307,7 +312,8 @@ def create_comment(post_id):
     data = request.get_json()
     user_id = g.user_id
     content = data.get('content')
-    
+    is_anonymous = data.get('is_anonymous', False)
+
     if not content:
         return jsonify({'message': '댓글 내용을 입력해주세요.'}), 400
 
@@ -315,16 +321,12 @@ def create_comment(post_id):
     if not post:
         return jsonify({'message': '게시글을 찾을 수 없습니다.'}), 404
 
-    author_user = User.query.get(user_id)
-    if not author_user:
-        current_app.logger.error(f"User with ID {user_id} not found when creating comment.")
-        return jsonify({'message': '사용자 정보를 찾을 수 없습니다.'}), 500
-
     try:
         new_comment = Comment(
             content=content,
             post_id=post_id,
-            user_id=user_id
+            user_id=user_id,
+            is_anonymous=is_anonymous
         )
         db.session.add(new_comment)
         db.session.commit()
@@ -334,14 +336,3 @@ def create_comment(post_id):
         current_app.logger.error(f"Error creating comment for post {post_id}: {e}", exc_info=True)
         return jsonify({'message': '댓글 작성에 실패했습니다.'}), 500
 
-# 댓글 수정 (기능 미구현)
-@community_bp.route('/comments/<int:comment_id>', methods=['PUT'])
-@token_required
-def update_comment(comment_id):
-    return jsonify({'message': '댓글 수정 기능은 아직 준비 중입니다.'}), 200
-
-# 댓글 삭제 (기능 미구현)
-@community_bp.route('/comments/<int:comment_id>', methods=['DELETE'])
-@token_required
-def delete_comment(comment_id):
-    return jsonify({'message': '댓글 삭제 기능은 아직 준비 중입니다.'}), 200
