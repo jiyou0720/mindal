@@ -101,7 +101,8 @@
                         posts.forEach(post => {
                             const row = document.createElement('tr');
                             row.classList.add('post-row');
-                            const detailUrl = `/community/${post.id}`;
+                            // [FIX] Correct the URL to match the Flask route
+                            const detailUrl = `/community/post/${post.id}`;
                             row.onclick = () => {
                                 window.location.href = detailUrl;
                             };
