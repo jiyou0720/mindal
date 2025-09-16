@@ -1,24 +1,23 @@
-import os
-from flask import Blueprint, request, jsonify, g, current_app
-from backend.extensions import db, mongo
-from backend.maria_models import User, Role, UserRole, NicknameHistory
-from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
-import jwt
+from flask import Blueprint, request, jsonify, current_app
+from backend.extensions import db, bcrypt
+from backend.maria_models import User, Role, NicknameHistory
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 import datetime
+from functools import wraps
 import random
 import string
-from bson import ObjectId
-
 
 auth_bp = Blueprint('auth_api', __name__)
 
 def token_required(fn):
     @wraps(fn)
     def decorated(*args, **kwargs):
+        # This is a simplified wrapper. For production, consider Flask-JWT-Extended's robust handling.
         try:
             return jwt_required()(fn)(*args, **kwargs)
         except Exception as e:
+            # Log the exception for debugging
+            current_app.logger.warning(f"JWT verification failed: {e}")
             return jsonify({'message': '토큰이 없거나 유효하지 않습니다.'}), 401
     return decorated
 
@@ -173,3 +172,4 @@ def update_profile():
             return jsonify({'message': '닉네임 변경 중 오류가 발생했습니다.'}), 500
 
     return jsonify({'message': '변경할 닉네임 정보가 없습니다.'}), 400
+
