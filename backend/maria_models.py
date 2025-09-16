@@ -64,7 +64,6 @@ class PostLike(db.Model):
     created_at = db.Column(db.DateTime, server_default=func.now())
     __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='_user_post_uc'),)
 
-# ✅ 스키마에 맞춰 추가된 모델
 class CommentLike(db.Model):
     __tablename__ = 'comment_likes'
     id = db.Column(db.Integer, primary_key=True)
@@ -73,7 +72,6 @@ class CommentLike(db.Model):
     created_at = db.Column(db.DateTime, server_default=func.now())
     __table_args__ = (db.UniqueConstraint('user_id', 'comment_id', name='_user_comment_uc'),)
 
-# ✅ 스키마에 맞춰 추가된 모델
 class NicknameHistory(db.Model):
     __tablename__ = 'nickname_history'
     id = db.Column(db.Integer, primary_key=True)
@@ -82,7 +80,6 @@ class NicknameHistory(db.Model):
     new_nickname = db.Column(db.String(80), nullable=False)
     changed_at = db.Column(db.DateTime, server_default=func.now())
 
-# ✅ 스키마에 맞춰 notices 모델 추가
 class Notice(db.Model):
     __tablename__ = 'notices'
     id = db.Column(db.Integer, primary_key=True)
